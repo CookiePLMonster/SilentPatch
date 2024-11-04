@@ -200,7 +200,7 @@ static bool PatchIAT_ByPointers()
 	using namespace Memory::VP;
 
 	pOrgSystemParametersInfoA = SystemParametersInfoA;
-	memcpy( orgCode, pOrgSystemParametersInfoA, sizeof(orgCode) );
+	memcpy( orgCode, reinterpret_cast<void*>(pOrgSystemParametersInfoA), sizeof(orgCode) );
 	InjectHook( pOrgSystemParametersInfoA, SystemParametersInfoA_OverwritingHook, HookType::Jump );
 	return true;
 }
