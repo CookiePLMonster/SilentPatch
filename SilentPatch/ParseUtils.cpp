@@ -1,7 +1,8 @@
-#include "ParseUtils.hpp"
-
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
+
+#include "ParseUtils.hpp"
+
 #include <windows.h>
 
 static std::string WcharToUTF8(std::wstring_view str)
