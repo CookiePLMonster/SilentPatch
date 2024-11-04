@@ -14,6 +14,7 @@
 #include "Desktop.h"
 
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(linker, "/EXPORT:DirectDrawCreateEx=_DirectDrawCreateEx@16")
 
 extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, REFIID iid, IUnknown FAR *pUnkOuter)
 {
