@@ -52,6 +52,7 @@ void RwD3D8GetRenderState(RwUInt32 state, void* value)
 	fnRwD3D8GetRenderState(state, value);
 }
 
+#ifndef RwIm2DGetNearScreenZ
 RwReal RwIm2DGetNearScreenZ()
 {
 	return RWSRCGLOBAL(dOpenDevice).zBufferNear;
@@ -66,6 +67,7 @@ RwBool RwRenderStateSet(RwRenderState state, void *value)
 {
 	return RWSRCGLOBAL(dOpenDevice).fpRenderStateSet(state, value);
 }
+#endif
 
 // Unreachable stub
 RwBool RwMatrixDestroy(RwMatrix* /*mpMat*/) { assert(!"Unreachable!"); return TRUE; }
