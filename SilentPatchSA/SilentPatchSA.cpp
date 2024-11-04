@@ -2,9 +2,9 @@
 #include <algorithm>
 #include <array>
 #include <d3d9.h>
-#include <Shlwapi.h>
-#include <ShlObj.h>
-#include <ShellAPI.h>
+#include <shlwapi.h>
+#include <shlobj.h>
+#include <shellapi.h>
 #include <cinttypes>
 
 #include "AnimationSA.h"

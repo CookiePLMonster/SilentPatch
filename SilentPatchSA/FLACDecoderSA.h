@@ -3,8 +3,8 @@
 #include "AudioHardwareSA.h"
 
 // libflac
-#include "FLAC\stream_decoder.h"
-#include "FLAC\metadata.h"
+#include "FLAC/stream_decoder.h"
+#include "FLAC/metadata.h"
 
 class CAEFLACDecoder final : public CAEStreamingDecoder
 {

@@ -14,7 +14,7 @@
 
 #include <array>
 #include <memory>
-#include <Shlwapi.h>
+#include <shlwapi.h>
 
 #include "Utils/ModuleList.hpp"
 #include "Utils/Patterns.h"
