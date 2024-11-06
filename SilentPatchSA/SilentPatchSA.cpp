@@ -8242,7 +8242,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	// Fixed escalators crash
 	try
 	{
-		orgEscalatorsUpdate = static_cast<decltype(orgEscalatorsUpdate)>(get_pattern( "80 3D ? ? ? ? ? 74 23 56" ));
+		orgEscalatorsUpdate = reinterpret_cast<decltype(orgEscalatorsUpdate)>(get_pattern( "80 3D ? ? ? ? ? 74 23 56" ));
 
 		auto updateEscalators = get_pattern("80 3D ? ? ? ? ? 74 22 56");
 		auto removeEscalatorsForEntity = pattern( "80 7E F5 00 74 56" ).get_one();
@@ -9112,7 +9112,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		ppRWD3D9 = *get_pattern<IDirect3D9**>("33 ED A3 ? ? ? ? 3B C5", 2 + 1);
 		FrontEndMenuManager = *get_pattern<void**>("50 50 68 ? ? ? ? B9 ? ? ? ? E8", 7 + 1); // This has 2 identical matches, we just need one
 
-		orgGetDocumentsPath = static_cast<char*(*)()>(get_pattern( "8D 45 FC 50 68 19 00 02 00", -6 ));
+		orgGetDocumentsPath = reinterpret_cast<char*(*)()>(get_pattern( "8D 45 FC 50 68 19 00 02 00", -6 ));
 
 		Patch(dialogBoxParam, &pDialogBoxParamA_New);
 		Patch(setFocus, &pSetFocus_NOP);

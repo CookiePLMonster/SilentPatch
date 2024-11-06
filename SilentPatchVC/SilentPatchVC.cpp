@@ -2346,7 +2346,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 
 
 		// Stuff to let us (re)initialize
-		static void (*HUDReInitialise)() = static_cast<decltype(HUDReInitialise)>(get_pattern("31 C0 53 0F EF C0 C6 05"));
+		static void (*HUDReInitialise)() = reinterpret_cast<decltype(HUDReInitialise)>(get_pattern("31 C0 53 0F EF C0 C6 05"));
 
 		// This pattern has 5 hits - first 2 are in Reinitialise, the rest is in Initialise
 		auto reinitialise1 = pattern("C7 05 ? ? ? ? 05 00 00 00 66 C7 05 ? ? ? ? 00 00 C7 05 ? ? ? ? 00 00 00 00").count(5);
@@ -3282,7 +3282,7 @@ void Patch_VC_Common()
 		using namespace IsPlayerTargettingCharFix;
 
 		auto isPlayerTargettingChar = pattern("83 7C 24 ? ? A3 ? ? ? ? 0F 84").get_one();
-		auto using1stPersonWeaponMode = static_cast<decltype(Using1stPersonWeaponMode)>(get_pattern("66 83 F8 07 74 18", -7));
+		auto using1stPersonWeaponMode = reinterpret_cast<decltype(Using1stPersonWeaponMode)>(get_pattern("66 83 F8 07 74 18", -7));
 		bool* useMouse3rdPerson = *get_pattern<bool*>("80 3D ? ? ? ? ? 75 09 66 C7 05 ? ? ? ? ? ? 8B 35", 2);
 		void* theCamera = *get_pattern<void*>("B9 ? ? ? ? 31 DB E8", 1);
 

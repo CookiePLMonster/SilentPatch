@@ -765,7 +765,7 @@ namespace Localization
 // ============= Call cDMAudio::IsAudioInitialised before adding one shot sounds, like in VC =============
 namespace AudioInitializedFix
 {
-	auto IsAudioInitialised = static_cast<bool(*)()>(Memory::ReadCallFrom( hook::get_pattern( "E8 ? ? ? ? 84 C0 74 ? 0F B7 47 10" ) ));
+	auto IsAudioInitialised = reinterpret_cast<bool(*)()>(Memory::ReadCallFrom( hook::get_pattern( "E8 ? ? ? ? 84 C0 74 ? 0F B7 47 10" ) ));
 	void* (*operatorNew)(size_t size);
 
 	void* operatorNew_InitializedCheck( size_t size )
