@@ -599,7 +599,7 @@ __declspec(naked) void RadarBoundsCheckEntityBlip()
 	}
 }
 
-extern char** ppUserFilesDir = AddressByVersion<char**>(0x580C16, 0x580F66, 0x580E66);
+char** ppUserFilesDir = AddressByVersion<char**>(0x580C16, 0x580F66, 0x580E66);
 
 static LARGE_INTEGER	FrameTime;
 NOBUFFERCHECKS int32_t GetTimeSinceLastFrame()

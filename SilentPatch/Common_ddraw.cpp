@@ -17,8 +17,6 @@
 
 #pragma comment(lib, "shlwapi.lib")
 
-extern char** ppUserFilesDir;
-
 // ============= Fake the VRAM poll =============
 namespace FakeVRAMPoll
 {
