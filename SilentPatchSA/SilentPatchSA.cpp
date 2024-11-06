@@ -1214,7 +1214,7 @@ char* GetMyDocumentsPathSA()
 }
 
 static LARGE_INTEGER	FrameTime;
-__declspec(safebuffers) int32_t GetTimeSinceLastFrame()
+NOBUFFERCHECKS int32_t GetTimeSinceLastFrame()
 {
 	LARGE_INTEGER	curTime;
 	QueryPerformanceCounter(&curTime);
@@ -4320,7 +4320,7 @@ __declspec(naked) void DarkVehiclesFix4()
 }
 // 1.0 ONLY ENDS HERE
 
-__declspec(safebuffers) static int _Timers_ftol_internal( double timer, double& remainder )
+NOBUFFERCHECKS static int _Timers_ftol_internal( double timer, double& remainder )
 {
 	double integral;
 	remainder = modf( timer + remainder, &integral );
