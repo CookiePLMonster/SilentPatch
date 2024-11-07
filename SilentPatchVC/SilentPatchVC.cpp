@@ -1035,8 +1035,15 @@ float FixedRefValue()
 	return 1.0f;
 }
 
+// C-style wrapper for calling a C++ function in GCC-style inline assembly (the function signature is really important here)
+RwFrame* __thiscall CVehicleModelInfo_GetExtrasFrame(CVehicleModelInfo* modelInfo, RpClump* clump)
+{
+	return modelInfo->GetExtrasFrame(clump);
+}
+
 __declspec(naked) void CreateInstance_BikeFix()
 {
+#ifdef _MSC_VER
 	_asm
 	{
 		push	eax
@@ -1044,6 +1051,16 @@ __declspec(naked) void CreateInstance_BikeFix()
 		call	CVehicleModelInfo::GetExtrasFrame
 		ret
 	}
+#else
+	__asm__ volatile
+	(
+		"push	eax\n"
+		"mov	ecx, ebp\n"
+		"call	%[CVehicleModelInfo_GetExtrasFrame]\n"
+		"ret"
+		:: [CVehicleModelInfo_GetExtrasFrame] "i" (CVehicleModelInfo_GetExtrasFrame)
+	);
+#endif
 }
 
 char** ppUserFilesDir = AddressByVersion<char**>(0x6022AA, 0x60228A, 0x601ECA);
@@ -1083,6 +1100,7 @@ unsigned int __cdecl AutoPilotTimerCalculation_VC(unsigned int nTimer, int nScal
 
 __declspec(naked) void AutoPilotTimerFix_VC()
 {
+#ifdef _MSC_VER
 	_asm
 	{
 		push	dword ptr [esp + 0xC]
@@ -1096,6 +1114,22 @@ __declspec(naked) void AutoPilotTimerFix_VC()
 		pop     ebx
 		ret     4
 	}
+#else
+	__asm__ volatile
+	(
+		"push	dword ptr [esp + 0xC]\n"
+		"push	dword ptr [ebx + 0x10]\n"
+		"push	eax\n"
+		"call	%[AutoPilotTimerCalculation_VC]\n"
+		"add	esp, 0xC\n"
+		"mov	[ebx + 0xC], eax\n"
+		"add	esp, 0x30\n"
+		"pop	ebp\n"
+		"pop	ebx\n"
+		"ret	4"
+		:: [AutoPilotTimerCalculation_VC] "i" (AutoPilotTimerCalculation_VC)
+	);
+#endif
 }
 
 
@@ -1216,6 +1250,7 @@ namespace SirenSwitchingFix
 {
 	__declspec(naked) static void IsFBIRanchOrFBICar()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			mov     dword ptr [esi+0x1C], 0x1C
@@ -1232,6 +1267,24 @@ namespace SirenSwitchingFix
 			xor     al, al
 			ret
 		}
+#else
+		__asm__ volatile
+		(
+			"mov    dword ptr [esi+0x1C], 0x1C\n"
+
+			// al = 0 - high pitched siren
+			// al = 1 - normal siren
+			"cmp    dword ptr [ebp+0x14], 90\n"	// fbiranch
+			"je     IsFBIRanchOrFBICar_HighPitchSiren\n"
+			"cmp    dword ptr [ebp+0x14], 17\n"	// fbicar
+			"setne  al\n"
+			"ret\n"
+
+		"IsFBIRanchOrFBICar_HighPitchSiren:\n"
+			"xor    al, al\n"
+			"ret"
+		);
+#endif
 	}
 }
 
@@ -1300,6 +1353,7 @@ namespace RemoveDriverStatusFix
 	{
 		// if (m_nStatus != STATUS_WRECKED)
 		//   m_nStatus = STATUS_ABANDONED;
+#ifdef _MSC_VER
 		_asm
 		{
 			mov		cl, [ebx+0x50]
@@ -1313,6 +1367,21 @@ namespace RemoveDriverStatusFix
 		DontSetStatus:
 			ret
 		}
+#else
+		__asm__ volatile
+		(
+			"mov	cl, [ebx+0x50]\n"
+			"mov	al, cl\n"
+			"and	cl, 0xF8\n"
+			"cmp	cl, 0x28\n"
+			"je		DontSetStatus\n"
+			"and    al, 7\n"
+			"or     al, 0x20\n"
+
+		"DontSetStatus:\n"
+			"ret"
+		);
+#endif
 	}
 }
 
@@ -1385,12 +1454,22 @@ namespace NullTerminatedLines
 	static void* orgSscanf_LoadPath;
 	__declspec(naked) static void sscanf1_LoadPath_Terminate()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			mov		eax, [esp+4]
 			mov		byte ptr [eax+ecx], 0
 			jmp		orgSscanf_LoadPath
 		}
+#else
+		__asm__ volatile
+		(
+			"mov	eax, [esp+4]\n"
+			"mov	byte ptr [eax+ecx], 0\n"
+			"jmp	%[orgSscanf_LoadPath]"
+			:: [orgSscanf_LoadPath] "m" (orgSscanf_LoadPath)
+		);
+#endif
 	}
 }
 
@@ -1415,16 +1494,26 @@ namespace PickupEffectsFixes
 {
 	__declspec(naked) static void PickUpEffects_BigDollarColor()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			mov		byte ptr [esp+0x184-0x170], 0
 			mov		dword ptr [esp+0x184-0x174], 37
 			ret
 		}
+#else
+		__asm__ volatile
+		(
+			"mov	byte ptr [esp+0x184-0x170], 0\n"
+			"mov	dword ptr [esp+0x184-0x174], 37\n"
+			"ret"
+		);
+#endif
 	}
 
 	__declspec(naked) static void PickUpEffects_Minigun2Glow()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			cmp		ecx, 294	// minigun2
@@ -1440,6 +1529,23 @@ namespace PickupEffectsFixes
 			mov     ebx, ecx
 			ret
 		}
+#else
+		__asm__ volatile
+		(
+			"cmp	ecx, 294\n"	// minigun2
+			"jnz	NotMinigun2\n"
+			"mov	byte ptr [esp+0x184-0x170], 0\n"
+			"xor	eax, eax\n"
+			"jmp	Return\n"
+
+		"NotMinigun2:\n"
+			"lea    eax, [ecx+1]\n"
+
+		"Return:\n"
+			"mov    ebx, ecx\n"
+			"ret"
+		);
+#endif
 	}
 }
 
@@ -1456,6 +1562,7 @@ namespace IsPlayerTargettingCharFix
 	__declspec(naked) static void IsPlayerTargettingChar_ExtraChecks()
 	{
 		// After this extra block of code, there is a jz Return, so set ZF to 0 here if this path is to be entered
+#ifdef _MSC_VER
 		_asm
 		{
 			test	bl, bl
@@ -1476,6 +1583,31 @@ namespace IsPlayerTargettingCharFix
 			xor		al, al
 			ret
 		}
+#else
+		__asm__ volatile
+		(
+			"test	bl, bl\n"
+			"jnz	ReturnToUpdateCompareFlag\n"
+			"mov	eax, %[bUseMouse3rdPerson]\n"
+			"cmp	byte ptr [eax], 0\n"
+			"jne	CmpAndReturn\n"
+			"mov	ecx, %[TheCamera]\n"
+			"call	%[Using1stPersonWeaponMode]\n"
+			"test	al, al\n"
+			"jz		ReturnToUpdateCompareFlag\n"
+
+		"CmpAndReturn:\n"
+			"cmp    byte ptr [esp+0x11C-0x10C], 0\n"
+			"ret\n"
+
+		"ReturnToUpdateCompareFlag:\n"
+			"xor	al, al\n"
+			"ret"
+			:: [bUseMouse3rdPerson] "m" (bUseMouse3rdPerson),
+			[TheCamera] "m" (TheCamera),
+			[Using1stPersonWeaponMode] "m" (Using1stPersonWeaponMode)
+		);
+#endif
 	}
 }
 
@@ -1617,6 +1749,7 @@ namespace SelectableBackfaceCulling
 	static void* EntityRender_Prologue_JumpBack;
 	__declspec(naked) static void __fastcall EntityRender_Original(CEntity*)
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			push    ebx
@@ -1624,6 +1757,16 @@ namespace SelectableBackfaceCulling
 			cmp     dword ptr [ebx+0x4C], 0
 			jmp		EntityRender_Prologue_JumpBack
 		}
+#else
+		__asm__ volatile
+		(
+			"push   ebx\n"
+			"mov    ebx, ecx\n"
+			"cmp    dword ptr [ebx+0x4C], 0\n"
+			"jmp	%[EntityRender_Prologue_JumpBack]"
+			:: [EntityRender_Prologue_JumpBack] "m" (EntityRender_Prologue_JumpBack)
+		);
+#endif
 	}
 
 	static bool ShouldDisableBackfaceCulling(const CEntity* entity)
@@ -1768,11 +1911,20 @@ namespace PedMugObjectiveFix
 	static void* PedMugObjectiveFix_JumpBack;
 	__declspec(naked) static void PedMugObjectiveFix_Wander()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			mov     eax, [ebp+534h]
 			jmp		[PedMugObjectiveFix_JumpBack]
 		}
+#else
+		__asm__ volatile
+		(
+			"mov    eax, [ebp+0x534]\n"
+			"jmp	%[PedMugObjectiveFix_JumpBack]"
+			:: [PedMugObjectiveFix_JumpBack] "m" (PedMugObjectiveFix_JumpBack)
+		);
+#endif
 	}
 }
 
@@ -1841,6 +1993,7 @@ namespace TommyFistShakeWithWeapons
 
 	__declspec(naked) static void CheckWeaponGroupHook()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			push	dword ptr [eax]
@@ -1849,6 +2002,17 @@ namespace TommyFistShakeWithWeapons
 			test	al, al
 			ret
 		}
+#else
+		__asm__ volatile
+		(
+			"push	dword ptr [eax]\n"
+			"call	%[WeaponProhibitsFistShake]\n"
+			"add	esp, 4\n"
+			"test	al, al\n"
+			"ret"
+			:: [WeaponProhibitsFistShake] "i" (WeaponProhibitsFistShake)
+		);
+#endif
 	}
 
 	template<std::size_t Index>
