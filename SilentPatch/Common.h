@@ -2,6 +2,13 @@
 
 #include <cstdint>
 
+// Workaround for old MSVC inline function bugs
+#if defined(_MSC_VER) && _MSC_VER < 1930
+#define STATIC_INLINE static
+#else
+#define STATIC_INLINE static inline
+#endif
+
 namespace ExtraCompSpecularity
 {
 	void ReadExtraCompSpecularityExceptions(const wchar_t* pPath);
