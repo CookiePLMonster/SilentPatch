@@ -1,8 +1,6 @@
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
 
-#define RwEngineInstance (*rwengine)
-
 #include <rwcore.h>
 #include "RWGTA.h"
 

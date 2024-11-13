@@ -3,6 +3,10 @@
 #include <rwcore.h>
 #include <rpworld.h>
 
+#define RwEngineInstance (*rwengine)
+
+extern void** rwengine;
+
 template<RwRenderState State>
 class RwScopedRenderState
 {
