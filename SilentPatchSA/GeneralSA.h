@@ -2,6 +2,7 @@
 #define __GENERAL
 
 #include <stdint.h>
+#include "Common.h"
 #include "TheFLAUtils.h"
 
 class CSimpleTransform

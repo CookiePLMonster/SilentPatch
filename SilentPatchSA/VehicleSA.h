@@ -302,7 +302,7 @@ public:
 
 private:
 	template<std::size_t Index>
-	static void (CVehicle::*orgDoHeadLightBeam)(int type, CMatrix& m, bool right);
+	STATIC_INLINE void (CVehicle::*orgDoHeadLightBeam)(int type, CMatrix& m, bool right);
 
 	template<std::size_t Index>
 	void DoHeadLightBeam_LightBeamFixSaveObj(int type, CMatrix& m, bool right)
@@ -337,7 +337,7 @@ public:
 
 public:
 	template<std::size_t Index>
-	static void (CAutomobile::*orgAutomobilePreRender)();
+	STATIC_INLINE void (CAutomobile::*orgAutomobilePreRender)();
 
 	template<std::size_t Index>
 	void		PreRender_SilentPatch()
@@ -352,7 +352,7 @@ public:
 	void HideDestroyedWheels_SilentPatch(void (CAutomobile::*spawnFlyingComponentCB)(int, unsigned int), int nodeID, unsigned int modelID);
 
 	template<std::size_t Index>
-	static void (CAutomobile::*orgSpawnFlyingComponent)(int, unsigned int);
+	STATIC_INLINE void (CAutomobile::*orgSpawnFlyingComponent)(int, unsigned int);
 
 	template<std::size_t Index>
 	void		SpawnFlyingComponent_HideWheels(int nodeID, unsigned int modelID)
@@ -448,7 +448,7 @@ private:
 
 private:
 	template<std::size_t Index>
-	static CVehicle* (CStoredCar::*orgRestoreCar)();
+	STATIC_INLINE CVehicle* (CStoredCar::*orgRestoreCar)();
 	
 	template<std::size_t Index>
 	CVehicle* RestoreCar_SilentPatch()

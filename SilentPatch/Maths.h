@@ -6,6 +6,15 @@
 
 #include <rwcore.h>
 
+// FIXME: Common.h might be a better place for this (but SA doesn't include it)
+#ifdef _MSC_VER
+#define NOBUFFERCHECKS __declspec(safebuffers)
+#elif defined(__GNUC__) && !defined(__clang__)
+#define NOBUFFERCHECKS __attribute__((optimize("-fno-stack-protector")))
+#else
+#define NOBUFFERCHECKS __attribute__((no_stack_protector))
+#endif
+
 constexpr double RAD_TO_DEG (180.0/M_PI);
 constexpr double DEG_TO_RAD (M_PI/180.0);
 

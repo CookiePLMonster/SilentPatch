@@ -1,11 +1,11 @@
-#include "FriendlyMonitorNames.h"
-
 // This API is Win7 only, so make sure we use dynamic imports
 #define WIN32_LEAN_AND_MEAN
 
 #define NOMINMAX
 #define WINVER 0x0602
 #define _WIN32_WINNT 0x0602
+
+#include "FriendlyMonitorNames.h"
 
 #include <windows.h>
 

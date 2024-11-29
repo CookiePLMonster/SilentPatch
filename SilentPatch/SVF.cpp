@@ -1,8 +1,12 @@
 #include "SVF.h"
 
-#include <cstdint>
 #include <algorithm>
 #include <map>
+
+#ifndef _MSC_VER
+#include <cstring>
+#define _stricmp strcasecmp
+#endif
 
 namespace SVF
 {

@@ -1,6 +1,8 @@
 #ifndef __TIMER
 #define __TIMER
 
+#include <cmath>
+
 class CTimer
 {
 public:

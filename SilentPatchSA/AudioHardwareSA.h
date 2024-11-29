@@ -2,7 +2,7 @@
 #define __AUDIOHARDWARE
 
 // IStream
-#include <Objidl.h>
+#include <objidl.h>
 
 enum eDecoderType
 {

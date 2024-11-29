@@ -34,7 +34,7 @@ namespace HandlingNameLoadFix
 // ============= Corona lines rendering fix =============
 namespace CoronaLinesFix
 {
-	static decltype(RwIm2DRenderLine)* orgRwIm2DRenderLine;
+	static RwIm2DRenderLineFunction orgRwIm2DRenderLine;
 	static RwBool RenderLine_SetRecipZ( RwIm2DVertex *vertices, RwInt32 numVertices, RwInt32 vert1, RwInt32 vert2 )
 	{
 		const RwReal nearScreenZ = RwIm2DGetNearScreenZ();

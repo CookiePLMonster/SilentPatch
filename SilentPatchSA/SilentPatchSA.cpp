@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <array>
 #include <d3d9.h>
-#include <Shlwapi.h>
-#include <ShlObj.h>
-#include <ShellAPI.h>
+#include <shlwapi.h>
+#include <shlobj.h>
+#include <shellapi.h>
 #include <cinttypes>
 
 #include "ScriptSA.h"
@@ -950,7 +950,7 @@ char* GetMyDocumentsPathSA()
 }
 
 static LARGE_INTEGER	FrameTime;
-__declspec(safebuffers) int32_t GetTimeSinceLastFrame()
+NOBUFFERCHECKS int32_t GetTimeSinceLastFrame()
 {
 	LARGE_INTEGER	curTime;
 	QueryPerformanceCounter(&curTime);
@@ -2851,7 +2851,7 @@ namespace CreditsScalingFixes
 	static const unsigned int FIXED_RES_HEIGHT_SCALE = 448;
 
 	template<std::size_t Index>
-	static void (*orgPrintString)(float,float,const wchar_t*);
+	STATIC_INLINE void (*orgPrintString)(float,float,const wchar_t*);
 
 	template<std::size_t Index>
 	static void PrintString_ScaleY(float fX, float fY, const wchar_t* pText)
@@ -2888,7 +2888,7 @@ namespace SlidingTextsScalingFixes
 		static inline bool bSlidingEnabled = false;
 
 		template<std::size_t Index>
-		static void (*orgPrintString)(float,float,const wchar_t*);
+		STATIC_INLINE void (*orgPrintString)(float,float,const wchar_t*);
 
 		template<std::size_t Index>
 		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
@@ -2898,7 +2898,7 @@ namespace SlidingTextsScalingFixes
 		}
 
 		template<std::size_t Index>
-		static void (*orgSetRightJustifyWrap)(float wrap);
+		STATIC_INLINE void (*orgSetRightJustifyWrap)(float wrap);
 
 		template<std::size_t Index>
 		static void SetRightJustifyWrap_Slide(float wrap)
@@ -2915,7 +2915,7 @@ namespace SlidingTextsScalingFixes
 		static inline bool bSlidingEnabled = false;
 
 		template<std::size_t Index>
-		static void (*orgPrintString)(float,float,const wchar_t*);
+		STATIC_INLINE void (*orgPrintString)(float,float,const wchar_t*);
 
 		template<std::size_t Index>
 		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
@@ -3960,7 +3960,7 @@ __declspec(naked) void DarkVehiclesFix4()
 }
 // 1.0 ONLY ENDS HERE
 
-__declspec(safebuffers) static int _Timers_ftol_internal( double timer, double& remainder )
+NOBUFFERCHECKS static int _Timers_ftol_internal( double timer, double& remainder )
 {
 	double integral;
 	remainder = modf( timer + remainder, &integral );
@@ -7680,7 +7680,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	// Fixed escalators crash
 	try
 	{
-		orgEscalatorsUpdate = static_cast<decltype(orgEscalatorsUpdate)>(get_pattern( "80 3D ? ? ? ? ? 74 23 56" ));
+		orgEscalatorsUpdate = reinterpret_cast<decltype(orgEscalatorsUpdate)>(get_pattern( "80 3D ? ? ? ? ? 74 23 56" ));
 
 		auto updateEscalators = get_pattern("80 3D ? ? ? ? ? 74 22 56");
 		auto removeEscalatorsForEntity = pattern( "80 7E F5 00 74 56" ).get_one();
@@ -8539,7 +8539,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		ppRWD3D9 = *get_pattern<IDirect3D9**>("33 ED A3 ? ? ? ? 3B C5", 2 + 1);
 		FrontEndMenuManager = *get_pattern<void**>("50 50 68 ? ? ? ? B9 ? ? ? ? E8", 7 + 1); // This has 2 identical matches, we just need one
 
-		orgGetDocumentsPath = static_cast<char*(*)()>(get_pattern( "8D 45 FC 50 68 19 00 02 00", -6 ));
+		orgGetDocumentsPath = reinterpret_cast<char*(*)()>(get_pattern( "8D 45 FC 50 68 19 00 02 00", -6 ));
 
 		Patch(dialogBoxParam, &pDialogBoxParamA_New);
 		Patch(setFocus, &pSetFocus_NOP);
