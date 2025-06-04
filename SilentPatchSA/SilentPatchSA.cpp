@@ -4742,6 +4742,7 @@ BOOL InjectDelayedPatches_10()
 		// Fix text background padding not scaling to resolution
 		// Debugged by Wesser
 		// Moved here for compatibility with wshps.asi
+		if (!bSAMP)
 		{
 			using namespace TextRectPaddingScalingFixes;
 
