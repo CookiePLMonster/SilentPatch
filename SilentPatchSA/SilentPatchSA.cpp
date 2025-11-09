@@ -6163,6 +6163,9 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Nop(0x73B3AE, 1);
 	InjectHook( 0x73B3AE + 1, WeaponRangeMult_VehicleCheck, HookType::Call );
 
+	// Peds voice selection fix
+	Nop(0x4C7320, 3);
+	Patch<BYTE>(0x4C7323, 0xEB);
 
 	// New timers fix
 	InjectHook( 0x561C32, asmTimers_ftol_PauseMode );
