@@ -376,7 +376,7 @@ namespace PrintStringShadows
 		}
 	};
 
-	template<uintptr_t pFltY>
+	template<uintptr_t pFltY, typename Scaler>
 	struct Y
 	{
 		static inline void (*orgPrintString)(float,float,const wchar_t*);
