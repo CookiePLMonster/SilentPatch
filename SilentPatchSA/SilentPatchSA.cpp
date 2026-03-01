@@ -3451,7 +3451,7 @@ namespace TextRectPaddingScalingFixes
 	}
 
 	template<std::size_t Index>
-	static const double* orgPaddingYSize_Double;
+	static inline const double* orgPaddingYSize_Double;
 
 	template<std::size_t Index>
 	static inline double PaddingYSize_Double_Recalculated;
