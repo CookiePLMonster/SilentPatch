@@ -393,7 +393,7 @@ static bool IgnoresWeaponPedsForPCFix();
 namespace BlurredRotorsAtomicRender
 {
 	template<std::size_t Index>
-	static RpAtomic* (*orgAtomicDefaultRenderCallback)(RpAtomic* pAtomic);
+	static inline RpAtomic* (*orgAtomicDefaultRenderCallback)(RpAtomic* pAtomic);
 
 	template<std::size_t Index>
 	static RpAtomic* AtomicDefaultRenderCallBack_HeliRotor(RpAtomic* pAtomic)
@@ -2029,7 +2029,7 @@ namespace VariableResets
 	}
 
 	template<std::size_t Index>
-	static void (*orgReInitGameObjectVariables)();
+	static inline void (*orgReInitGameObjectVariables)();
 
 	template<std::size_t Index>
 	void ReInitGameObjectVariables()
@@ -2634,7 +2634,7 @@ namespace GetCorrectPedModel_Lapdm1
 namespace RestrictImpoundVehicleTypes
 {
 	template<std::size_t Index>
-	static bool (*orgIsThisVehicleInteresting)(CVehicle* vehicle);
+	static inline bool (*orgIsThisVehicleInteresting)(CVehicle* vehicle);
 
 	template<std::size_t Index>
 	static bool IsThisVehicleInteresting_AndCanBeImpounded(CVehicle* vehicle)
@@ -2889,7 +2889,7 @@ namespace LitFlyingComponents
 namespace Rand16bit
 {
 	template<std::size_t Index>
-	static int (*orgRand)();
+	static inline int (*orgRand)();
 
 	template<std::size_t Index>
 	static int rand16bit()
@@ -3152,7 +3152,7 @@ namespace CreditsScalingFixes
 	static const unsigned int FIXED_RES_HEIGHT_SCALE = 448;
 
 	template<std::size_t Index>
-	static void (*orgPrintString)(float,float,const wchar_t*);
+	static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 	template<std::size_t Index>
 	static void PrintString_ScaleY(float fX, float fY, const wchar_t* pText)
@@ -3192,7 +3192,7 @@ namespace SlidingTextsScalingFixes
 		static inline bool bSlidingEnabled = false;
 
 		template<std::size_t Index>
-		static void (*orgPrintString)(float,float,const wchar_t*);
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 		template<std::size_t Index>
 		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
@@ -3202,7 +3202,7 @@ namespace SlidingTextsScalingFixes
 		}
 
 		template<std::size_t Index>
-		static void (*orgSetRightJustifyWrap)(float wrap);
+		static inline void (*orgSetRightJustifyWrap)(float wrap);
 
 		template<std::size_t Index>
 		static void SetRightJustifyWrap_Slide(float wrap)
@@ -3219,7 +3219,7 @@ namespace SlidingTextsScalingFixes
 		static inline bool bSlidingEnabled = false;
 
 		template<std::size_t Index>
-		static void (*orgPrintString)(float,float,const wchar_t*);
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 		template<std::size_t Index>
 		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
@@ -3252,7 +3252,7 @@ namespace PostEffectsScalingFixes
 	}
 
 	template<std::size_t Index>
-	static void (*orgSetCurrentVideoMode)(int modeIndex);
+	static inline void (*orgSetCurrentVideoMode)(int modeIndex);
 
 	template<std::size_t Index>
 	static void SetCurrentVideoMode_SetupPostFX(int modeIndex)
@@ -3280,7 +3280,7 @@ namespace PostEffectsScalingFixes
 namespace CrosshairScalingFixes
 {
 	template<std::size_t Index>
-	static void (*orgRenderOneXLUSprite_Rotate_Aspect)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, short, float, float, uint8_t);
+	static inline void (*orgRenderOneXLUSprite_Rotate_Aspect)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, short, float, float, uint8_t);
 
 	template<std::size_t Index>
 	static void RenderOneXLUSprite_Rotate_Aspect_Scale(float a1, float a2, float a3, float width, float height, uint8_t a6, uint8_t a7, uint8_t a8, short a9, float a10, float a11, uint8_t a12)
@@ -3290,10 +3290,10 @@ namespace CrosshairScalingFixes
 	}
 
 	template<std::size_t Index>
-	static const float* orgSize_GamepadCrosshair;
+	static inline const float* orgSize_GamepadCrosshair;
 
 	template<std::size_t Index>
-	static float Size_Recalculated_GamepadCrosshair;
+	static inline float Size_Recalculated_GamepadCrosshair;
 
 	template<std::size_t... I>
 	static void RecalculateSizes_GamepadCrosshair(std::index_sequence<I...>)
@@ -3303,10 +3303,10 @@ namespace CrosshairScalingFixes
 	}
 
 	template<std::size_t Index>
-	static const double* orgSize_GamepadCrosshair_Double;
+	static inline const double* orgSize_GamepadCrosshair_Double;
 
 	template<std::size_t Index>
-	static double Size_Recalculated_GamepadCrosshair_Double;
+	static inline double Size_Recalculated_GamepadCrosshair_Double;
 
 	template<std::size_t... I>
 	static void RecalculateSizes_GamepadCrosshair_Double(std::index_sequence<I...>)
@@ -3365,10 +3365,10 @@ namespace MapScreenScalingFixes
 
 
 	template<std::size_t Index>
-	static const float* orgCursorXSize;
+	static inline const float* orgCursorXSize;
 
 	template<std::size_t Index>
-	static float CursorXSize_Recalculated;
+	static inline float CursorXSize_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateXSize(std::index_sequence<I...>)
@@ -3378,10 +3378,10 @@ namespace MapScreenScalingFixes
 	}
 
 	template<std::size_t Index>
-	static const float* orgCursorYSize;
+	static inline const float* orgCursorYSize;
 
 	template<std::size_t Index>
-	static float CursorYSize_Recalculated;
+	static inline float CursorYSize_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateYSize(std::index_sequence<I...>)
@@ -3425,10 +3425,10 @@ namespace MapScreenScalingFixes
 namespace TextRectPaddingScalingFixes
 {
 	template<std::size_t Index>
-	static const float* orgPaddingXSize;
+	static inline const float* orgPaddingXSize;
 
 	template<std::size_t Index>
-	static float PaddingXSize_Recalculated;
+	static inline float PaddingXSize_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateXSize(std::index_sequence<I...>)
@@ -3438,10 +3438,10 @@ namespace TextRectPaddingScalingFixes
 	}
 
 	template<std::size_t Index>
-	static const float* orgPaddingYSize;
+	static inline const float* orgPaddingYSize;
 
 	template<std::size_t Index>
-	static float PaddingYSize_Recalculated;
+	static inline float PaddingYSize_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateYSize(std::index_sequence<I...>)
@@ -3454,7 +3454,7 @@ namespace TextRectPaddingScalingFixes
 	static const double* orgPaddingYSize_Double;
 
 	template<std::size_t Index>
-	static double PaddingYSize_Double_Recalculated;
+	static inline double PaddingYSize_Double_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateYSize_Double(std::index_sequence<I...>)
@@ -3536,7 +3536,7 @@ namespace JetThrustersFix
 {
 	// These are technically CMatrix, but for simplicity we use RwMatrix here
 	template<std::size_t Index>
-	static RwMatrix* (*orgMatrixMultiply)(RwMatrix* out, const RwMatrix* lhs, const RwMatrix* rhs);
+	static inline RwMatrix* (*orgMatrixMultiply)(RwMatrix* out, const RwMatrix* lhs, const RwMatrix* rhs);
 
 	template<std::size_t Index>
 	static RwMatrix* MatrixMultiply_ZeroFlags(RwMatrix* out, const RwMatrix* lhs, const RwMatrix* rhs)
@@ -3580,7 +3580,7 @@ namespace FixedLineWraps
 	struct WrapInternal
 	{
 		template<std::size_t Index>
-		static void (*orgWrapFunction)(float);
+		static inline void (*orgWrapFunction)(float);
 
 		template<std::size_t Index>
 		static void WrapFunction_LeftAlign(float fLength)
@@ -3628,7 +3628,7 @@ namespace FixedLineWraps
 namespace CoronaFlaresScaling
 {
 	template<std::size_t Index>
-	static void (*orgRenderBufferedOneXLUSprite2D)(void* x, void* y, float width, float height, void* rgb, void* intens, void* a);
+	static inline void (*orgRenderBufferedOneXLUSprite2D)(void* x, void* y, float width, float height, void* rgb, void* intens, void* a);
 	
 	template<std::size_t Index>
 	static void RenderBufferedOneXLUSprite2D_Scale(void* x, void* y, float width, float height, void* rgb, void* intens, void* a)
@@ -3768,7 +3768,7 @@ namespace SpeechSystemFixes
 	}
 
 	template<std::size_t Index>
-	static int16_t (__thiscall* orgGetSoundAndBankIDs)(CAEPedSpeechAudioEntity* obj, int16_t GlobalSpeechContext, void* a2);
+	static inline int16_t (__thiscall* orgGetSoundAndBankIDs)(CAEPedSpeechAudioEntity* obj, int16_t GlobalSpeechContext, void* a2);
 	template<std::size_t Index>
 	static int16_t __fastcall GetSoundAndBankIDs_WeatherReplyFallback(CAEPedSpeechAudioEntity* obj, void*, int16_t GlobalSpeechContext, void* a2)
 	{
@@ -3802,7 +3802,7 @@ namespace SpeechSystemFixes
 	}
 
 	template<std::size_t Index>
-	static int16_t (*orgGetVoice)(const char* pString, void* type);
+	static inline int16_t (*orgGetVoice)(const char* pString, void* type);
 	template<std::size_t Index>
 	static int16_t GetVoice_CheckTypos(const char* pString, void* type)
 	{

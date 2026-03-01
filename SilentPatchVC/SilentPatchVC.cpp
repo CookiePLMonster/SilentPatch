@@ -376,7 +376,7 @@ namespace PrintStringShadows
 		}
 	};
 
-	template<uintptr_t pFltY>
+	template<uintptr_t pFltY, typename Scaler>
 	struct Y
 	{
 		static inline void (*orgPrintString)(float,float,const wchar_t*);
@@ -401,10 +401,10 @@ namespace RadardiscFixes
 	static float* orgRadarXPosPtr;
 
 	template<std::size_t Index>
-	static const float* orgRadarXPos_RadardiscShrink;
+	static inline const float* orgRadarXPos_RadardiscShrink;
 
 	template<std::size_t Index>
-	static float RadarXPos_Recalculated_RadardiscShrink;
+	static inline float RadarXPos_Recalculated_RadardiscShrink;
 
 	template<std::size_t... I>
 	static void RecalculateXPositions_RadardiscShrink(std::index_sequence<I...>)
@@ -414,10 +414,10 @@ namespace RadardiscFixes
 	}
 
 	template<std::size_t Index>
-	static const float* orgRadarYPos_RadardiscShrink;
+	static inline const float* orgRadarYPos_RadardiscShrink;
 
 	template<std::size_t Index>
-	static float RadarYPos_Recalculated_RadardiscShrink;
+	static inline float RadarYPos_Recalculated_RadardiscShrink;
 
 	template<std::size_t... I>
 	static void RecalculateYPositions_RadardiscShrink(std::index_sequence<I...>)
@@ -448,7 +448,7 @@ namespace RadardiscFixes
 	}
 
 	template<std::size_t Index>
-	static void (__fastcall* orgDrawSprite)(void* obj, void*, const CRect& rect, const CRGBA& col1, const CRGBA& col2, const CRGBA& col3, const CRGBA& col4);
+	static inline void (__fastcall* orgDrawSprite)(void* obj, void*, const CRect& rect, const CRGBA& col1, const CRGBA& col2, const CRGBA& col3, const CRGBA& col4);
 
 	template<std::size_t Index>
 	static void __fastcall DrawSprite_Scale(void* obj, void*, const CRect& rect, const CRGBA& col1, const CRGBA& col2, const CRGBA& col3, const CRGBA& col4)
@@ -463,16 +463,16 @@ namespace RadardiscFixes
 namespace OnscreenCounterBarFixes
 {
 	template<std::size_t Index>
-	static const float* orgXPos;
+	static inline const float* orgXPos;
 
 	template<std::size_t Index>
-	static float XPos_Recalculated;
+	static inline float XPos_Recalculated;
 
 	template<std::size_t Index>
-	static const float* orgYPos;
+	static inline const float* orgYPos;
 
 	template<std::size_t Index>
-	static float YPos_Recalculated;
+	static inline float YPos_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateXPositions(std::index_sequence<I...>)
@@ -507,16 +507,16 @@ namespace OnscreenCounterBarFixes
 namespace RadarTraceOutlineFixes
 {
 	template<std::size_t Index>
-	static const float* orgXPos;
+	static inline const float* orgXPos;
 
 	template<std::size_t Index>
-	static float XPos_Recalculated;
+	static inline float XPos_Recalculated;
 
 	template<std::size_t Index>
-	static const float* orgYPos;
+	static inline const float* orgYPos;
 
 	template<std::size_t Index>
-	static float YPos_Recalculated;
+	static inline float YPos_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateXPositions(std::index_sequence<I...>)
@@ -542,7 +542,7 @@ namespace RadarTraceOutlineFixes
 		}
 
 		template<std::size_t Index>
-		static void (*orgShowRadarTraceWithHeight)(float, float, unsigned int, unsigned char, unsigned char, unsigned char, unsigned char, unsigned char);
+		static inline void (*orgShowRadarTraceWithHeight)(float, float, unsigned int, unsigned char, unsigned char, unsigned char, unsigned char, unsigned char);
 
 		template<std::size_t Index>
 		static void ShowRadarTraceWithHeight_RecalculatePositions(float a1, float a2, unsigned int a3, unsigned char a4, unsigned char a5, unsigned char a6, unsigned char a7, unsigned char a8)
@@ -563,16 +563,16 @@ namespace RadarTraceOutlineFixes
 namespace LoadingBarOutlineFixes
 {
 	template<std::size_t Index>
-	static const float* orgXPos;
+	static inline const float* orgXPos;
 
 	template<std::size_t Index>
-	static float XPos_Recalculated;
+	static inline float XPos_Recalculated;
 
 	template<std::size_t Index>
-	static const float* orgYPos;
+	static inline const float* orgYPos;
 
 	template<std::size_t Index>
-	static float YPos_Recalculated;
+	static inline float YPos_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateXPositions(std::index_sequence<I...>)
@@ -610,7 +610,7 @@ namespace CreditsScalingFixes
 	static const unsigned int FIXED_RES_HEIGHT_SCALE = 448;
 
 	template<std::size_t Index>
-	static void (*orgPrintString)(float,float,const wchar_t*);
+	static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 	template<std::size_t Index>
 	static void PrintString_ScaleY(float fX, float fY, const wchar_t* pText)
@@ -642,7 +642,7 @@ namespace SlidingTextsScalingFixes
 		static inline bool bSlidingEnabled = false;
 
 		template<std::size_t Index>
-		static void (*orgPrintString)(float,float,const wchar_t*);
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 		template<std::size_t Index>
 		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
@@ -652,7 +652,7 @@ namespace SlidingTextsScalingFixes
 		}
 
 		template<std::size_t Index>
-		static void (*orgSetRightJustifyWrap)(float wrap);
+		static inline void (*orgSetRightJustifyWrap)(float wrap);
 
 		template<std::size_t Index>
 		static void SetRightJustifyWrap_Slide(float wrap)
@@ -669,7 +669,7 @@ namespace SlidingTextsScalingFixes
 		static inline bool bSlidingEnabled = false;
 
 		template<std::size_t Index>
-		static void (*orgPrintString)(float,float,const wchar_t*);
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 		template<std::size_t Index>
 		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
@@ -691,7 +691,7 @@ namespace SlidingTextsScalingFixes
 namespace DarkelTextPlacement
 {
 	template<std::size_t Index>
-	static void (*orgPrintString)(float,float,const wchar_t*);
+	static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 	template<std::size_t Index>
 	static void PrintString_ScaleY(float fX, float fY, const wchar_t* pText)
@@ -783,7 +783,7 @@ namespace ShadowScalingFixes
 	}
 
 	template<std::size_t Index>
-	static void (*orgPrintString)(float x, float y, uint32_t, uint16_t*, uint16_t*, float);
+	static inline void (*orgPrintString)(float x, float y, uint32_t, uint16_t*, uint16_t*, float);
 
 	template<std::size_t Index>
 	static void PrintString_AdjustShadow(float x, float y, uint32_t a3, uint16_t* a4, uint16_t* a5, float a6)
@@ -815,10 +815,10 @@ namespace ShadowScalingFixes
 namespace TextRectPaddingScalingFixes
 {
 	template<std::size_t Index>
-	static const float* orgPaddingXSize;
+	static inline const float* orgPaddingXSize;
 
 	template<std::size_t Index>
-	static float PaddingXSize_Recalculated;
+	static inline float PaddingXSize_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateXSize(std::index_sequence<I...>)
@@ -828,10 +828,10 @@ namespace TextRectPaddingScalingFixes
 	}
 
 	template<std::size_t Index>
-	static const float* orgPaddingYSize;
+	static inline const float* orgPaddingYSize;
 
 	template<std::size_t Index>
-	static float PaddingYSize_Recalculated;
+	static inline float PaddingYSize_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateYSize(std::index_sequence<I...>)
@@ -853,10 +853,10 @@ namespace TextRectPaddingScalingFixes
 	HOOK_EACH_INIT(PaddingYSize, orgPaddingYSize, PaddingYSize_Recalculated);
 
 	template<std::size_t Index>
-	static const float* orgWrapX;
+	static inline const float* orgWrapX;
 
 	template<std::size_t Index>
-	static float WrapX_Recalculated;
+	static inline float WrapX_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateWrapX(std::index_sequence<I...>)
@@ -881,10 +881,10 @@ namespace TextRectPaddingScalingFixes
 namespace BigMessage3ScalingFixes
 {
 	template<std::size_t Index>
-	static const float* orgOffsetY;
+	static inline const float* orgOffsetY;
 
 	template<std::size_t Index>
-	static float OffsetY_Recalculated;
+	static inline float OffsetY_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateYOffset(std::index_sequence<I...>)
@@ -930,7 +930,7 @@ namespace FixedLineWraps
 	struct WrapInternal
 	{
 		template<std::size_t Index>
-		static void (*orgWrapFunction)(float);
+		static inline void (*orgWrapFunction)(float);
 
 		template<std::size_t Index>
 		static void WrapFunction_LeftAlign(float fLength)
@@ -989,16 +989,16 @@ namespace FixedLineWraps
 namespace YouAreHereScalingFixes
 {
 	template<std::size_t Index>
-	static const float* orgXPos;
+	static inline const float* orgXPos;
 
 	template<std::size_t Index>
-	static float XPos_Recalculated;
+	static inline float XPos_Recalculated;
 
 	template<std::size_t Index>
-	static const float* orgYPos;
+	static inline const float* orgYPos;
 
 	template<std::size_t Index>
-	static float YPos_Recalculated;
+	static inline float YPos_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateXPositions(std::index_sequence<I...>)
@@ -1499,7 +1499,7 @@ namespace VariableResets
 	}
 
 	template<std::size_t Index>
-	static void (*orgReInitGameObjectVariables)();
+	static inline void (*orgReInitGameObjectVariables)();
 
 	template<std::size_t Index>
 	void ReInitGameObjectVariables()
@@ -1726,7 +1726,7 @@ namespace ConstructionSiteLODFix
 	}
 
 	template<std::size_t Index>
-	static void (__fastcall *orgReplaceWithNewModel)(CEntity* building, void*, int newModelID);
+	static inline void (__fastcall *orgReplaceWithNewModel)(CEntity* building, void*, int newModelID);
 
 	template<std::size_t Index>
 	static void __fastcall ReplaceWithNewModel_ConstructionSiteFix(CEntity* building, void*, int newModelID)
@@ -1841,7 +1841,7 @@ namespace TommyFistShakeWithWeapons
 	}
 
 	template<std::size_t Index>
-	static WeaponInfo* (*orgGetWeaponInfo)(uint32_t weaponID);
+	static inline WeaponInfo* (*orgGetWeaponInfo)(uint32_t weaponID);
 
 	template<std::size_t Index>
 	static WeaponInfo* gGetWeaponInfo_ExcludeChainsaw(uint32_t weaponID)

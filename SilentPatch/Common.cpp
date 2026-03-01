@@ -61,7 +61,7 @@ namespace StaticShadowAlphaFix
 	static RwUInt32 alphaFuncVal;
 
 	template<std::size_t Index>
-	static RwBool (*orgRenderStateSet_StoreAlphaTest)(RwRenderState state, void* value);
+	static inline RwBool (*orgRenderStateSet_StoreAlphaTest)(RwRenderState state, void* value);
 
 	template<std::size_t Index>
 	static RwBool RenderStateSet_StoreAlphaTest(RwRenderState state, void* value)
@@ -73,7 +73,7 @@ namespace StaticShadowAlphaFix
 	}
 
 	template<std::size_t Index>
-	static RwBool (*orgRenderStateSet_RestoreAlphaTest)(RwRenderState state, void* value);
+	static inline RwBool (*orgRenderStateSet_RestoreAlphaTest)(RwRenderState state, void* value);
 
 	template<std::size_t Index>
 	static RwBool RenderStateSet_RestoreAlphaTest(RwRenderState state, void* value)

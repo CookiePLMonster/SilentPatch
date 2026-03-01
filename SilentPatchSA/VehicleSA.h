@@ -173,6 +173,12 @@ enum eDoors
 
 #define FLAG_HYDRAULICS_INSTALLED 0x20000
 
+class CVehicle;
+namespace LightbeamFix
+{
+	void SetCurrentVehicle( CVehicle* vehicle );
+}
+
 class NOVMT CVehicle	: public CPhysical
 {
 protected:
@@ -299,7 +305,7 @@ public:
 
 private:
 	template<std::size_t Index>
-	static void (CVehicle::*orgDoHeadLightBeam)(int type, CMatrix& m, bool right);
+	static inline void (CVehicle::*orgDoHeadLightBeam)(int type, CMatrix& m, bool right);
 
 	template<std::size_t Index>
 	void DoHeadLightBeam_LightBeamFixSaveObj(int type, CMatrix& m, bool right)
@@ -334,7 +340,7 @@ public:
 
 public:
 	template<std::size_t Index>
-	static void (CAutomobile::*orgAutomobilePreRender)();
+	static inline void (CAutomobile::*orgAutomobilePreRender)();
 
 	template<std::size_t Index>
 	void		PreRender_SilentPatch()
@@ -349,7 +355,7 @@ public:
 	void HideDestroyedWheels_SilentPatch(void (CAutomobile::*spawnFlyingComponentCB)(int, unsigned int), int nodeID, unsigned int modelID);
 
 	template<std::size_t Index>
-	static void (CAutomobile::*orgSpawnFlyingComponent)(int, unsigned int);
+	static inline void (CAutomobile::*orgSpawnFlyingComponent)(int, unsigned int);
 
 	template<std::size_t Index>
 	void		SpawnFlyingComponent_HideWheels(int nodeID, unsigned int modelID)
@@ -445,7 +451,7 @@ private:
 
 private:
 	template<std::size_t Index>
-	static CVehicle* (CStoredCar::*orgRestoreCar)();
+	static inline CVehicle* (CStoredCar::*orgRestoreCar)();
 
 	template<std::size_t Index>
 	CVehicle* RestoreCar_SilentPatch()

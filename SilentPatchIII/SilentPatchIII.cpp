@@ -282,7 +282,7 @@ namespace UIScales
 namespace RadarTraceScaling
 {
 	template<std::size_t Index>
-	static void (*orgDrawRect)(const CRect&,const CRGBA&);
+	static inline void (*orgDrawRect)(const CRect&,const CRGBA&);
 
 	template<std::size_t Index>
 	static void DrawRect_Scale(const CRect& pos, const CRGBA& color)
@@ -303,7 +303,7 @@ namespace RadarTraceScaling
 namespace ScalingFixes
 {
 	template<std::size_t Index>
-	static void (*orgSetScale)(float fX, float fY);
+	static inline void (*orgSetScale)(float fX, float fY);
 
 	template<std::size_t Index>
 	static void SetScale_Pickups(float fX, float fY)
@@ -962,7 +962,7 @@ namespace VariableResets
 	}
 
 	template<std::size_t Index>
-	static void (*orgReInitGameObjectVariables)();
+	static inline void (*orgReInitGameObjectVariables)();
 
 	template<std::size_t Index>
 	void ReInitGameObjectVariables()
@@ -984,7 +984,7 @@ namespace VariableResets
 	static void (__fastcall* DestroyAllGameCreatedEntities)(void* DMAudio);
 
 	template<std::size_t Index>
-	static void (__fastcall* orgService)(void* DMAudio);
+	static inline void (__fastcall* orgService)(void* DMAudio);
 
 	template<std::size_t Index>
 	static void __fastcall Service_AndDestroyEntities(void* DMAudio)
@@ -1050,7 +1050,7 @@ namespace SitInBoat
 	static bool bSitInBoat = false;
 
 	template<std::size_t Index>
-	static void (__fastcall *orgRegisterReference)(CVehicle* pThis, void*, CVehicle** pReference);
+	static inline void (__fastcall *orgRegisterReference)(CVehicle* pThis, void*, CVehicle** pReference);
 
 	template<std::size_t Index>
 	static void __fastcall RegisterReference_CheckSitInBoat(CVehicle* pThis, void*, CVehicle** pReference)
@@ -1062,7 +1062,7 @@ namespace SitInBoat
 	HOOK_EACH_INIT(CheckSitInBoat, orgRegisterReference, RegisterReference_CheckSitInBoat);
 
 	template<std::size_t Index>
-	static void* (*orgBlendAnimation)(void*, unsigned int, unsigned int, float);
+	static inline void* (*orgBlendAnimation)(void*, unsigned int, unsigned int, float);
 
 	template<std::size_t Index>
 	static void* BlendAnimation_SitInBoat(void* clump, unsigned int groupId, unsigned int animationId, float factor)
@@ -1140,10 +1140,10 @@ namespace FixedBrightnessSaving
 namespace RadardiscFixes
 {
 	template<std::size_t Index>
-	static const float* orgRadarXPos;
+	static inline const float* orgRadarXPos;
 
 	template<std::size_t Index>
-	static float RadarXPos_Recalculated;
+	static inline float RadarXPos_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateXPositions(std::index_sequence<I...>)
@@ -1153,10 +1153,10 @@ namespace RadardiscFixes
 	}
 
 	template<std::size_t Index>
-	static const float* orgRadarYPos;
+	static inline const float* orgRadarYPos;
 
 	template<std::size_t Index>
-	static float RadarYPos_Recalculated;
+	static inline float RadarYPos_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateYPositions(std::index_sequence<I...>)
@@ -1182,16 +1182,16 @@ namespace RadardiscFixes
 namespace OnscreenCounterBarFixes
 {
 	template<std::size_t Index>
-	static const float* orgXPos;
+	static inline const float* orgXPos;
 
 	template<std::size_t Index>
-	static float XPos_Recalculated;
+	static inline float XPos_Recalculated;
 
 	template<std::size_t Index>
-	static const float* orgYPos;
+	static inline const float* orgYPos;
 
 	template<std::size_t Index>
-	static float YPos_Recalculated;
+	static inline float YPos_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateXPositions(std::index_sequence<I...>)
@@ -1228,7 +1228,7 @@ namespace CreditsScalingFixes
 	static const unsigned int FIXED_RES_HEIGHT_SCALE = 448;
 
 	template<std::size_t Index>
-	static void (*orgPrintString)(float,float,const wchar_t*);
+	static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 	template<std::size_t Index>
 	static void PrintString_ScaleY(float fX, float fY, const wchar_t* pText)
@@ -1262,7 +1262,7 @@ namespace SlidingTextsScalingFixes
 		static inline float** pHorShadowValue;
 
 		template<std::size_t Index>
-		static void (*orgPrintString)(float,float,const wchar_t*);
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 		template<std::size_t Index>
 		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
@@ -1282,7 +1282,7 @@ namespace SlidingTextsScalingFixes
 		}
 
 		template<std::size_t Index>
-		static void (*orgSetRightJustifyWrap)(float wrap);
+		static inline void (*orgSetRightJustifyWrap)(float wrap);
 
 		template<std::size_t Index>
 		static void SetRightJustifyWrap_Slide(float wrap)
@@ -1299,7 +1299,7 @@ namespace SlidingTextsScalingFixes
 		static inline bool bSlidingEnabled = false;
 
 		template<std::size_t Index>
-		static void (*orgPrintString)(float,float,const wchar_t*);
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 		template<std::size_t Index>
 		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
@@ -1320,7 +1320,7 @@ namespace SlidingTextsScalingFixes
 namespace DarkelTextPlacement
 {
 	template<std::size_t Index>
-	static void (*orgPrintString)(float,float,const wchar_t*);
+	static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 	template<std::size_t Index>
 	static void PrintString_ScaleY(float fX, float fY, const wchar_t* pText)
@@ -1345,10 +1345,10 @@ namespace DarkelTextPlacement
 namespace GaragesTextPlacement
 {
 	template<std::size_t Index>
-	static const float* orgYOffset;
+	static inline const float* orgYOffset;
 
 	template<std::size_t Index>
-	static float YOffset_Recalculated;
+	static inline float YOffset_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateYOffset(std::index_sequence<I...>)
@@ -1374,7 +1374,7 @@ namespace GaragesTextPlacement
 namespace IslandSplashTextPositionFix
 {
 	template<std::size_t Index>
-	static void (*orgPrintString)(float,float,const wchar_t*);
+	static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 	template<std::size_t Index>
 	static void PrintString_ScaleX(float fX, float fY, const wchar_t* pText)
@@ -1400,7 +1400,7 @@ namespace FixedLineWraps
 	struct WrapInternal
 	{
 		template<std::size_t Index>
-		static void (*orgWrapFunction)(float);
+		static inline void (*orgWrapFunction)(float);
 
 		template<std::size_t Index>
 		static void WrapFunction_LeftAlign(float fLength)
@@ -1501,10 +1501,10 @@ namespace BrakelightsDummy
 namespace TextRectPaddingScalingFixes
 {
 	template<std::size_t Index>
-	static const float* orgPaddingXSize;
+	static inline const float* orgPaddingXSize;
 
 	template<std::size_t Index>
-	static float PaddingXSize_Recalculated;
+	static inline float PaddingXSize_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateXSize(std::index_sequence<I...>)
@@ -1514,10 +1514,10 @@ namespace TextRectPaddingScalingFixes
 	}
 
 	template<std::size_t Index>
-	static const float* orgPaddingYSize;
+	static inline const float* orgPaddingYSize;
 
 	template<std::size_t Index>
-	static float PaddingYSize_Recalculated;
+	static inline float PaddingYSize_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateYSize(std::index_sequence<I...>)
@@ -1539,10 +1539,10 @@ namespace TextRectPaddingScalingFixes
 	HOOK_EACH_INIT(PaddingYSize, orgPaddingYSize, PaddingYSize_Recalculated);
 
 	template<std::size_t Index>
-	static const float* orgWrapX;
+	static inline const float* orgWrapX;
 
 	template<std::size_t Index>
-	static float WrapX_Recalculated;
+	static inline float WrapX_Recalculated;
 
 	template<std::size_t... I>
 	static void RecalculateWrapX(std::index_sequence<I...>)
@@ -1567,7 +1567,7 @@ namespace TextRectPaddingScalingFixes
 namespace MenuManagerScalingFixes
 {
 	template<std::size_t Index>
-	static void (*orgPrintString)(float,float,const wchar_t*);
+	static inline void (*orgPrintString)(float,float,const wchar_t*);
 
 	template<std::size_t Index>
 	static void PrintString_Scale(float fX, float fY, const wchar_t* pText)
@@ -1678,19 +1678,22 @@ namespace SubtitleRadarCutoutFix
 	static bool bEnableFix = true;
 
 	template<std::size_t Index>
-	static const float* orgPaddingSize;
+	static inline const float* orgPaddingSize;
 
 	template<std::size_t Index>
-	static float PaddingSize_Recalculated;
+	static inline float PaddingSize_Recalculated;
 
 	template<std::size_t Index>
-	static const float* orgRadarXPos;
+	static inline const float* orgRadarXPos;
 
 	template<std::size_t Index>
-	static float RadarXPos_Recalculated;
+	static inline float RadarXPos_Recalculated;
 
 	static const float* orgRadarWidth;
 	static const float* orgRadarBorderWidth;
+
+	static bool* bWideScreenOn;
+	static float fExtraSubtitleYOffset;
 
 	template<std::size_t... I>
 	static void RecalculateValues(std::index_sequence<I...>)
@@ -1709,9 +1712,6 @@ namespace SubtitleRadarCutoutFix
 			((RadarXPos_Recalculated<I> = *orgRadarXPos<I>), ...);		
 		}
 	}
-
-	static bool* bWideScreenOn;
-	static float fExtraSubtitleYOffset;
 
 	static void (*orgSetCentreSize)(float size);
 	static void SetCentreSize_CenterForCutscene(float size)
