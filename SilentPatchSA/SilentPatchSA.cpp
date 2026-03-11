@@ -7145,6 +7145,8 @@ void Patch_SA_10(HINSTANCE hInstance)
 		Patch<const void*>(0x6D5612 + 2, &LightStatusRandomnessThreshold);
 	}
 
+	// Fix damage state of vehicle rear lights both using RIGHT_TAIL_LIGHT
+	Patch<uint8_t>(0x6E1D4E + 1, 2); // LEFT_TAIL_LIGHT
 
 	// Fixed vehicles exploding twice if the driver leaves the car while it's exploding
 	{
@@ -9422,6 +9424,14 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	}
 	TXN_CATCH();
 
+	// Fix damage state of vehicle rear lights both using RIGHT_TAIL_LIGHT
+	try
+	{
+		auto damageManagerGetLightStatus = get_pattern("6A 03 8D 8F ? ? ? ? E8 ? ? ? ? 85 C0 74", 1);
+
+		Patch<uint8_t>(damageManagerGetLightStatus, 2); // LEFT_TAIL_LIGHT
+	}
+	TXN_CATCH();
 
 	// Fixed vehicles exploding twice if the driver leaves the car while it's exploding
 	try
