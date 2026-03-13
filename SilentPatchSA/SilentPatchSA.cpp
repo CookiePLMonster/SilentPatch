@@ -3959,6 +3959,27 @@ namespace SpeechSystemFixes
 		}
 	}
 
+	static int16_t (__thiscall* orgPedSay_ArrestPed)(CPed* ped, uint16_t Phrase, uint32_t StartTimeDelay, float Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd);
+	static int16_t __fastcall PedSay_ArrestPed_CJReply(CPed* cop, CPed* player, uint16_t Phrase, uint32_t StartTimeDelay, float Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd)
+	{
+		const int16_t result = orgPedSay_ArrestPed(cop, Phrase, StartTimeDelay, Probability, bOverideSilence, bForceAudible, bFrontEnd);
+		if (result >= 0)
+		{
+			// The above SOLO is very frequent, so reduce the probability of this response a bit
+			orgPedSay_ArrestPed(player, CONTEXT_GLOBAL_CHASED, 3500, 0.6f, bOverideSilence, bForceAudible, bFrontEnd);
+		}
+		return result;
+	}
+
+	static __declspec(naked) void PedSay_ArrestPedHook()
+	{
+		_asm
+		{
+			mov		edx, dword ptr [esi+10h]
+			jmp		PedSay_ArrestPed_CJReply
+		}
+	}
+
 	namespace Patches
 	{
 		static void PatchGlobalSpeechContexts(int16_t (*gSpeechContextLookup)[8])
@@ -7576,6 +7597,9 @@ void Patch_SA_10(HINSTANCE hInstance)
 		// Re-enable PAIN_SPRAYED
 		InjectHook(0x4B3349, &CheckForSprayHook_OldBinaries, HookType::Call);
 		Nop(0x4B3349 + 5, 4);
+
+		// Play CJ's CHASED line from CTaskComplexArrestPed too, so 1-star quotes are not ultra rare
+		InterceptCall(0x68D82F, orgPedSay_ArrestPed, PedSay_ArrestPedHook);
 	}
 }
 
@@ -10134,6 +10158,15 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 			InjectHook(check_type.get<void>(0), &CheckForSprayHook_NewBinaries, HookType::Call);
 			Nop(check_type.get<void>(5), 1);
+		}
+		TXN_CATCH();
+
+		// Play CJ's CHASED line from CTaskComplexArrestPed too, so 1-star quotes are not ultra rare
+		try
+		{
+			auto solo_say = get_pattern("E8 ? ? ? ? EB 0A 6A FF");
+
+			InterceptCall(solo_say, orgPedSay_ArrestPed, PedSay_ArrestPedHook);
 		}
 		TXN_CATCH();
 	}
