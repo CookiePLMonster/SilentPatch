@@ -3890,6 +3890,75 @@ namespace SpeechSystemFixes
 
 	HOOK_EACH_INIT(VehicleDamageFallback, orgPedSay_VehicleDamage, PedSay_VehicleDamageFallback);
 
+	static void PlayPainSprayed(CPed* ped)
+	{
+		ped->Say(CONTEXT_GLOBAL_PAIN_SPRAYED);
+	}
+
+	static __declspec(naked) void CheckForSprayHook_OldBinaries()
+	{
+		static const float FIVE = 5.0f;
+		_asm
+		{
+			cmp		dword ptr [ebp+0Ch], WEAPONTYPE_TEARGAS
+			je		CheckForSprayHook_Play
+			cmp		dword ptr [ebp+0Ch], WEAPONTYPE_SPRAYCAN
+			je		CheckForSprayHook_Play
+			cmp		dword ptr [ebp+0Ch], WEAPONTYPE_EXTINGUISHER
+			jne		CheckForSprayHook_Return
+
+		CheckForSprayHook_Play:
+			push	esi
+			call	PlayPainSprayed
+			add		esp, 8 // Pop the IP of the PlayPainSprayed call
+
+			// Original epilogue
+			pop		edi
+			pop		esi
+			pop		ebp
+			pop		ebx
+			retn	0Ch
+
+		CheckForSprayHook_Return:
+			// Original code
+			fld		dword ptr [ebp+4]
+			fcomp	FIVE
+			retn
+		}
+	}
+
+	static __declspec(naked) void CheckForSprayHook_NewBinaries()
+	{
+		static const float FIVE = 5.0f;
+		_asm
+		{
+			cmp		dword ptr [ebx+0Ch], WEAPONTYPE_TEARGAS
+			je		CheckForSprayHook_Play
+			cmp		dword ptr [ebx+0Ch], WEAPONTYPE_SPRAYCAN
+			je		CheckForSprayHook_Play
+			cmp		dword ptr [ebx+0Ch], WEAPONTYPE_EXTINGUISHER
+			jne		CheckForSprayHook_Return
+
+		CheckForSprayHook_Play:
+			push	esi
+			call	PlayPainSprayed
+			add		esp, 8 // Pop the IP of the PlayPainSprayed call
+
+			// Original epilogue
+			pop		edi
+			pop		esi
+			pop		ebx
+			mov		esp, ebp
+			pop		ebp
+			retn	0Ch
+
+		CheckForSprayHook_Return:
+			// Original code
+			fld		FIVE
+			retn
+		}
+	}
+
 	namespace Patches
 	{
 		static void PatchGlobalSpeechContexts(int16_t (*gSpeechContextLookup)[8])
@@ -7503,6 +7572,10 @@ void Patch_SA_10(HINSTANCE hInstance)
 			0x6A8254, 0x6B9145
 		};
 		HookEach_VehicleDamageFallback(vehicle_damage_fallback, InterceptCall);
+
+		// Re-enable PAIN_SPRAYED
+		InjectHook(0x4B3349, &CheckForSprayHook_OldBinaries, HookType::Call);
+		Nop(0x4B3349 + 5, 4);
 	}
 }
 
@@ -10051,6 +10124,16 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 				get_pattern("6A 42 E8 ? ? ? ? D9 86", 2),
 			};
 			HookEach_VehicleDamageFallback(vehicle_damage_fallback, InterceptCall);
+		}
+		TXN_CATCH();
+
+		// Re-enable PAIN_SPRAYED
+		try
+		{
+			auto check_type = pattern("D9 05 ? ? ? ? D8 5B 04").get_one();
+
+			InjectHook(check_type.get<void>(0), &CheckForSprayHook_NewBinaries, HookType::Call);
+			Nop(check_type.get<void>(5), 1);
 		}
 		TXN_CATCH();
 	}
