@@ -379,26 +379,33 @@ bool CVehicle::CanThisVehicleBeImpounded() const
 	return bIsCar || bIsBike;
 }
 
-int32_t CVehicle::GetRemapIndex()
+int32_t CVehicle::GetRemapIndex() const
 {
-	int32_t remapTxd = m_remapTxdSlot.Get();
-	if ( remapTxd == -1 )
+	int32_t remapTxdSlot = m_remapTxdSlot.Get();
+	if ( remapTxdSlot == -1 )
 	{
 		// Original code never checked that variable, hence the bug
-		remapTxd = m_remapTxdSlotToLoad.Get();
+		remapTxdSlot = m_remapTxdSlotToLoad.Get();
 	}
-	if ( remapTxd == -1 )
+	if ( remapTxdSlot == -1 )
 	{
 		return -1;
 	}
 
 	const CVehicleModelInfo* modelInfo = static_cast<CVehicleModelInfo*>(ms_modelInfoPtrs[ m_nModelIndex.Get() ]);
-	for ( int32_t i = 0, j = modelInfo->GetNumRemaps(); i < j; i++ )
+	int32_t index = 0;
+	for (const auto& remapTxd : modelInfo->m_awRemapTxds)
 	{
-		if ( modelInfo->m_awRemapTxds[i].Get() == remapTxd )
+		const int32_t remapTxdId = remapTxd.Get();
+		if (remapTxdId == -1)
 		{
-			return i;
+			break;
 		}
+		if (remapTxdId == remapTxdSlot)
+		{
+			return index;
+		}
+		index++;
 	}
 	return -1;
 }

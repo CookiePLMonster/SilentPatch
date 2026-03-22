@@ -286,7 +286,7 @@ public:
 	CPed*			PickRandomPassenger();
 	bool			CanThisVehicleBeImpounded() const;
 
-	int32_t			GetRemapIndex();
+	int32_t			GetRemapIndex() const;
 
 	static void		SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute = true );
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
