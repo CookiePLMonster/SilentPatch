@@ -140,7 +140,7 @@ RwCamera* CShadowCamera::Update(CEntity* pEntity)
 	{
 		if ( pEntity )
 		{
-			if ( pEntity->nType == 3 )
+			if ( pEntity->GetType() == ENTITY_TYPE_PED )
 				static_cast<CPed*>(pEntity)->RenderForShadow();
 			else
 				RpClumpForAllAtomics(reinterpret_cast<RpClump*>(pEntity->m_pRwObject), ShadowCameraRenderCB);

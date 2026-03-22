@@ -454,6 +454,8 @@ private:
 	int					m_iMouseLockOnRecruitTimer;
 
 public:
+	CPed* GetMouseLockOnRecruitPed() const { return m_pMouseLockOnRecruitPed; }
+
 	static void (CPlayerPed::*orgDoStuffToGoOnFire)();
 
 	void DoStuffToGoOnFire()

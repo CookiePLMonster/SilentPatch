@@ -3980,6 +3980,21 @@ namespace SpeechSystemFixes
 		}
 	}
 
+	static int16_t (__thiscall* orgPedSay_ShootContext)(void* ped, void* Phrase, void* StartTimeDelay, void* Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd);
+	static int16_t __fastcall PedSay_ShootContext_CheckTarget(CPlayerPed* firedBy, CPed* targetEntity, void* Phrase, void* StartTimeDelay, void* Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd)
+	{
+		if (targetEntity == nullptr)
+		{
+			targetEntity = firedBy->GetMouseLockOnRecruitPed();
+		}
+		if (targetEntity != nullptr && targetEntity->GetType() == ENTITY_TYPE_PED)
+		{
+			return orgPedSay_ShootContext(firedBy, Phrase, StartTimeDelay, Probability, bOverideSilence, bForceAudible, bFrontEnd);
+		}
+		return -1;
+
+	}
+
 	namespace Patches
 	{
 		static void PatchGlobalSpeechContexts(int16_t (*gSpeechContextLookup)[8])
@@ -7600,6 +7615,11 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 		// Play CJ's CHASED line from CTaskComplexArrestPed too, so 1-star quotes are not ultra rare
 		InterceptCall(0x68D82F, orgPedSay_ArrestPed, PedSay_ArrestPedHook);
+
+		// Fix CJ not playing SHOOT lines when shooting on a mouse and keyboard
+		Nop(0x7427F1, 2 + 3);
+		Patch(0x7427FC, { 0x8B, 0xD5 }); // mov edx, ebp
+		InterceptCall(0x74281A, orgPedSay_ShootContext, PedSay_ShootContext_CheckTarget);
 	}
 }
 
@@ -10167,6 +10187,19 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			auto solo_say = get_pattern("E8 ? ? ? ? EB 0A 6A FF");
 
 			InterceptCall(solo_say, orgPedSay_ArrestPed, PedSay_ArrestPedHook);
+		}
+		TXN_CATCH();
+
+		// Fix CJ not playing SHOOT lines when shooting on a mouse and keyboard
+		try
+		{
+			auto target_entity_check1 = get_pattern("74 2D 8A 48 36");
+			auto target_entity_check2 = get_pattern("75 22 83 3F 17");
+			auto ped_say = get_pattern("E8 ? ? ? ? 83 3F 27");
+
+			Nop(target_entity_check1, 2 + 3);
+			Patch(target_entity_check2, { 0x8B, 0xD0 }); // mov edx, eax
+			InterceptCall(ped_say, orgPedSay_ShootContext, PedSay_ShootContext_CheckTarget);
 		}
 		TXN_CATCH();
 	}

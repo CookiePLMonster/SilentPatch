@@ -61,6 +61,17 @@ enum // nStatus
 	STATUS_GHOST = 12,
 };
 
+enum
+{
+    ENTITY_TYPE_NOTHING = 0,
+    ENTITY_TYPE_BUILDING,
+    ENTITY_TYPE_VEHICLE,
+    ENTITY_TYPE_PED,
+    ENTITY_TYPE_OBJECT,
+    ENTITY_TYPE_DUMMY,
+    ENTITY_TYPE_NOTINPOOLS
+};
+
 // TODO: May not be the best place to put it?
 class NOVMT CEntity	: public CPlaceable
 {
@@ -140,7 +151,7 @@ public:
     char			numLodChildrenRendered;		// 0x35
 
     //********* BEGIN CEntityInfo **********//
-    uint8_t			nType : 3;							// what type is the entity	// 0x36 (2 == Vehicle)
+    uint8_t			nType : 3;							// what type is the entity	// 0x36
 	uint8_t			nStatus : 5;						// control status			// 0x36
     //********* END CEntityInfo ************//
 
@@ -148,7 +159,9 @@ public:
 	static void*	(CEntity::*orgGetColModel)();
 
 public:
-	uint8_t	GetStatus() const { return nStatus; }
+    uint8_t	GetStatus() const { return nStatus; }
+    int32_t GetType() const { return nType; }
+
 
 	void* GetColModel() { return std::invoke(orgGetColModel, this); }
 

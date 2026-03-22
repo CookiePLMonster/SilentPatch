@@ -132,6 +132,7 @@ All the remaining, non-critical fixes.
 * ➕ CJ will now make comments when crashing into another vehicle while on a motorbike.
 * ➕ An unique pain sound is now used by peds sprayed with a spray can, fire extinguisher, or choking on a tear gas.
 * ➕ CJ now shouts his police chase quotes also at 1 wanted level star.
+* ➕ CJ's shooting dialogue lines now play also when using the keyboard and mouse, not only when using the gamepad auto-aim.
 * Detached vehicle parts will now keep the same color and lighting as the vehicle they came from.
 * Detached vehicle parts are now rendered from both sides.
 * Resolved single-pixel wide seams showing on the Map screen with Anti-Aliasing enabled.
