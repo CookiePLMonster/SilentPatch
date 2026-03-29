@@ -3995,6 +3995,26 @@ namespace SpeechSystemFixes
 
 	}
 
+	static CWanted* (*orgFindPlayerWanted_GetPedsGroup)(int playerID);
+	static void* GetPedsGroup_DummyForCops()
+	{
+		return orgFindPlayerWanted_GetPedsGroup(-1)->m_nCopsInPursuit > 1 ? &__ImageBase : nullptr;
+	}
+
+	template<std::size_t Index>
+	static void* (*orgGetPedsGroup)(const CPed* pPed);
+	template<std::size_t Index>
+	static void* GetPedsGroup_WithDummyForCops(const CPed* pPed)
+	{
+		if (pPed->GetPedType() == PEDTYPE_COP)
+		{
+			return GetPedsGroup_DummyForCops();
+		}
+		return orgGetPedsGroup<Index>(pPed);
+	}
+
+	HOOK_EACH_INIT(GetPedGroupsForCops, orgGetPedsGroup, GetPedsGroup_WithDummyForCops);
+
 	namespace Patches
 	{
 		static void PatchGlobalSpeechContexts(int16_t (*gSpeechContextLookup)[8])
@@ -7620,6 +7640,14 @@ void Patch_SA_10(HINSTANCE hInstance)
 		Nop(0x7427F1, 2 + 3);
 		Patch(0x7427FC, { 0x8B, 0xD5 }); // mov edx, ebp
 		InterceptCall(0x74281A, orgPedSay_ShootContext, PedSay_ShootContext_CheckTarget);
+
+		// Enable SURROUNDED and COVER ME lines for cops
+		ReadCall(0x62740B, orgFindPlayerWanted_GetPedsGroup);
+
+		std::array<intptr_t, 4> get_peds_group = {
+			0x627587, 0x62C96C, 0x62D21B, 0x62CF5A,
+		};
+		HookEach_GetPedGroupsForCops(get_peds_group, InterceptCall);
 	}
 }
 
@@ -10200,6 +10228,23 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			Nop(target_entity_check1, 2 + 3);
 			Patch(target_entity_check2, { 0x8B, 0xD0 }); // mov edx, eax
 			InterceptCall(ped_say, orgPedSay_ShootContext, PedSay_ShootContext_CheckTarget);
+		}
+		TXN_CATCH();
+
+		// Enable SURROUNDED and COVER ME lines for cops
+		try
+		{
+			auto find_player_wanted = get_pattern("E8 ? ? ? ? D9 E8 83 C4 04 80 78 18 01 6A 00");
+			auto get_peds_group_pattern = pattern("E8 ? ? ? ? 83 C4 04 85 C0 74 ? D9 E8").count(3);
+			std::array<void*, 4> get_peds_group = {
+				get_peds_group_pattern.get(0).get<void>(),
+				get_pattern("E8 ? ? ? ? D9 E8 83 C4 04 85 C0"),
+				get_peds_group_pattern.get(1).get<void>(),
+				get_peds_group_pattern.get(2).get<void>(),
+			};
+
+			ReadCall(find_player_wanted, orgFindPlayerWanted_GetPedsGroup);
+			HookEach_GetPedGroupsForCops(get_peds_group, InterceptCall);
 		}
 		TXN_CATCH();
 	}

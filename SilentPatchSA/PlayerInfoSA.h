@@ -3,6 +3,21 @@
 #include "PedSA.h"
 #include "VehicleSA.h"
 
+// Incomplete
+class CWanted
+{
+public:
+	int32_t		m_nWantedLevel;
+	int32_t		m_nWantedLevelBeforeParole;
+	uint32_t	m_LastTimeWantedDecreased;
+	uint32_t	m_LastTimeWantedLevelChanged;
+	uint32_t	m_TimeOfParole;
+	float		m_fMultiplier;
+	uint8_t		m_nCopsInPursuit;
+	uint8_t		m_nMaxCopsInPursuit;
+	uint8_t		m_nMaxCopCarsInPursuit;
+};
+
 class CPlayerInfo
 {
 private:
