@@ -239,12 +239,15 @@ bool CVehicle::HasFirelaLadder() const
 
 void* CVehicle::PlayPedHitSample_GetColModel()
 {
-	if ( this == FindPlayerVehicle() )
+	if (this == FindPlayerVehicle())
 	{
 		CPed *pPassenger = PickRandomPassenger();
-		if ( pPassenger != nullptr )
+		if (pPassenger != nullptr )
 		{
-			pPassenger->Say( CONTEXT_GLOBAL_CAR_HIT_PED );
+			if (pPassenger->Say(CONTEXT_GLOBAL_CAR_HIT_PED) < 0)
+			{
+				pPassenger->Say(CONTEXT_GLOBAL_TAXI_HIT_PED);
+			}
 		}
 	}
 
