@@ -4128,6 +4128,15 @@ namespace SpeechSystemFixes
 			}
 		}
 
+		static void PatchGngSpeechContexts(int16_t (*gGngSpeechLookup)[52][2])
+		{
+			// Copy typo'd speech contexts to the correct contexts
+			for (size_t i = 0; i < std::size(*gGngSpeechLookup); i++)
+			{
+				tryMoveContext(gGngSpeechLookup, i, CONTEXT_GNG_ATTACK_PLAYER_LIKE, CONTEXT_GNG_ATTACK_BY_PLAYER_LIKE);
+			}
+		}
+
 		static void PatchPedVoiceNameLookups(int16_t (*gSpecialPedVoiceLookup)[3], char (*gSpecialPedVoiceNameLookup)[20], size_t numPedVoiceLookups)
 		{
 			for (size_t i = 0; i < numPedVoiceLookups; i++)
@@ -5570,6 +5579,7 @@ BOOL InjectDelayedPatches_10()
 			auto gGenSpeechLookup = *reinterpret_cast<uint8_t (**)[209][2]>(0x4E5A0C + 4);
 			auto gGfdSpeechLookup = *reinterpret_cast<int16_t (**)[18][2]>(0x4E5B51 + 3);
 			auto gPlySpeechLookup = *reinterpret_cast<int16_t (**)[20][2]>(0x4E5AD4 + 3);
+			auto gGngSpeechLookup = *reinterpret_cast<int16_t (**)[52][2]>(0x4E5B12 + 3);
 			auto gSpecialPedVoiceLookup = *reinterpret_cast<int16_t (**)[3]>(0x4E41AF + 3);
 			auto gSpecialPedVoiceNameLookup = *reinterpret_cast<char (**)[20]>(0x4E4186 + 3);
 			const size_t numPedVoiceLookups = *reinterpret_cast<uint8_t*>(0x4E419B + 3);
@@ -5588,6 +5598,10 @@ BOOL InjectDelayedPatches_10()
 			if (ModCompat::Utils::GetModuleHandleFromAddress(gPlySpeechLookup) == hInstance)
 			{
 				Patches::PatchPlySpeechContexts(gPlySpeechLookup);
+			}
+			if (ModCompat::Utils::GetModuleHandleFromAddress(gGngSpeechLookup) == hInstance)
+			{
+				Patches::PatchGngSpeechContexts(gGngSpeechLookup);
 			}
 			if (ModCompat::Utils::GetModuleHandleFromAddress(gSpecialPedVoiceLookup) == hInstance &&
 				ModCompat::Utils::GetModuleHandleFromAddress(gSpecialPedVoiceNameLookup) == hInstance)
@@ -6235,6 +6249,7 @@ BOOL InjectDelayedPatches_NewBinaries()
 			auto gGenSpeechLookup = *get_pattern<uint8_t (*)[209][2]>("03 C1 0F B6 B4 00", 2 + 4);
 			auto gGfdSpeechLookup = *get_pattern<int16_t (*)[18][2]>("0F B7 B4 00 ? ? ? ? 03 C0 0F B7 80 ? ? ? ? 66 83 FE FF", 4);
 			auto gPlySpeechLookup = *get_pattern<int16_t (*)[20][2]>("8D 04 90 03 C0 0F B7 B4 00 ? ? ? ? 03 C0", 5 + 4);
+			auto gGngSpeechLookup = *get_pattern<int16_t (*)[52][2]>("03 C1 03 C0 0F B7 B4 00 ? ? ? ? 03 C0 0F B7 80 ? ? ? ? E9", 4 + 4);
 			auto gSpecialPedVoiceLookup = *get_pattern<int16_t (*)[3]>("8D 04 40 0F B7 8C 00", 3 + 3);
 			auto gSpecialPedVoiceNameLookup = *get_pattern<char (*)[20]>("0F BF C6 8D 04 80 8D 0C 85", 6 + 3);
 			const size_t numPedVoiceLookups = *get_pattern<uint8_t>("66 83 FE ? 7C DF", 3);
@@ -6253,6 +6268,10 @@ BOOL InjectDelayedPatches_NewBinaries()
 			if (ModCompat::Utils::GetModuleHandleFromAddress(gPlySpeechLookup) == hInstance)
 			{
 				Patches::PatchPlySpeechContexts(gPlySpeechLookup);
+			}
+			if (ModCompat::Utils::GetModuleHandleFromAddress(gGngSpeechLookup) == hInstance)
+			{
+				Patches::PatchGngSpeechContexts(gGngSpeechLookup);
 			}
 			if (ModCompat::Utils::GetModuleHandleFromAddress(gSpecialPedVoiceLookup) == hInstance &&
 				ModCompat::Utils::GetModuleHandleFromAddress(gSpecialPedVoiceNameLookup) == hInstance)

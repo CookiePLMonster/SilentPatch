@@ -134,6 +134,7 @@ All the remaining, non-critical fixes.
 * ➕ CJ now shouts his police chase quotes also at 1 wanted level star.
 * ➕ CJ's shooting dialogue lines now play also when using the keyboard and mouse, not only when using the gamepad auto-aim.
 * ➕ Cops now use their dialogue lines for ordering CJ to surrender and asking others to cover them.
+* ➕ FAM3 voice lines reacting to the player attacking him are now properly assigned.
 * Detached vehicle parts will now keep the same color and lighting as the vehicle they came from.
 * Detached vehicle parts are now rendered from both sides.
 * Resolved single-pixel wide seams showing on the Map screen with Anti-Aliasing enabled.
