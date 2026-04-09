@@ -345,7 +345,7 @@ class NOVMT CPed : public CPhysical
 {
 public:
 	BYTE				__pad1[820];
-	CPedFlags			pedFlags;
+	CPedFlags			m_nPedFlags;
 	class CPedIntelligence*	pPedIntelligence;
 	CPlayerPedData*		pPlayerData;
 	unsigned char		PedCreatedBy;
@@ -362,7 +362,7 @@ public:
 	float				m_fCurrentRotation;
 	float				m_fTargetRotation;
 	BYTE				__pad3[44];
-	CVehicle*			pVehicle;
+	CVehicle*			m_pMyVehicle;
 	BYTE				__pad9[8];
 	int32_t				m_nPedType;
 	BYTE				__pad4[4];
@@ -386,10 +386,6 @@ public:
 
 	inline int32_t	GetPedType() const
 							{ return m_nPedType; };
-	inline CPedFlags&	GetPedFlags() 
-							{ return pedFlags; };
-	inline CVehicle*	GetVehiclePtr() 
-							{ return pVehicle; };
 	inline CWeapon*	GetWeaponSlots() 
 							{ return weaponSlots; };
 	inline int			GetMoveAnimGroup() 
@@ -406,6 +402,9 @@ public:
 							{ return pPlayerData; };
 	inline BYTE			GetActiveWeapon() 
 							{ return m_bActiveWeapon; };
+
+	CVehicle*			GetCurrentVehicle() const
+							{ return m_nPedFlags.bInVehicle ? m_pMyVehicle : nullptr; }
 
 	inline void			SetCurrentHeading(float fVal)
 		{ m_fCurrentRotation = fVal; }

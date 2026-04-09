@@ -3963,7 +3963,7 @@ namespace SpeechSystemFixes
 	static int16_t __fastcall PedSay_ArrestPed_CJReply(CPed* cop, CPed* player, uint16_t Phrase, uint32_t StartTimeDelay, float Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd)
 	{
 		const int16_t result = orgPedSay_ArrestPed(cop, Phrase, StartTimeDelay, Probability, bOverideSilence, bForceAudible, bFrontEnd);
-		if (result >= 0)
+		if (result >= 0 && player->GetCurrentVehicle() == nullptr) // Some lines specifically refer to running, so they only make sense on-foot.
 		{
 			// The above SOLO is very frequent, so reduce the probability of this response a bit
 			orgPedSay_ArrestPed(player, CONTEXT_GLOBAL_CHASED, 3500, 0.6f, bOverideSilence, bForceAudible, bFrontEnd);
@@ -4890,10 +4890,10 @@ __declspec(naked) void WeaponRangeMult_VehicleCheck()
 {
 	_asm
 	{
-		mov		eax, [edx]CPed.pedFlags
+		mov		eax, [edx]CPed.m_nPedFlags
 		test    ah, 1
 		jz		WeaponRangeMult_VehicleCheck_NotInCar
-		mov		eax, [edx]CPed.pVehicle
+		mov		eax, [edx]CPed.m_pMyVehicle
 		ret
 
 	WeaponRangeMult_VehicleCheck_NotInCar:

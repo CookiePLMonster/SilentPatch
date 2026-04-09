@@ -16,11 +16,8 @@ CEntity* FindPlayerEntityWithRC( int playerID )
 	CPlayerPed* ped = player->GetPlayerPed();
 	CVehicle* remoteVehicle = player->GetControlledVehicle();
 	if ( remoteVehicle != nullptr ) return remoteVehicle;
-	if ( ped->GetPedFlags().bInVehicle )
-	{
-		CVehicle* normalVehicle = ped->GetVehiclePtr();
-		if ( normalVehicle != nullptr ) return normalVehicle;
-	}
+	CVehicle* normalVehicle = ped->GetCurrentVehicle();
+	if (normalVehicle != nullptr) return normalVehicle;
 	return ped;
 }
 
@@ -30,11 +27,15 @@ CVehicle* FindPlayerVehicle( int playerID, bool withRC )
 
 	CPlayerPed* ped = player->GetPlayerPed();
 	if ( ped == nullptr ) return nullptr;
-	if ( !ped->GetPedFlags().bInVehicle ) return nullptr;
-	CVehicle* vehicle = player->GetControlledVehicle();
-	if ( !withRC || vehicle == nullptr )
+	if ( !ped->m_nPedFlags.bInVehicle ) return nullptr;
+
+	if (withRC)
 	{
-		vehicle = ped->GetVehiclePtr();
+		CVehicle* vehicle = player->GetControlledVehicle();
+		if (vehicle != nullptr)
+		{
+			return vehicle;
+		}
 	}
-	return vehicle;
+	return ped->m_pMyVehicle;
 }
