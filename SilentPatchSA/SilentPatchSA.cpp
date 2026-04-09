@@ -3869,6 +3869,20 @@ namespace SpeechSystemFixes
 
 	HOOK_EACH_INIT(DoGangAbuseSpeech, orgDoGangAbuseSpeech, DoGangAbuseSpeech_AddLSV);
 
+	static void (*orgDoGangAttackSpeech)(CPed* ped1, CPed* ped2);
+	static void DoGangAttackSpeech_AddPlayer(CPed* ped1, CPed* ped2)
+	{
+		if (ped1 != nullptr && ped2 != nullptr)
+		{
+			if (ped1->GetPedType() >= PEDTYPE_GANG1 && ped1->GetPedType() <= PEDTYPE_GANG10 && ped2->IsPlayer())
+			{
+				ped1->Say(CONTEXT_GLOBAL_ATTACK_PLAYER);
+				return;
+			}
+		}
+		orgDoGangAttackSpeech(ped1, ped2);
+	}
+
 	static int16_t PedSay_VehicleDamageFallback_Internal(int16_t (__thiscall* func)(void* ped, uint16_t Phrase, void* StartTimeDelay, void* Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd),
 		void* ped, uint16_t Phrase, void* StartTimeDelay, void* Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd)
 	{
@@ -7641,6 +7655,10 @@ void Patch_SA_10(HINSTANCE hInstance)
 		};
 		HookEach_DoGangAbuseSpeech(do_gang_abuse_speech, InterceptCall);
 
+		// Add a missing ATTACK_PLAYER trigger to CTaskComplexGangLeader::DoGangAttackSpeech
+		// (it's checking for the player, but doesn't play anything)
+		InterceptCall(0x626A5B, orgDoGangAttackSpeech, DoGangAttackSpeech_AddPlayer);
+
 		// Add a CRASH_GENERIC fallback, as not everyone has CRASH_CAR or CRASH_BIKE
 		// For example, CJ has no CRASH_BIKE lines, so he's never commenting on crashes when on a bike
 		std::array<intptr_t, 2> vehicle_damage_fallback = {
@@ -10203,6 +10221,15 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 				get_pattern("E8 ? ? ? ? 83 C4 08 38 5E 24")
 			};
 			HookEach_DoGangAbuseSpeech(do_gang_abuse_speech, InterceptCall);
+		}
+		TXN_CATCH();
+
+		// Add a missing ATTACK_PLAYER trigger to CTaskComplexGangLeader::DoGangAttackSpeech
+		// (it's checking for the player, but doesn't play anything)
+		try
+		{
+			auto do_gang_attack_speech = get_pattern("E8 ? ? ? ? 83 C4 08 8B 46 08 8B 4D F4 5F 5E 5B");
+			InterceptCall(do_gang_attack_speech, orgDoGangAttackSpeech, DoGangAttackSpeech_AddPlayer);
 		}
 		TXN_CATCH();
 
