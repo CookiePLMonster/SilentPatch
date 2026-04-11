@@ -4029,6 +4029,24 @@ namespace SpeechSystemFixes
 
 	HOOK_EACH_INIT(GetPedGroupsForCops, orgGetPedsGroup, GetPedsGroup_WithDummyForCops);
 
+	static int16_t (__thiscall* orgPedSay_DismissReply)(void* ped, uint16_t Phrase, void* StartTimeDelay, void* Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd);
+	static int16_t __fastcall PedSay_DismissReply_WhereYouFrom(void* ped, void*, uint16_t Phrase, void* StartTimeDelay, void* Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd)
+	{
+		const uint32_t Topic = *ConversationTopic;
+
+		// This code also runs for AE_CONV_GANGBANG, but it "shouldn't"
+		if (Topic == AE_CONV_GANGBANG)
+		{
+			return -1;
+		}
+
+		if (Topic == AE_CONV_WHERE_YOU_FROM)
+		{
+			Phrase = CONTEXT_GLOBAL_WHERE_YOU_FROM_POS_REPLY;
+		}
+		return orgPedSay_DismissReply(ped, Phrase, StartTimeDelay, Probability, bOverideSilence, bForceAudible, bFrontEnd);
+	}
+
 	namespace Patches
 	{
 		static void PatchGlobalSpeechContexts(int16_t (*gSpeechContextLookup)[8])
@@ -7685,6 +7703,11 @@ void Patch_SA_10(HINSTANCE hInstance)
 			0x627587, 0x62C96C, 0x62D21B, 0x62CF5A,
 		};
 		HookEach_GetPedGroupsForCops(get_peds_group, InterceptCall);
+
+		// Rnable WHERE_YOU_FROM_POS_REPLY as a reply to WHERE_YOU_FROM_POS
+		WriteOffsetValue(0x43BC13 + 2, 0x43BECD);
+		WriteOffsetValue(0x43BE14 + 1, 0x43BECD);
+		InterceptCall(0x43C0C7, orgPedSay_DismissReply, PedSay_DismissReply_WhereYouFrom);
 	}
 }
 
@@ -10291,6 +10314,25 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 			ReadCall(find_player_wanted, orgFindPlayerWanted_GetPedsGroup);
 			HookEach_GetPedGroupsForCops(get_peds_group, InterceptCall);
+		}
+		TXN_CATCH();
+
+		// Rnable WHERE_YOU_FROM_POS_REPLY as a reply to WHERE_YOU_FROM_POS
+		try
+		{
+			auto set_conv_state_2 = get_pattern("E8 ? ? ? ? 8B 0D ? ? ? ? 5F", 5);
+			std::array<void*, 2> jump_to_set_conv_state2 = {
+				get_pattern("0F 8D ? ? ? ? 6A 40 E8 ? ? ? ? 83 C4 04 89 45 E4 89 75 FC", 2),
+				get_pattern("89 7D FC E8 ? ? ? ? E9 ? ? ? ? D9 E8", 8 + 1),
+			};
+			auto ped_say_reply = get_pattern("E8 ? ? ? ? EB 97 8B 0D");
+
+			for (void* addr : jump_to_set_conv_state2)
+			{
+				WriteOffsetValue(addr, set_conv_state_2);
+			}
+
+			InterceptCall(ped_say_reply, orgPedSay_DismissReply, PedSay_DismissReply_WhereYouFrom);
 		}
 		TXN_CATCH();
 	}
