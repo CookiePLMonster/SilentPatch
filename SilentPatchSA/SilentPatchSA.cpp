@@ -4139,6 +4139,15 @@ namespace SpeechSystemFixes
 			tryMoveContext(gGenSpeechLookup, VOICE_GEN_VWMOTR1, CONTEXT_GEN_MUGGING, CONTEXT_GEN_MUGGED);
 		}
 
+		static void PatchEmgSpeechContexts(int16_t (*gEmgSpeechLookup)[46][2])
+		{
+			// Copy typo'd speech contexts to the correct contexts
+			for (size_t i = 0; i < std::size(*gEmgSpeechLookup); i++)
+			{
+				tryMoveContext(gEmgSpeechLookup, i, CONTEXT_EMG_ARREST_CRIMINAL, CONTEXT_EMG_ARREST_CRIM);
+			}
+		}
+
 		static void PatchGfdSpeechContexts(int16_t (*gGfdSpeechLookup)[18][2])
 		{
 			// CONTEXT_GFD_SHOOT_GENERIC contains data meaningful for CONTEXT_GFD_SHOP_CLOSED,
@@ -5609,6 +5618,7 @@ BOOL InjectDelayedPatches_10()
 
 			auto gSpeechContextLookup = *reinterpret_cast<int16_t (**)[8]>(0x4E4492 + 1);
 			auto gGenSpeechLookup = *reinterpret_cast<uint8_t (**)[209][2]>(0x4E5A0C + 4);
+			auto gEmgSpeechLookup = *reinterpret_cast<int16_t (**)[46][2]>(0x4E5A4A + 3);
 			auto gGfdSpeechLookup = *reinterpret_cast<int16_t (**)[18][2]>(0x4E5B51 + 3);
 			auto gPlySpeechLookup = *reinterpret_cast<int16_t (**)[20][2]>(0x4E5AD4 + 3);
 			auto gGngSpeechLookup = *reinterpret_cast<int16_t (**)[52][2]>(0x4E5B12 + 3);
@@ -5622,6 +5632,10 @@ BOOL InjectDelayedPatches_10()
 			if (ModCompat::Utils::GetModuleHandleFromAddress(gGenSpeechLookup) == hInstance)
 			{
 				Patches::PatchGenSpeechContexts(gGenSpeechLookup);
+			}
+			if (ModCompat::Utils::GetModuleHandleFromAddress(gEmgSpeechLookup) == hInstance)
+			{
+				Patches::PatchEmgSpeechContexts(gEmgSpeechLookup);
 			}
 			if (ModCompat::Utils::GetModuleHandleFromAddress(gGfdSpeechLookup) == hInstance)
 			{
@@ -6279,6 +6293,7 @@ BOOL InjectDelayedPatches_NewBinaries()
 
 			auto gSpeechContextLookup = *get_pattern<int16_t (*)[8]>("77 3F 66 A1 ? ? ? ? 33 C9 66 83 F8 FF", 2 + 2);
 			auto gGenSpeechLookup = *get_pattern<uint8_t (*)[209][2]>("03 C1 0F B6 B4 00", 2 + 4);
+			auto gEmgSpeechLookup = *get_pattern<int16_t (*)[46][2]>("03 C0 66 89 97 ? ? ? ? 0F B7 B0 ? ? ? ? 0F B7 80 ? ? ? ? E9", 9 + 3);
 			auto gGfdSpeechLookup = *get_pattern<int16_t (*)[18][2]>("0F B7 B4 00 ? ? ? ? 03 C0 0F B7 80 ? ? ? ? 66 83 FE FF", 4);
 			auto gPlySpeechLookup = *get_pattern<int16_t (*)[20][2]>("8D 04 90 03 C0 0F B7 B4 00 ? ? ? ? 03 C0", 5 + 4);
 			auto gGngSpeechLookup = *get_pattern<int16_t (*)[52][2]>("03 C1 03 C0 0F B7 B4 00 ? ? ? ? 03 C0 0F B7 80 ? ? ? ? E9", 4 + 4);
@@ -6292,6 +6307,10 @@ BOOL InjectDelayedPatches_NewBinaries()
 			if (ModCompat::Utils::GetModuleHandleFromAddress(gGenSpeechLookup) == hInstance)
 			{
 				Patches::PatchGenSpeechContexts(gGenSpeechLookup);
+			}
+			if (ModCompat::Utils::GetModuleHandleFromAddress(gEmgSpeechLookup) == hInstance)
+			{
+				Patches::PatchEmgSpeechContexts(gEmgSpeechLookup);
 			}
 			if (ModCompat::Utils::GetModuleHandleFromAddress(gGfdSpeechLookup) == hInstance)
 			{

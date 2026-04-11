@@ -135,6 +135,7 @@ All the remaining, non-critical fixes.
 * ➕ CJ's shooting dialogue lines now play also when using the keyboard and mouse, not only when using the gamepad auto-aim.
 * ➕ Cops now use their dialogue lines for ordering CJ to surrender and asking others to cover them.
 * ➕ FAM3 voice lines reacting to the player attacking him are now properly assigned.
+* ➕ LAPDM1 voice lines for arresting criminals are now properly assigned.
 * ➕ Hostile gangsters now play extra taunt lines towards CJ when attacking him.
 * ➕ Hostile gangsters now further respond to CJ's positive response to a 'Where are you from' question.
 * Detached vehicle parts will now keep the same color and lighting as the vehicle they came from.
