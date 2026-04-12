@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GeneralSA.h"
+#include "EventsSA.h"
 
 class CEntryExit;
 class CEvent;
@@ -111,8 +112,32 @@ static_assert(sizeof(CTaskComplexCarSlowBeDraggedOut) == 0x14, "Wrong size: CTas
 class CTaskManager
 {
 public:
-	CTask* m_primaryTasks[5];
-	CTask* m_secondaryTasks[6];
+	enum
+	{
+		TASK_PRIORITY_PHYSICAL_RESPONSE = 0,
+		TASK_PRIORITY_EVENT_RESPONSE_TEMP,
+		TASK_PRIORITY_EVENT_RESPONSE_NONTEMP,
+		TASK_PRIORITY_PRIMARY,
+		TASK_PRIORITY_DEFAULT,
+		TASK_PRIORITY_MAX
+	};
+
+	enum
+	{
+		TASK_SECONDARY_ATTACK = 0,
+		TASK_SECONDARY_DUCK,
+		TASK_SECONDARY_SAY,
+		TASK_SECONDARY_FACIAL_COMPLEX,
+		TASK_SECONDARY_PARTIAL_ANIM,
+		TASK_SECONDARY_IK,
+		TASK_SECONDARY_MAX
+	};
+
+	CTask* GetTask(int taskPriority) const { return m_tasks[taskPriority]; }
+
+private:
+	CTask* m_tasks[TASK_PRIORITY_MAX];
+	CTask* m_tasksSecondary[TASK_SECONDARY_MAX];
 	CPed* m_pPed;
 };
 static_assert(sizeof(CTaskManager) == 0x30, "Wrong size: CTaskManager");
@@ -120,11 +145,16 @@ static_assert(sizeof(CTaskManager) == 0x30, "Wrong size: CTaskManager");
 class CPedIntelligence
 {
 public:
+	CTask* GetTaskPrimary() const { return m_taskManager.GetTask(CTaskManager::TASK_PRIORITY_PRIMARY); }
+	CEvent* GetCurrentEvent() const { return m_eventHandler.GetCurrentEvent(); }
+
+	class CTaskSimpleJetPack*	GetTaskJetPack() const;
+
+private:
 	CPed* m_pPed;
 	CTaskManager m_taskManager;
-
-public:
-	class CTaskSimpleJetPack*	GetTaskJetPack() const;
+	CEventHandler m_eventHandler;
+	CEventGroup m_eventGroup;
 };
 
 class CPedFlags
@@ -354,7 +384,9 @@ public:
 	BYTE				__pad2[28];
 	RwObject*			m_pWeaponObject;
 	RwFrame*			m_pMuzzleFlashFrame;
-	BYTE				__pad10[68];
+	BYTE				__pad10[52];
+	int32_t				m_nPedState;
+	std::byte			__pad11[12];
 	float				fHealth;
 	float				fMaxHealth;
 	float				fArmour;
@@ -384,6 +416,8 @@ public:
 	virtual bool		Save();
 	virtual bool		Load();
 
+	int32_t			GetPedState() const
+							{ return m_nPedState; }
 	inline int32_t	GetPedType() const
 							{ return m_nPedType; };
 	inline CWeapon*	GetWeaponSlots() 
@@ -392,7 +426,7 @@ public:
 							{ return iMoveAnimGroup; };
 	inline void			SetMoveAnimGroup(int a) 
 							{ iMoveAnimGroup = a; };
-	inline CPedIntelligence*	GetPedIntelligencePtr() 
+	inline CPedIntelligence*	GetPedIntelligence() const
 							{ return pPedIntelligence; };
 	inline float		GetHealth() 
 							{ return fHealth; };

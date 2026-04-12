@@ -2493,15 +2493,15 @@ namespace BikerCopsDriveByFix
 		CPed* driver = vehicle->GetDriver();
 		if (driver != nullptr)
 		{
-			CPedIntelligence* driverIntelligence = driver->GetPedIntelligencePtr();
+			CPedIntelligence* driverIntelligence = driver->GetPedIntelligence();
 			if (driverIntelligence != nullptr)
 			{
 				// If the driver has a sequence, it's the fourth one
-				CTask* primaryTask = driverIntelligence->m_taskManager.m_primaryTasks[3];
+				CTask* primaryTask = driverIntelligence->GetTaskPrimary();
 				if (primaryTask != nullptr && primaryTask->GetTaskType() == 244) // TASK_COMPLEX_SEQUENCE
 				{
 					// If the sequence contains a TASK_SIMPLE_GANG_DRIVEBY, abort it
-					CTaskComplexSequence* taskSequence = reinterpret_cast<CTaskComplexSequence*>(primaryTask);
+					CTaskComplexSequence* taskSequence = static_cast<CTaskComplexSequence*>(primaryTask);
 					if (taskSequence->Contains(1022))
 					{
 						taskSequence->MakeAbortable(driver, 1, nullptr);
@@ -4194,6 +4194,69 @@ namespace SpeechSystemFixes
 				}
 			}
 		}
+	}
+}
+
+
+// ============= Good Citizen Bonus =============
+namespace GoodCitizenBonus
+{
+	static CPed* pChasingCopPed;
+	bool __stdcall IsPedFleeingFromCops_PlayAudio(const CPed* ped)
+	{
+		// If this flag is set, we already gave a bonus for this ped once
+		// Don't check for the event again
+		if (ped->m_nPedFlags.bBeingChasedByPolice)
+		{
+			pChasingCopPed = nullptr;
+			return true;
+		}
+
+		CEvent* event = ped->GetPedIntelligence()->GetCurrentEvent();
+		if (event != nullptr && event->GetEventType() == CEvent::EVENT_PED_TO_FLEE)
+		{
+			CEventPedToFlee* eventPedToFlee = static_cast<CEventPedToFlee*>(event);
+			CPed* chasingCopPed = eventPedToFlee->GetPedToFlee();
+			if (chasingCopPed != nullptr && chasingCopPed->GetPedType() == PEDTYPE_COP)
+			{
+				pChasingCopPed = chasingCopPed;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool __stdcall IsNotDying_AndBonusNotGiven(CPed* ped)
+	{
+		// If we already gave the bonus, don't give it again
+		if (ped->m_nPedFlags.bBeingChasedByPolice)
+		{
+			return false;
+		}
+
+		int pedState = ped->GetPedState();
+		if (pedState != 54 && pedState != 55) // != PEDSTATE_DIE && != PEDSTATE_DEAD
+		{
+			ped->m_nPedFlags.bBeingChasedByPolice = true;
+			if (pChasingCopPed != nullptr)
+			{
+				pChasingCopPed->Say(CONTEXT_GLOBAL_GOOD_CITIZEN);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	const char* (__thiscall *orgGetText_Goodboy)(void* obj, void* key);
+	const char* __fastcall GetText_Goodboy_Fallback(void* obj, void*, void* key)
+	{
+		const char* text = orgGetText_Goodboy(obj, key);
+		if (text[0] == '\0')
+		{
+			text = "$50 Good Citizen Bonus!";
+		}
+		return text;
 	}
 }
 
@@ -7728,6 +7791,26 @@ void Patch_SA_10(HINSTANCE hInstance)
 		WriteOffsetValue(0x43BE14 + 1, 0x43BECD);
 		InterceptCall(0x43C0C7, orgPedSay_DismissReply, PedSay_DismissReply_WhereYouFrom);
 	}
+
+
+	// Good Citizen Bonus
+	{
+		using namespace GoodCitizenBonus;
+
+		// Replace a legacy flag check with a fleeing event check, and play GOOD_CITIZEN on the chasing cop
+		Patch<uint8_t>(0x532092, 0x57); // push edi
+		InjectHook(0x532093, IsPedFleeingFromCops_PlayAudio, HookType::Call);
+		Patch(0x532098, { 0x84, 0xC0, 0x90, 0x90 }); // tesl al, al / nop
+
+		// Prevent the player from getting punished for defending against the criminal they stopped
+		Patch<uint8_t>(0x53209E, 0x57); // push edi
+		InjectHook(0x53209F, IsNotDying_AndBonusNotGiven, HookType::Call);
+		Patch(0x5320A4, { 0x84, 0xC0, 0x90 }); // tesl al, al / nop
+		Nop(0x5320B0, 6);
+
+		// Inject a fallback text as GOODBOY doesn't exist by default
+		InterceptCall(0x5320C7, orgGetText_Goodboy, GetText_Goodboy_Fallback);
+	}
 }
 
 void Patch_SA_11()
@@ -10354,6 +10437,31 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			InterceptCall(ped_say_reply, orgPedSay_DismissReply, PedSay_DismissReply_WhereYouFrom);
 		}
 		TXN_CATCH();
+	}
+	TXN_CATCH();
+
+
+	// Good Citizen Bonus
+	try
+	{
+		using namespace GoodCitizenBonus;
+
+		auto report_crime = pattern("F7 87 ? ? ? ? 00 00 80 00 74 5C 8B BF ? ? ? ? 83 FF 36 0F 84 ? ? ? ? 83 FF 37 0F 84").get_one();
+		auto goodboy_text = get_pattern("E8 ? ? ? ? 50 E8 ? ? ? ? 0F B6 05");
+
+		// Replace a legacy flag check with a fleeing event check, and play GOOD_CITIZEN on the chasing cop
+		Patch<uint8_t>(report_crime.get<void>(0), 0x57); // push edi
+		InjectHook(report_crime.get<void>(1), IsPedFleeingFromCops_PlayAudio, HookType::Call);
+		Patch(report_crime.get<void>(6), { 0x84, 0xC0, 0x90, 0x90 }); // tesl al, al / nop
+
+		// Prevent the player from getting punished for defending against the criminal they stopped
+		Patch<uint8_t>(report_crime.get<void>(0xC), 0x57); // push edi
+		InjectHook(report_crime.get<void>(0xC + 1), IsNotDying_AndBonusNotGiven, HookType::Call);
+		Patch(report_crime.get<void>(0xC + 6), { 0x84, 0xC0, 0x90 }); // tesl al, al / nop
+		Nop(report_crime.get<void>(0x1E), 6);
+
+		// Inject a fallback text as GOODBOY doesn't exist by default
+		InterceptCall(goodboy_text, orgGetText_Goodboy, GetText_Goodboy_Fallback);
 	}
 	TXN_CATCH();
 }

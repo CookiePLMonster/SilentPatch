@@ -87,6 +87,9 @@
     <ClCompile Include="..\SilentPatch\FriendlyMonitorNames.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="EventsSA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StdAfxSA.h">
@@ -174,6 +177,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SpeechContextsSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EventsSA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

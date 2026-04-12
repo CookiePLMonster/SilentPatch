@@ -212,6 +212,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="AudioHardwareSA.cpp" />
+    <ClCompile Include="EventsSA.cpp" />
     <ClCompile Include="FireManagerSA.cpp" />
     <ClCompile Include="FLACDecoderSA.cpp" />
     <ClCompile Include="GeneralSA.cpp" />
@@ -245,6 +246,7 @@
     <ClInclude Include="..\SilentPatch\Utils\Patterns.h" />
     <ClInclude Include="AnimationSA.h" />
     <ClInclude Include="AudioHardwareSA.h" />
+    <ClInclude Include="EventsSA.h" />
     <ClInclude Include="FireManagerSA.h" />
     <ClInclude Include="FLACDecoderSA.h" />
     <ClInclude Include="GeneralSA.h" />
