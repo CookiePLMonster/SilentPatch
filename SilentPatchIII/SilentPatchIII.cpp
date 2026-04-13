@@ -765,7 +765,7 @@ namespace VariableResets
 // This has been fixed in VC/SA
 namespace GenerateNewPickup_ReuseObjectFix
 {
-	static void* pPickupObject;
+	static void** pPickupObject;
 	static void (*orgGiveUsAPickUpObject)(int);
 
 	__declspec(naked) void GiveUsAPickUpObject_CleanUpObject()
@@ -773,6 +773,7 @@ namespace GenerateNewPickup_ReuseObjectFix
 		_asm
 		{
 			mov		eax, [pPickupObject]
+			mov		eax, [eax]
 			add		eax, ebp
 			mov		eax, [eax]
 			test	eax, eax
@@ -2371,7 +2372,7 @@ void Patch_III_Common()
 
 		auto give_us_a_pick_up_object = pattern("6A FF E8 ? ? ? ? 89 85").get_one();
 
-		pPickupObject = *give_us_a_pick_up_object.get<void*>(7 + 2);
+		pPickupObject = give_us_a_pick_up_object.get<void*>(7 + 2);
 		InterceptCall(give_us_a_pick_up_object.get<void>(2), orgGiveUsAPickUpObject, GiveUsAPickUpObject_CleanUpObject);
 	}
 	TXN_CATCH();
