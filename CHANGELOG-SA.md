@@ -112,7 +112,7 @@ All the remaining, non-critical fixes.
 * ➕ Hydra's jet thrusters no longer randomly fail to appear (contributed by **B1ack_Wh1te**).
 * ➕ Hunter's interior does not disappear when viewed through the glass door panel.
 * ➕ CJ no longer sinks inside the bike when jumping on it from the front (contributed by **B1ack_Wh1te**).
-* ➕ Characters entering the back of van vehicles will no longer sligthly teleport when playing the entering animation (contributed by **B1ack_Wh1te**).
+* ➕ Characters entering the back of van vehicles will no longer slightly teleport when playing the entering animation (contributed by **B1ack_Wh1te**).
 * ➕ Cops will no longer hold one handed weapons like gangsters. This behaviour is now given to dealers and criminals instead (contributed by **iFarbod**).
 * ➕ Specific roadblocks in 'End of the Line' will no longer spawn CJ's clones.
 * ➕ Additional gang tags added through mods can now load from the save file correctly.
