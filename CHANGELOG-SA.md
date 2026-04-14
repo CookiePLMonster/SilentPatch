@@ -130,7 +130,7 @@ All the remaining, non-critical fixes.
 * ➕ Restored the gang taunt voice lines against Los Santos Vagos, Triads, San Fierro Rifa, and Da Nang Boys.
 * ➕ Restored several incorrectly assigned CJ's voice lines for stealing cars from women.
 * ➕ CJ will now make comments when crashing into another vehicle while on a motorbike.
-* ➕ An unique pain sound is now used by peds sprayed with a spray can, fire extinguisher, or choking on a tear gas.
+* ➕ A unique pain sound is now used by peds sprayed with a spray can, fire extinguisher, or choking on a tear gas.
 * ➕ CJ now shouts his police chase quotes also at 1 wanted level star.
 * ➕ CJ's shooting dialogue lines now play also when using the keyboard and mouse, not only when using the gamepad auto-aim.
 * ➕ Cops now use their dialogue lines for ordering CJ to surrender and asking others to cover them.
