@@ -1,23 +1,21 @@
-#include "Common_ddraw.h"
-
-#include "Desktop.h"
-
 #define WIN32_LEAN_AND_MEAN
 
 #define WINVER 0x0501
 #define _WIN32_WINNT 0x0501
 #define NOMINMAX
 
+#include "Common_ddraw.h"
+
+#include "Desktop.h"
+
 #include <windows.h>
 
-#include <Shlwapi.h>
-#include <ShlObj.h>
+#include <shlwapi.h>
+#include <shlobj.h>
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
 
 #pragma comment(lib, "shlwapi.lib")
-
-extern char** ppUserFilesDir;
 
 // ============= Fake the VRAM poll =============
 namespace FakeVRAMPoll

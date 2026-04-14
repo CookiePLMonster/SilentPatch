@@ -1,8 +1,6 @@
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
 
-#define RwEngineInstance (*rwengine)
-
 #include <rwcore.h>
 #include "RWGTA.h"
 
@@ -52,6 +50,7 @@ void RwD3D8GetRenderState(RwUInt32 state, void* value)
 	fnRwD3D8GetRenderState(state, value);
 }
 
+#ifndef RwIm2DGetNearScreenZ
 RwReal RwIm2DGetNearScreenZ()
 {
 	return RWSRCGLOBAL(dOpenDevice).zBufferNear;
@@ -66,6 +65,7 @@ RwBool RwRenderStateSet(RwRenderState state, void *value)
 {
 	return RWSRCGLOBAL(dOpenDevice).fpRenderStateSet(state, value);
 }
+#endif
 
 // Unreachable stub
 RwBool RwMatrixDestroy(RwMatrix* /*mpMat*/) { assert(!"Unreachable!"); return TRUE; }
@@ -78,19 +78,19 @@ bool RWGTA::Patches::TryLocateRwD3D8() try
 	auto pfnRwD3D8SetRenderState = [] {
 		try {
 			// Everything except for III Steam
-			return static_cast<decltype(RwD3D8SetRenderState)*>(get_pattern("39 0C C5 ? ? ? ? 74 31", -8));
+			return reinterpret_cast<decltype(RwD3D8SetRenderState)*>(get_pattern("39 0C C5 ? ? ? ? 74 31", -8));
 		} catch (const hook::txn_exception&) {
 			// III Steam
-			return static_cast<decltype(RwD3D8SetRenderState)*>(get_pattern("8B 0C C5 ? ? ? ? 3B CA", -8));
+			return reinterpret_cast<decltype(RwD3D8SetRenderState)*>(get_pattern("8B 0C C5 ? ? ? ? 3B CA", -8));
 		}
 	}();
 	auto pfnRwD3D8GetRenderState = [] {
 		try {
 			// Everything except for III Steam
-			return static_cast<decltype(RwD3D8GetRenderState)*>(get_pattern("8B 0C C5 ? ? ? ? 89 0A C3", -8));
+			return reinterpret_cast<decltype(RwD3D8GetRenderState)*>(get_pattern("8B 0C C5 ? ? ? ? 89 0A C3", -8));
 		} catch (const hook::txn_exception&) {
 			// III Steam
-			return static_cast<decltype(RwD3D8GetRenderState)*>(get_pattern("8B 04 C5 ? ? ? ? 89 02 C3", -8));
+			return reinterpret_cast<decltype(RwD3D8GetRenderState)*>(get_pattern("8B 04 C5 ? ? ? ? 89 02 C3", -8));
 		}
 	}();
 

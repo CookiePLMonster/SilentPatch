@@ -4,8 +4,8 @@
 
 #include <windows.h>
 #include <stdio.h>
-#include <Shlwapi.h>
-#include <ShlObj.h>
+#include <shlwapi.h>
+#include <shlobj.h>
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
 #include "Utils/ScopedUnprotect.hpp"
@@ -14,6 +14,7 @@
 #include "Desktop.h"
 
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(linker, "/EXPORT:DirectDrawCreateEx=_DirectDrawCreateEx@16")
 
 extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, REFIID iid, IUnknown FAR *pUnkOuter)
 {
@@ -199,7 +200,7 @@ static bool PatchIAT_ByPointers()
 	using namespace Memory::VP;
 
 	pOrgSystemParametersInfoA = SystemParametersInfoA;
-	memcpy( orgCode, pOrgSystemParametersInfoA, sizeof(orgCode) );
+	memcpy( orgCode, reinterpret_cast<void*>(pOrgSystemParametersInfoA), sizeof(orgCode) );
 	InjectHook( pOrgSystemParametersInfoA, SystemParametersInfoA_OverwritingHook, HookType::Jump );
 	return true;
 }

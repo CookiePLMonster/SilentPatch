@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+extern char** ppUserFilesDir;
+
 namespace Common
 {
 	namespace Patches

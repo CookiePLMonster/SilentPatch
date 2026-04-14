@@ -14,7 +14,7 @@
 
 #include <array>
 #include <memory>
-#include <Shlwapi.h>
+#include <shlwapi.h>
 
 #include "Utils/ModuleList.hpp"
 #include "Utils/Patterns.h"
@@ -414,6 +414,7 @@ namespace M16StatsFix
 static const float fMinusOne = -1.0f;
 __declspec(naked) void HeadlightsFix()
 {
+#ifdef _MSC_VER
 	_asm
 	{
 		fld		dword ptr [esp+0x708-0x690]
@@ -431,6 +432,27 @@ __declspec(naked) void HeadlightsFix()
 		fld		st
 		jmp		HeadlightsFix_JumpBack
 	}
+#else
+	__asm__ volatile
+	(
+		"fld	dword ptr [esp+0x708-0x690]\n"
+		"fcomp	%[fMinusOne]\n"
+		"fnstsw	ax\n"
+		"and	ah, 5\n"
+		"cmp	ah, 1\n"
+		"jnz	HeadlightsFix_DontLimit\n"
+		"fld	%[fMinusOne]\n"
+		"fstp	dword ptr [esp+0x708-0x690]\n"
+
+"HeadlightsFix_DontLimit:\n"
+		"fld	dword ptr [esp+0x708-0x690]\n"
+		"fabs\n"
+		"fld	st\n"
+		"jmp	%[HeadlightsFix_JumpBack]"
+		:: [fMinusOne] "f" (fMinusOne),
+		[HeadlightsFix_JumpBack] "m" (HeadlightsFix_JumpBack)
+	);
+#endif
 }
 
 namespace PrintStringShadows
@@ -539,6 +561,7 @@ namespace MouseSensNewGame
 	static float DefaultHorizontalAccel, DefaultVerticalAccel;
 	__declspec(naked) void CameraInit_KeepSensitivity()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			mov     ecx, 0x3A76
@@ -550,6 +573,19 @@ namespace MouseSensNewGame
 			fstp	[ebp]CCamera.m_horizontalAccel
 			ret
 		}
+#else
+		__asm__ volatile
+		(
+			"mov	ecx, 0x3A76\n"
+			"mov	edi, ebp\n"
+			"fld	dword ptr [ebp+0x194]\n" // CCamera.m_horizontalAccel
+			"fld	dword ptr [ebp+0x198]\n" // CCamera.m_verticalAccel
+			"rep	stosd\n"
+			"fstp	dword ptr [ebp+0x198]\n" // CCamera.m_verticalAccel
+			"fstp	dword ptr [ebp+0x194]\n" // CCamera.m_horizontalAccel
+			"ret"
+		);
+#endif
 	}
 
 	static void (__thiscall *orgCtorCameraInit)(CCamera* obj);
@@ -565,6 +601,7 @@ static void* RadarBoundsCheckCoordBlip_JumpBack = AddressByVersion<void*>(0x4A55
 static void* RadarBoundsCheckCoordBlip_Count = AddressByVersion<void*>(0x4A55AF, 0x4A569F, 0x4A562F);
 __declspec(naked) void RadarBoundsCheckCoordBlip()
 {
+#ifdef _MSC_VER
 	_asm
 	{
 		mov		edx, RadarBoundsCheckCoordBlip_Count
@@ -579,11 +616,30 @@ __declspec(naked) void RadarBoundsCheckCoordBlip()
 		fcompp
 		ret
 	}
+#else
+	__asm__ volatile
+	(
+		"mov	edx, %[RadarBoundsCheckCoordBlip_Count]\n"
+		"cmp	cl, byte ptr [edx]\n"
+		"jnb	OutOfBounds\n"
+		"mov    edx, ecx\n"
+		"mov    eax, [esp+4]\n"
+		"jmp	%[RadarBoundsCheckCoordBlip_JumpBack]\n"
+
+"OutOfBounds:\n"
+		"or		eax, -1\n"
+		"fcompp\n"
+		"ret"
+		:: [RadarBoundsCheckCoordBlip_Count] "m" (RadarBoundsCheckCoordBlip_Count),
+		[RadarBoundsCheckCoordBlip_JumpBack] "m" (RadarBoundsCheckCoordBlip_JumpBack)
+	);
+#endif
 }
 
 static void* RadarBoundsCheckEntityBlip_JumpBack = AddressByVersion<void*>(0x4A565E, 0x4A574E, 0x4A56DE);
 __declspec(naked) void RadarBoundsCheckEntityBlip()
 {
+#ifdef _MSC_VER
 	_asm
 	{
 		mov		edx, RadarBoundsCheckCoordBlip_Count
@@ -597,12 +653,29 @@ __declspec(naked) void RadarBoundsCheckEntityBlip()
 		or		eax, -1
 		ret
 	}
+#else
+	__asm__ volatile
+	(
+		"mov	edx, %[RadarBoundsCheckCoordBlip_Count]\n"
+		"cmp	cl, byte ptr [edx]\n"
+		"jnb	OutOfBounds2\n"
+		"mov    edx, ecx\n"
+		"mov    eax, [esp+4]\n"
+		"jmp	%[RadarBoundsCheckEntityBlip_JumpBack]\n"
+
+		"OutOfBounds2:\n"
+		"or		eax, -1\n"
+		"ret"
+		:: [RadarBoundsCheckCoordBlip_Count] "m" (RadarBoundsCheckCoordBlip_Count),
+		[RadarBoundsCheckEntityBlip_JumpBack] "m" (RadarBoundsCheckEntityBlip_JumpBack)
+	);
+#endif
 }
 
-extern char** ppUserFilesDir = AddressByVersion<char**>(0x580C16, 0x580F66, 0x580E66);
+char** ppUserFilesDir = AddressByVersion<char**>(0x580C16, 0x580F66, 0x580E66);
 
 static LARGE_INTEGER	FrameTime;
-__declspec(safebuffers) int32_t GetTimeSinceLastFrame()
+NOBUFFERCHECKS int32_t GetTimeSinceLastFrame()
 {
 	LARGE_INTEGER	curTime;
 	QueryPerformanceCounter(&curTime);
@@ -635,6 +708,7 @@ unsigned int __cdecl AutoPilotTimerCalculation_III(unsigned int nTimer, int nSca
 
 __declspec(naked) void AutoPilotTimerFix_III()
 {
+#ifdef _MSC_VER
 	_asm
 	{
 		push    dword ptr [esp + 0x4]
@@ -649,6 +723,23 @@ __declspec(naked) void AutoPilotTimerFix_III()
 		pop     ebx
 		ret     4
 	}
+#else
+	__asm__ volatile
+	(
+		"push	dword ptr [esp + 0x4]\n"
+		"push	dword ptr [ebx + 0x10]\n"
+		"push	eax\n"
+		"call	%[AutoPilotTimerCalculation_III]\n"
+		"add	esp, 0xC\n"
+		"mov	[ebx + 0xC], eax\n"
+		"add	esp, 0x28\n"
+		"pop	ebp\n"
+		"pop	esi\n"
+		"pop	ebx\n"
+		"ret	4"
+		:: [AutoPilotTimerCalculation_III] "i" (AutoPilotTimerCalculation_III)
+	);
+#endif
 }
 
 namespace ZeroAmmoFix
@@ -765,7 +856,7 @@ namespace Localization
 // ============= Call cDMAudio::IsAudioInitialised before adding one shot sounds, like in VC =============
 namespace AudioInitializedFix
 {
-	auto IsAudioInitialised = static_cast<bool(*)()>(Memory::ReadCallFrom( hook::get_pattern( "E8 ? ? ? ? 84 C0 74 ? 0F B7 47 10" ) ));
+	auto IsAudioInitialised = reinterpret_cast<bool(*)()>(Memory::ReadCallFrom( hook::get_pattern( "E8 ? ? ? ? 84 C0 74 ? 0F B7 47 10" ) ));
 	void* (*operatorNew)(size_t size);
 
 	void* operatorNew_InitializedCheck( size_t size )
@@ -803,6 +894,7 @@ namespace RemoveDriverStatusFix
 	{
 		// if (m_nStatus != STATUS_WRECKED)
 		//   m_nStatus = STATUS_ABANDONED;
+#ifdef _MSC_VER
 		_asm
 		{
 			mov		ah, [ecx+0x50]
@@ -816,6 +908,21 @@ namespace RemoveDriverStatusFix
 		DontSetStatus:
 			ret
 		}
+#else
+		__asm__ volatile
+		(
+			"mov	ah, [ecx+0x50]\n"
+			"mov	al, ah\n"
+			"and	ah, 0xF8\n"
+			"cmp	ah, 0x28\n"
+			"je		DontSetStatus\n"
+			"and    al, 7\n"
+			"or     al, 0x20\n"
+
+		"DontSetStatus:\n"
+			"ret"
+		);
+#endif
 	}
 }
 
@@ -848,6 +955,7 @@ namespace EvasiveDiveFix
 
 	__declspec(naked) static void CalculateAngle_Hook()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			push    dword ptr [esi+0x7C]
@@ -858,6 +966,19 @@ namespace EvasiveDiveFix
 			mov     ecx, ebp
 			ret
 		}
+#else
+		__asm__ volatile
+		(
+			"push	dword ptr [esi+0x7C]\n"
+			"push	dword ptr [esi+0x78]\n"
+			"call	%[CalculateAngle]\n"
+			"add	esp, 8\n"
+
+			"mov	ecx, ebp\n"
+			"ret"
+			:: [CalculateAngle] "i" (CalculateAngle)
+		);
+#endif
 	}
 }
 
@@ -870,27 +991,48 @@ namespace NullTerminatedLines
 	static void* orgSscanf_LoadPath;
 	__declspec(naked) static void sscanf1_LoadPath_Terminate()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			mov		eax, [esp+4]
 			mov		byte ptr [eax+ecx], 0
 			jmp		orgSscanf_LoadPath
 		}
+#else
+		__asm__ volatile
+		(
+			"mov	eax, [esp+4]\n"
+			"mov	byte ptr [eax+ecx], 0\n"
+			"jmp	%[orgSscanf_LoadPath]"
+			:: [orgSscanf_LoadPath] "m" (orgSscanf_LoadPath)
+		);
+#endif
 	}
 
 	static void* orgSscanf1;
 	__declspec(naked) static void sscanf1_Terminate()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			mov		eax, [esp+4]
 			mov		byte ptr [eax+ecx], 0
 			jmp		orgSscanf1
 		}
+#else
+		__asm__ volatile
+		(
+			"mov	eax, [esp+4]\n"
+			"mov	byte ptr [eax+ecx], 0\n"
+			"jmp	%[orgSscanf1]"
+			:: [orgSscanf1] "m" (orgSscanf1)
+		);
+#endif
 	}
 
 	__declspec(naked) static void ReadTrackFile_Terminate()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			mov		ecx, gString
@@ -900,6 +1042,18 @@ namespace NullTerminatedLines
 			add     ecx, [esp+0xAC-0x98]
 			ret
 		}
+#else
+		__asm__ volatile
+		(
+			"mov	ecx, %[gString]\n"
+			"mov	byte ptr [ecx+edx], 0\n"
+			"mov	ecx, [esi]\n"
+			"inc	ebp\n"
+			"add	ecx, [esp+0xAC-0x98]\n"
+			"ret"
+			:: [gString] "m" (gString)
+		);
+#endif
 	}
 }
 
@@ -926,6 +1080,7 @@ namespace DodoKeyboardControls
 	static void* (*orgFindPlayerVehicle)();
 	__declspec(naked) static void FindPlayerVehicle_DodoCheck()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			call	orgFindPlayerVehicle
@@ -937,6 +1092,21 @@ namespace DodoKeyboardControls
 		CheatDisabled:
 			ret
 		}
+#else
+		__asm__ volatile
+		(
+			"call	%[orgFindPlayerVehicle]\n"
+			"mov	ecx, %[bAllDodosCheat]\n"
+			"cmp	byte ptr [ecx], 0\n"
+			"je		CheatDisabled\n"
+			"mov	byte ptr [esp+0x1C-0x14], 1\n"
+
+		"CheatDisabled:\n"
+			"ret"
+			:: [orgFindPlayerVehicle] "m" (orgFindPlayerVehicle),
+			[bAllDodosCheat] "m" (bAllDodosCheat)
+		);
+#endif
 	}
 }
 
@@ -1005,6 +1175,7 @@ namespace GenerateNewPickup_ReuseObjectFix
 
 	__declspec(naked) static void GiveUsAPickUpObject_CleanUpObject()
 	{
+#ifdef _MSC_VER
 		_asm
 		{
 			mov		eax, pPickupObject
@@ -1031,6 +1202,36 @@ namespace GenerateNewPickup_ReuseObjectFix
 		NoPickup:
 			jmp		orgGiveUsAPickUpObject
 		}
+#else
+		__asm__ volatile
+		(
+			"mov	eax, %[pPickupObject]\n"
+			"add	eax, ebp\n"
+			"mov	eax, [eax]\n"
+			"test	eax, eax\n"
+			"jz		NoPickup\n"
+			"push	edi\n"
+			"mov	edi, eax\n"
+
+			"push	edi\n"
+			"call	offset %[WorldRemove]\n"
+			"add	esp, 4\n"
+
+			// Call dtor
+			"mov	ecx, edi\n"
+			"mov	eax, [edi]\n"
+			"push	1\n"
+			"call	dword ptr [eax]\n"
+
+			"pop	edi\n"
+
+		"NoPickup:\n"
+			"jmp	%[orgGiveUsAPickUpObject]"
+			:: [pPickupObject] "m" (pPickupObject),
+			[WorldRemove] "m" (WorldRemove),
+			[orgGiveUsAPickUpObject] "m" (orgGiveUsAPickUpObject)
+		);
+#endif
 	}
 }
 
@@ -1263,7 +1464,7 @@ namespace SlidingTextsScalingFixes
 		static inline float** pHorShadowValue;
 
 		template<std::size_t Index>
-		static void (*orgPrintString)(float,float,const wchar_t*);
+		STATIC_INLINE void (*orgPrintString)(float,float,const wchar_t*);
 
 		template<std::size_t Index>
 		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
@@ -1283,7 +1484,7 @@ namespace SlidingTextsScalingFixes
 		}
 
 		template<std::size_t Index>
-		static void (*orgSetRightJustifyWrap)(float wrap);
+		STATIC_INLINE void (*orgSetRightJustifyWrap)(float wrap);
 
 		template<std::size_t Index>
 		static void SetRightJustifyWrap_Slide(float wrap)
@@ -1300,7 +1501,7 @@ namespace SlidingTextsScalingFixes
 		static inline bool bSlidingEnabled = false;
 
 		template<std::size_t Index>
-		static void (*orgPrintString)(float,float,const wchar_t*);
+		STATIC_INLINE void (*orgPrintString)(float,float,const wchar_t*);
 
 		template<std::size_t Index>
 		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
@@ -1401,7 +1602,7 @@ namespace FixedLineWraps
 	struct WrapInternal
 	{
 		template<std::size_t Index>
-		static void (*orgWrapFunction)(float);
+		STATIC_INLINE void (*orgWrapFunction)(float);
 
 		template<std::size_t Index>
 		static void WrapFunction_LeftAlign(float fLength)
@@ -1693,6 +1894,8 @@ namespace SubtitleRadarCutoutFix
 	static const float* orgRadarWidth;
 	static const float* orgRadarBorderWidth;
 
+	static bool* bWideScreenOn;
+
 	template<std::size_t... I>
 	static void RecalculateValues(std::index_sequence<I...>)
 	{
@@ -1711,7 +1914,6 @@ namespace SubtitleRadarCutoutFix
 		}
 	}
 
-	static bool* bWideScreenOn;
 	static float fExtraSubtitleYOffset;
 
 	static void (*orgSetCentreSize)(float size);
