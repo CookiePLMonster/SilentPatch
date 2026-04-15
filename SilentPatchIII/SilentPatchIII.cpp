@@ -15,6 +15,7 @@
 #include <array>
 #include <memory>
 #include <Shlwapi.h>
+#include <intrin.h>
 
 #include "Utils/ModuleList.hpp"
 #include "Utils/Patterns.h"
@@ -1774,7 +1775,29 @@ namespace CastShadowEntityFix
 	// This is actually CEntity*, but we don't have that defined at the moment and we only care about the matrix
 	void __fastcall TransformShadowPoint3D(const CVehicle* entity, CVector* vec)
 	{
-		*vec = entity->GetMatrix() * *vec;
+		const CMatrix& mat = entity->GetMatrix();
+		const CVector& right = mat.GetRight();
+		const CVector& up = mat.GetUp();
+		const CVector& at = mat.GetAt();
+		const CVector& pos = mat.GetPos();
+
+		// We *must* use SSE, so we preserve the x87 state
+		__m128 rightV = _mm_loadu_ps(&right.x);
+		__m128 upV = _mm_loadu_ps(&up.x);
+		__m128 atV = _mm_loadu_ps(&at.x);
+		__m128 posV = _mm_loadu_ps(&pos.x);
+
+		__m128 rx = _mm_mul_ps(rightV, _mm_set_ps1(vec->x));
+		__m128 uy = _mm_mul_ps(upV, _mm_set_ps1(vec->y));
+		__m128 az = _mm_mul_ps(atV, _mm_set_ps1(vec->z));
+
+		__m128 sum = _mm_add_ps(_mm_add_ps(rx, uy), _mm_add_ps(az, posV));
+
+		alignas(16) float out[4];
+		_mm_store_ps(out, sum);
+
+		// This cannot invoke the CVector constructor, as it might use FPU
+		memcpy(vec, out, sizeof(*vec));
 	}
 }
 
@@ -2659,6 +2682,10 @@ void Patch_III_Common()
 	using namespace Memory;
 	using namespace hook::txn;
 
+	int cpuinfo[4];
+	__cpuid(cpuinfo, 1);
+
+	const bool bSSESupported = (cpuinfo[3] & (1 << 25)) != 0;
 
 	// Scale the radar trace (blip) to resolution
 	try
@@ -3399,7 +3426,7 @@ void Patch_III_Common()
 
 
 	// Fix CShadows::CastShadowEntityXY ignoring the Up rotation of an object
-	try
+	if (bSSESupported) try
 	{
 		using namespace CastShadowEntityFix;
 
