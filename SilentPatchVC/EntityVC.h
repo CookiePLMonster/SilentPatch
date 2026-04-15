@@ -1,8 +1,9 @@
-#pragma 
+#pragma once
 
 #include <cstdint>
 #include <cstddef>
 
+#include "Maths.h"
 #include "TheFLAUtils.h"
 
 enum // m_objectCreatedBy
@@ -15,8 +16,17 @@ enum // m_objectCreatedBy
 class CEntity
 {
 public:
-	std::byte		__pad[80];
-	uint8_t			m_nType : 3;
-	std::byte		__pad2[11];
-	FLAUtils::int16	m_modelIndex;
+	void*		__vmt;
+	CMatrix		m_matrix;
+	void*		clump;
+	uint8_t		m_nType : 3;
+	std::byte	__pad4[11];
+	FLAUtils::int16 m_modelIndex;
+
+public:
+	int32_t GetModelIndex() const
+		{ return m_modelIndex.Get(); }
+
+	const CMatrix& GetMatrix() const
+		{ return m_matrix; }
 };

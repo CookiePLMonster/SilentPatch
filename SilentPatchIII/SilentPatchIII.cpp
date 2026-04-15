@@ -1768,6 +1768,17 @@ namespace CoronaFlaresScaling
 }
 
 
+// ============= Fix CShadows::CastShadowEntityXY ignoring the Up rotation of an object =============
+namespace CastShadowEntityFix
+{
+	// This is actually CEntity*, but we don't have that defined at the moment and we only care about the matrix
+	void __fastcall TransformShadowPoint3D(const CVehicle* entity, CVector* vec)
+	{
+		*vec = entity->GetMatrix() * *vec;
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -3385,6 +3396,23 @@ void Patch_III_Common()
 		}
 		TXN_CATCH();
 	}
+
+
+	// Fix CShadows::CastShadowEntityXY ignoring the Up rotation of an object
+	try
+	{
+		using namespace CastShadowEntityFix;
+
+		auto cast_shadow_entity = pattern("D9 82 ? ? ? ? DD DC D9 C3 DD DD D9 82 ? ? ? ? D8 08 8B 84 24 ? ? ? ? D9 C4").get_one();
+		auto cast_shadow_entity_end = get_pattern("39 F9 7C 80 83 BC 24");
+
+		Patch(cast_shadow_entity.get<void>(0), { 0x81, 0xC2 }); // add edx, X
+		Patch(cast_shadow_entity.get<void>(6), { 0x51, 0x8B, 0x8C, 0x24, 0x00, 0x01, 0x00, 0x00 }); // push ecx / mov ecx, [esp+FCh+arg_0]
+		InjectHook(cast_shadow_entity.get<void>(14), TransformShadowPoint3D, HookType::Call);
+		Patch(cast_shadow_entity.get<void>(19), { 0x59, 0x41 }); // pop ecx / inc ecx
+		InjectHook(cast_shadow_entity.get<void>(21), cast_shadow_entity_end, HookType::Jump);
+	}
+	TXN_CATCH();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

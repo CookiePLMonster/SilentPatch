@@ -4261,6 +4261,16 @@ namespace GoodCitizenBonus
 }
 
 
+// ============= Fix CShadows::CastShadowEntityXY ignoring the Up rotation of an object =============
+namespace CastShadowEntityFix
+{
+	void __fastcall TransformShadowPoint3D(const CEntity* entity, CVector* vec)
+	{
+		*vec = *entity->GetMatrix() * *vec;
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -7811,6 +7821,21 @@ void Patch_SA_10(HINSTANCE hInstance)
 		// Inject a fallback text as GOODBOY doesn't exist by default
 		InterceptCall(0x5320C7, orgGetText_Goodboy, GetText_Goodboy_Fallback);
 	}
+
+
+	// Fix CShadows::CastShadowEntityXY ignoring the Up rotation of an object
+	{
+		using namespace CastShadowEntityFix;
+
+		// lea edx, [esi-4]
+		// mov ecx, edi
+		Patch(0x709821, { 0x8D, 0x56, 0xFC, 0x8B, 0xCF });
+		InjectHook(0x709821 + 5, TransformShadowPoint3D, HookType::Call);
+		InjectHook(0x709821 + 10, 0x7098C3, HookType::Jump);
+
+		Nop(0x7098C7, 3);
+		Nop(0x7098D2, 3);
+	}
 }
 
 void Patch_SA_11()
@@ -10462,6 +10487,25 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		// Inject a fallback text as GOODBOY doesn't exist by default
 		InterceptCall(goodboy_text, orgGetText_Goodboy, GetText_Goodboy_Fallback);
+	}
+	TXN_CATCH();
+
+
+	// Fix CShadows::CastShadowEntityXY ignoring the Up rotation of an object
+	try
+	{
+		using namespace CastShadowEntityFix;
+
+		auto cast_shadow_entity = pattern("8B 46 14 89 45 F4 85 C0 75 13 8B CE E8 ? ? ? ? 8B 4E 14").get_one();
+		auto cast_shadow_entity_end = pattern("83 C3 0C FF 4D F8 D8 43 F8 D9 5B F8").get_one();
+
+		// lea edx, [ebx-4]
+		// mov ecx, esi
+		Patch(cast_shadow_entity.get<void>(0), { 0x8D, 0x53, 0xFC, 0x8B, 0xCE });
+		InjectHook(cast_shadow_entity.get<void>(5), TransformShadowPoint3D, HookType::Call);
+		InjectHook(cast_shadow_entity.get<void>(10), cast_shadow_entity_end.get<void>(0), HookType::Jump);
+
+		Nop(cast_shadow_entity_end.get<void>(6), 6);
 	}
 	TXN_CATCH();
 }

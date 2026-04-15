@@ -29,13 +29,13 @@ public:
 		UNREFERENCED_PARAMETER(dummy);
 	}
 
-	inline CVector*					GetCoords()
-		{ return m_pCoords ? &m_pCoords->GetPos() : &m_transform.m_translate; }
-	inline CMatrix*					GetMatrix()
+	inline const CVector&					GetCoords() const
+		{ return m_pCoords != nullptr ? m_pCoords->GetPos() : m_transform.m_translate; }
+	inline const CMatrix*					GetMatrix() const
 		{ return m_pCoords; }
-	inline CSimpleTransform&		GetTransform()
+	inline const CSimpleTransform&		GetTransform() const
 		{ return m_transform; }
-	inline float					GetHeading()
+	inline float					GetHeading() const
 		{ return m_pCoords ? atan2(-m_pCoords->GetUp().x, m_pCoords->GetUp().y) : m_transform.m_heading; }
 
 	inline void						SetCoords(const CVector& pos)

@@ -77,6 +77,7 @@ All the remaining, non-critical fixes.
 * The correct window icon is now displayed.
 * The engine start sound now always plays correctly, regardless of the Dynamic Acoustic Modeling setting or environmental reverb.
 * Flare effects now scale to resolution correctly.
+* Shadows and lights now cast correctly on map objects rotated along the X axis.
 * ⚙️ Fixed siren corona placements in Firetruck, Ambulance, and Enforcer.
 * ⚙️ Fixed taxi light corona placement for Taxi.
 * ⚙️ Fixed police chopper's searchlight placement.

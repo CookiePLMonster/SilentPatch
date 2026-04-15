@@ -1776,6 +1776,17 @@ namespace PedMugObjectiveFix
 }
 
 
+// ============= Fix CShadows::CastShadowEntityXY ignoring the Up rotation of an object =============
+namespace CastShadowEntityFix
+{
+	// This is actually CEntity*, but we don't have that defined at the moment and we only care about the matrix
+	void __fastcall TransformShadowPoint3D(const CVehicle* entity, CVector* vec)
+	{
+		*vec = entity->GetMatrix() * *vec;
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -3601,6 +3612,26 @@ void Patch_VC_Common()
 
 			Patch(&ped_objective_jump_table[47], &PedMugObjectiveFix_Wander);
 		}
+	}
+	TXN_CATCH();
+
+
+	// Fix CShadows::CastShadowEntityXY ignoring the Up rotation of an object
+	try
+	{
+		using namespace CastShadowEntityFix;
+
+		auto cast_shadow_entity = pattern("D9 04 2B DD DC 8B 44 24 54 D9 C3 DD DD D9 44 2B 04 D8 08").get_one();
+		auto cast_shadow_entity_end = get_pattern("83 C5 0C 42 39 CA");
+
+		// push ecx
+		// push edx
+		// mov ecx, [esp+120h+arg_0]
+		// lea edx, [ebx+ebp]
+		Patch(cast_shadow_entity.get<void>(0), {0x51, 0x52, 0x8B, 0x8C, 0x24, 0x24, 0x01, 0x00, 0x00, 0x8D, 0x14, 0x2B });
+		InjectHook(cast_shadow_entity.get<void>(12), TransformShadowPoint3D, HookType::Call);
+		Patch(cast_shadow_entity.get<void>(17), { 0x5A, 0x59 }); // pop edx / pop ecx
+		InjectHook(cast_shadow_entity.get<void>(19), cast_shadow_entity_end, HookType::Jump);
 	}
 	TXN_CATCH();
 }

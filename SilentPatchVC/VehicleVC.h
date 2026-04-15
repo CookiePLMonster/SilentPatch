@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "EntityVC.h"
 #include "Maths.h"
 #include "TheFLAUtils.h"
 
@@ -14,14 +15,9 @@ enum eVehicleType
 	VEHICLE_BIKE
 };
 
-class CVehicle
+class CVehicle : public CEntity
 {
 protected:
-	// TODO: Make this part of CEntity properly
-	void*		__vmt;
-	CMatrix		m_matrix;
-	uint8_t		__pad4[16];
-	FLAUtils::int16 m_modelIndex;
 	void*		m_pFirstReference;
 	int32_t		m_audioEntityId; // TODO: This should really be CPhysical
 	uint8_t		__pad5[320];
@@ -36,12 +32,6 @@ protected:
 
 
 public:
-	int32_t GetModelIndex() const
-		{ return m_modelIndex.Get(); }
-
-	const CMatrix& GetMatrix() const
-		{ return m_matrix; }
-
 	uint32_t		GetClass() const
 		{ return m_dwVehicleClass; }
 
