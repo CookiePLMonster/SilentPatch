@@ -109,7 +109,7 @@ namespace UIScales
 
 
 	// Each static struct here uses scaling constants from a different game class.
-	// They are separated for the bext compatibility with the widescreen fix, and can be used
+	// They are separated for the best compatibility with the widescreen fix, and can be used
 	// directly or as template parameters for PrintString fixes
 
 	// CDarkel - widescreen fixed, scaled by HUD scale
