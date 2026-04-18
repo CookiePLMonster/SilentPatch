@@ -2287,7 +2287,7 @@ namespace FollowCarMouseCamFix
 	}
 };
 
-// ======= Tie handlebar movement to the stering animations on Quadbike, fixes odd animation interpolations at low speeds =======
+// ======= Tie handlebar movement to the steering animations on Quadbike, fixes odd animation interpolations at low speeds =======
 namespace QuadbikeHandlebarAnims
 {
 	static const float POW_CONSTANT = 0.86f;
@@ -2358,7 +2358,7 @@ namespace QuadbikeHandlebarAnims
 }
 
 
-// ======= Modify the radio station change anim to only affect the right hand, and disable it on the Kart =======
+// ======= Modify the radio station change animation to only affect the right hand, and disable it on the Kart =======
 namespace RadioStationChangeAnimBlending
 {
 	// Disable all bones but the right hand and arm, and head/neck, so the animation looks better on different vehicles
@@ -2471,7 +2471,7 @@ namespace CameraMemoryLeakFix
 }
 
 
-// ============= Fix crosshair issues when sniper rifle is quipped and a photo is taken by a gang member =============
+// ============= Fix crosshair issues when sniper rifle is equipped and a photo is taken by a gang member =============
 namespace CameraCrosshairFix
 {
 	CWeaponInfo* (*orgGetWeaponInfo)(eWeaponType, signed char);
@@ -2648,7 +2648,7 @@ namespace RestrictImpoundVehicleTypes
 
 // ============= Fix PlayerPed replay crashes =============
 // 1. Crash when starting a mocap cutscene after playing a replay wearing different clothes to the ones CJ has currently
-// 2. Crash when playing back a replay with a different motion group anim (fat/muscular/normal) than the current one
+// 2. Crash when playing back a replay with a different motion group animation (fat/muscular/normal) than the current one
 namespace ReplayPlayerPedCrashFixes
 {
 	static void (*orgRestoreStuffFromMem)();
@@ -6623,7 +6623,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 	// Impounding after busted works
 	Nop(0x443292, 5);
 
-	// Mouse rotates an airbone car only with Steer with Mouse option enabled
+	// Mouse rotates an airborne car only with Steer with Mouse option enabled
 	bool*	bEnableMouseSteering = *(bool**)0x6AD7AD; // CVehicle::m_bEnableMouseSteering
 	Patch<bool*>(0x6B4EC0, bEnableMouseSteering);
 	Patch<bool*>(0x6CE827, bEnableMouseSteering);
@@ -6657,7 +6657,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 	//Patch<BYTE>(0x6FD528, rwFILTERLINEAR);
 	Patch<BYTE>(0x6FDF47, rwFILTERLINEAR);
 
-	// -//- Roadsign maganer
+	// -//- Roadsign manager
 	//Patch<BYTE>(0x6FE147, rwFILTERLINEAR);
 
 	// Bilinear filtering with mipmaps for weapon icons
@@ -7181,7 +7181,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Reset requested extras if created vehicle has no extras
-	// Fixes eg. lightless taxis
+	// Fixes e.g. lightless taxis
 	InjectHook( 0x4C97B1, CVehicleModelInfo::ResetCompsForNoExtras, HookType::Call );
 	Nop( 0x4C97B1 + 5, 9 );
 
@@ -7213,13 +7213,13 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Nop(0x5E69BC + 5, 3);
 
 
-	// Tie handlebar movement to the stering animations on Quadbike, fixes odd animation interpolations at low speeds
+	// Tie handlebar movement to the steering animations on Quadbike, fixes odd animation interpolations at low speeds
 	// By Wesser
 	Nop(0x6B7932, 1);
 	InjectHook(0x6B7932+1, &QuadbikeHandlebarAnims::ProcessRiderAnims_FixInterp, HookType::Call);
 
 
-	// Modify the radio station change anim to only affect the right hand, and disable it on the Kart
+	// Modify the radio station change animation to only affect the right hand, and disable it on the Kart
 	// By Wesser, improved by B1ack_Wh1te
 	{
 		using namespace RadioStationChangeAnimBlending;
@@ -7237,7 +7237,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
-	// Fix crosshair issues when sniper rifle is quipped and a photo is taken by a gang member
+	// Fix crosshair issues when sniper rifle is equipped and a photo is taken by a gang member
 	// By Wesser
 	{
 		using namespace CameraCrosshairFix;
@@ -7341,7 +7341,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 	// Fix PlayerPed replay crashes
 	// 1. Crash when starting a mocap cutscene after playing a replay wearing different clothes to the ones CJ has currently
-	// 2. Crash when playing back a replay with a different motion group anim (fat/muscular/normal) than the current one
+	// 2. Crash when playing back a replay with a different motion group animation (fat/muscular/normal) than the current one
 	{
 		using namespace ReplayPlayerPedCrashFixes;
 
@@ -7645,7 +7645,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Stop cops holding one handed guns like gangsters, with a tilted stance
-	// Instead, give this behaviour to dealers and criminals
+	// Instead, give this behavior to dealers and criminals
 	// By iFarbod
 	Patch<int8_t>(0x61E52E + 2, 0x11); // PED_TYPE_DEALER
 	Patch<int8_t>(0x61E533 + 2, 0x14); // PED_TYPE_CRIMINAL
@@ -7796,7 +7796,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 		};
 		HookEach_GetPedGroupsForCops(get_peds_group, InterceptCall);
 
-		// Rnable WHERE_YOU_FROM_POS_REPLY as a reply to WHERE_YOU_FROM_POS
+		// Enable WHERE_YOU_FROM_POS_REPLY as a reply to WHERE_YOU_FROM_POS
 		WriteOffsetValue(0x43BC13 + 2, 0x43BECD);
 		WriteOffsetValue(0x43BE14 + 1, 0x43BECD);
 		InterceptCall(0x43C0C7, orgPedSay_DismissReply, PedSay_DismissReply_WhereYouFrom);
@@ -7999,7 +7999,7 @@ void Patch_SA_11()
 	// Impounding after busted works
 	Nop(0x443312, 5);
 
-	// Mouse rotates an airbone car only with Steer with Mouse option enabled
+	// Mouse rotates an airborne car only with Steer with Mouse option enabled
 	bool*	bEnableMouseSteering = *(bool**)0x6ADFCD; // CVehicle::m_bEnableMouseSteering
 	Patch<bool*>(0x6B56E0, bEnableMouseSteering);
 	Patch<bool*>(0x6CF047, bEnableMouseSteering);
@@ -8035,7 +8035,7 @@ void Patch_SA_11()
 	//Patch<BYTE>(0x6FD528, rwFILTERLINEAR);
 	Patch<BYTE>(0x6FE777, rwFILTERLINEAR);
 
-	// -//- Roadsign maganer
+	// -//- Roadsign manager
 	//Patch<BYTE>(0x6FE147, rwFILTERLINEAR);
 
 	// Bilinear filtering with mipmaps for weapon icons
@@ -8332,7 +8332,7 @@ void Patch_SA_Steam()
 	// Impounding after busted works
 	Nop(0x446F58, 5);
 
-	// Mouse rotates an airbone car only with Steer with Mouse option enabled
+	// Mouse rotates an airborne car only with Steer with Mouse option enabled
 	bool*	bEnableMouseSteering = *(bool**)0x6DB76D; // CVehicle::m_bEnableMouseSteering
 	Patch<bool*>(0x6E3199, bEnableMouseSteering);
 	Patch<bool*>(0x7046AB, bEnableMouseSteering);
@@ -8365,7 +8365,7 @@ void Patch_SA_Steam()
 	//Patch<BYTE>(0x6FD528, rwFILTERLINEAR);
 	Patch<BYTE>(0x736B30, rwFILTERLINEAR);
 
-	// -//- Roadsign maganer
+	// -//- Roadsign manager
 	//Patch<BYTE>(0x6FE147, rwFILTERLINEAR);
 
 	// Bilinear filtering with mipmaps for weapon icons
@@ -9505,7 +9505,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Reset requested extras if created vehicle has no extras
-	// Fixes eg. lightless taxis
+	// Fixes e.g. lightless taxis
 	try
 	{
 		auto resetComps = pattern( "6A 00 68 ? ? ? ? 57 E8 ? ? ? ? 83 C4 0C 8B C7" ).get_one();
@@ -9555,7 +9555,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	TXN_CATCH();
 
 
-	// Tie handlebar movement to the stering animations on Quadbike, fixes odd animation interpolations at low speeds
+	// Tie handlebar movement to the steering animations on Quadbike, fixes odd animation interpolations at low speeds
 	// By Wesser
 	try
 	{
@@ -9572,7 +9572,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	TXN_CATCH();
 
 
-	// Modify the radio station change anim to only affect the right hand, and disable it on the Kart
+	// Modify the radio station change animation to only affect the right hand, and disable it on the Kart
 	// By Wesser, improved by B1ack_Wh1te
 	try
 	{
@@ -9597,7 +9597,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	TXN_CATCH();
 
 
-	// Fix crosshair issues when sniper rifle is quipped and a photo is taken by a gang member
+	// Fix crosshair issues when sniper rifle is equipped and a photo is taken by a gang member
 	// By Wesser
 	try
 	{
@@ -9685,7 +9685,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 	// Fix PlayerPed replay crashes
 	// 1. Crash when starting a mocap cutscene after playing a replay wearing different clothes to the ones CJ has currently
-	// 2. Crash when playing back a replay with a different motion group anim (fat/muscular/normal) than the current one
+	// 2. Crash when playing back a replay with a different motion group animation (fat/muscular/normal) than the current one
 	try
 	{
 		using namespace ReplayPlayerPedCrashFixes;
@@ -10143,7 +10143,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	}
 
 	// Stop cops holding one handed guns like gangsters, with a tilted stance
-	// Instead, give this behaviour to dealers and criminals
+	// Instead, give this behavior to dealers and criminals
 	// By iFarbod
 	try
 	{
@@ -10444,7 +10444,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		}
 		TXN_CATCH();
 
-		// Rnable WHERE_YOU_FROM_POS_REPLY as a reply to WHERE_YOU_FROM_POS
+		// Enable WHERE_YOU_FROM_POS_REPLY as a reply to WHERE_YOU_FROM_POS
 		try
 		{
 			auto set_conv_state_2 = get_pattern("E8 ? ? ? ? 8B 0D ? ? ? ? 5F", 5);

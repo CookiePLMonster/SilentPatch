@@ -109,7 +109,7 @@ namespace UIScales
 
 
 	// Each static struct here uses scaling constants from a different game class.
-	// They are separated for the bext compatibility with the widescreen fix, and can be used
+	// They are separated for the best compatibility with the widescreen fix, and can be used
 	// directly or as template parameters for PrintString fixes
 
 	// CDarkel - widescreen fixed, scaled by HUD scale
@@ -2352,7 +2352,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		auto setColor_WantedStars = get_pattern("E8 ? ? ? ? DB 05 ? ? ? ? 8D 84 24 ? ? ? ? 59 50 50 D8 0D ? ? ? ? D8 0D ? ? ? ? D9 1C 24 FF 74 24 24");
 
 		// Get SetDropShadowPosition and SetDropColor with their corresponding parameters straight from the armor counter,
-		// to preserve the current behaviour
+		// to preserve the current behavior
 		auto setDropShadow = pattern("6A ? E8 ? ? ? ? 59 8D 8C 24 ? ? ? ? 68 ? ? ? ? 6A ? 6A ? 6A ? E8 ? ? ? ? 8D 84 24 ? ? ? ? 50 E8").get_one();
 
 

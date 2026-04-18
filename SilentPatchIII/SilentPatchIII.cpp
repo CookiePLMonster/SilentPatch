@@ -133,7 +133,7 @@ namespace UIScales
 
 
 	// Each static struct here uses scaling constants from a different game class.
-	// They are separated for the bext compatibility with the widescreen fix, and can be used
+	// They are separated for the best compatibility with the widescreen fix, and can be used
 	// directly or as template parameters for PrintString fixes
 
 	// CDarkel - widescreen fixed, scaled by HUD scale
@@ -1470,7 +1470,7 @@ namespace FixedLineWraps
 }
 
 
-// ============= Rsstore the 'brakelights' dummy as it's vanished from the III PC code =============
+// ============= Restore the 'brakelights' dummy as it's vanished from the III PC code =============
 namespace BrakelightsDummy
 {
 	struct RwObjectNameIdAssocation
@@ -2276,7 +2276,7 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 	TXN_CATCH();
 
 
-	// Rsstore the 'brakelights' dummy as it's vanished from the III PC code
+	// Restore the 'brakelights' dummy as it's vanished from the III PC code
 	try
 	{
 		using namespace BrakelightsDummy;
@@ -2832,7 +2832,7 @@ void Patch_III_Common()
 
 
 		// For NICK007J
-		// Uncomment this to get rid of "treadable hack" in CCarCtrl::PickNextNodeToChaseCar (to mirror VC behaviour)
+		// Uncomment this to get rid of "treadable hack" in CCarCtrl::PickNextNodeToChaseCar (to mirror VC behavior)
 		InjectHook( funcAddr + 0x2A, funcAddr + 0x182, HookType::Jump );
 	}
 	TXN_CATCH();
