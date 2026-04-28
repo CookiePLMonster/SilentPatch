@@ -7872,6 +7872,13 @@ void Patch_SA_10(HINSTANCE hInstance)
 		SetCentreSize = reinterpret_cast<decltype(SetCentreSize)>(0x7194E0);
 		InterceptCall(0x4E9F7A, orgSetDropColor, SetDropColor_AndCentreSize);
 	}
+
+
+	// Revert leftover GTA III code making Securicars very fragile against the player
+	if (MemEquals(0x6A806F, { 0x75 }))
+	{
+		Patch<uint8_t>(0x6A806F, 0xEB);
+	}
 }
 
 void Patch_SA_11()
@@ -10564,6 +10571,15 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		SetCentreSize = reinterpret_cast<decltype(SetCentreSize)>(set_centre_size);
 		InterceptCall(set_drop_color, orgSetDropColor, SetDropColor_AndCentreSize);
+	}
+	TXN_CATCH();
+
+
+	// Revert leftover GTA III code making Securicars very fragile against the player
+	try
+	{
+		auto vehicle_damage = get_pattern("75 1C 8B 86 ? ? ? ? 85 C0");
+		Patch<uint8_t>(vehicle_damage, 0xEB);
 	}
 	TXN_CATCH();
 }

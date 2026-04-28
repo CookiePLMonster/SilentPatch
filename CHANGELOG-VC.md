@@ -72,6 +72,7 @@ All the remaining, non-critical fixes.
 * SWAT, FBI, and Army standing by the police roadblocks now equip their weapons.
 * Fixed a bug where criminals mugging other peds would immediately cancel their objective.
 * Shadows and lights now cast correctly on map objects rotated along the X axis.
+* Securicars are now tougher when damaged by the player.
 * ⚙️ Fixed siren corona placements in Police, Firetruck, Ambulance, Enforcer, Vice Cheetah, and FBI Washington.
 * ⚙️ Added siren corona to FBI Washington.
 * ⚙️ Fixed taxi light corona placement for Taxi.

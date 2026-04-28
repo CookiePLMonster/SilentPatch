@@ -3661,6 +3661,15 @@ void Patch_VC_Common()
 		InjectHook(cast_shadow_entity.get<void>(19), cast_shadow_entity_end, HookType::Jump);
 	}
 	TXN_CATCH();
+
+
+	// Revert leftover GTA III code making Securicars very fragile against the player
+	try
+	{
+		auto vehicle_damage = get_pattern("66 81 F9 ? ? 75 ? 8B 83", 5);
+		Patch<uint8_t>(vehicle_damage, 0xEB);
+	}
+	TXN_CATCH();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
