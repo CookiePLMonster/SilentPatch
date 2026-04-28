@@ -4281,6 +4281,20 @@ namespace CastShadowEntityFix
 }
 
 
+// ============= Fix script draws affecting the line wrapping of a radio station name display =============
+namespace RadioStationDisplayWidth
+{
+	static void (*SetCentreSize)(float x);
+
+	static void (*orgSetDropColor)(void* color);
+	static void SetDropColor_AndCentreSize(void* color)
+	{
+		orgSetDropColor(color);
+		SetCentreSize(static_cast<float>(RsGlobal->MaximumWidth));
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -7849,6 +7863,15 @@ void Patch_SA_10(HINSTANCE hInstance)
 		Nop(0x7098C7, 3);
 		Nop(0x7098D2, 3);
 	}
+
+
+	// Fix script draws affecting the line wrapping of a radio station name display
+	{
+		using namespace RadioStationDisplayWidth;
+
+		SetCentreSize = reinterpret_cast<decltype(SetCentreSize)>(0x7194E0);
+		InterceptCall(0x4E9F7A, orgSetDropColor, SetDropColor_AndCentreSize);
+	}
 }
 
 void Patch_SA_11()
@@ -10527,6 +10550,20 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InjectHook(cast_shadow_entity.get<void>(10), cast_shadow_entity_end.get<void>(0), HookType::Jump);
 
 		Nop(cast_shadow_entity_end.get<void>(6), 6);
+	}
+	TXN_CATCH();
+
+
+	// Fix script draws affecting the line wrapping of a radio station name display
+	try
+	{
+		using namespace RadioStationDisplayWidth;
+
+		auto set_drop_color = get_pattern("E8 ? ? ? ? 83 C4 04 83 7E 6C 00");
+		auto set_centre_size = ReadCallFrom(get_pattern("E8 ? ? ? ? 0F B6 56 FB"));
+
+		SetCentreSize = reinterpret_cast<decltype(SetCentreSize)>(set_centre_size);
+		InterceptCall(set_drop_color, orgSetDropColor, SetDropColor_AndCentreSize);
 	}
 	TXN_CATCH();
 }

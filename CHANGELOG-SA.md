@@ -141,6 +141,7 @@ All the remaining, non-critical fixes.
 * ➕ 'Good Citizen Bonus' has been re-enabled, alongside a previously unused voice line of cops thanking CJ for his help.
 * ➕ Drugged up GSF members will now correctly play a dialogue line refusing to join CJ's gang when the player tries to recruit them.
 * ➕ Shadows and lights now cast correctly on map objects rotated along the X axis.
+* ➕ Script draws can no longer cause the radio station name text to wrap.
 * Detached vehicle parts will now keep the same color and lighting as the vehicle they came from.
 * Detached vehicle parts are now rendered from both sides.
 * Resolved single-pixel wide seams showing on the Map screen with Anti-Aliasing enabled.
