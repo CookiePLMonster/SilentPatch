@@ -139,6 +139,7 @@ All the remaining, non-critical fixes.
 * ➕ Hostile gangsters now play extra taunt lines towards CJ when attacking him.
 * ➕ Hostile gangsters now further respond to CJ's positive response to a 'Where are you from' question.
 * ➕ 'Good Citizen Bonus' has been re-enabled, alongside a previously unused voice line of cops thanking CJ for his help.
+* ➕ Drugged up GSF members will now correctly play a dialogue line refusing to join CJ's gang when the player tries to recruit them.
 * ➕ Shadows and lights now cast correctly on map objects rotated along the X axis.
 * Detached vehicle parts will now keep the same color and lighting as the vehicle they came from.
 * Detached vehicle parts are now rendered from both sides.

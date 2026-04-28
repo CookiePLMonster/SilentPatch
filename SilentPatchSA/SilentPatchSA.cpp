@@ -4047,6 +4047,16 @@ namespace SpeechSystemFixes
 		return orgPedSay_DismissReply(ped, Phrase, StartTimeDelay, Probability, bOverideSilence, bForceAudible, bFrontEnd);
 	}
 
+	static void* orgPedSay_MakeThisPedJoinOurGroup_DruggedIgnore;
+	static __declspec(naked) void PedSay_MakeThisPedJoinOurGroup_DruggedIgnore()
+	{
+		_asm
+		{
+			mov		ecx, edi
+			jmp		[orgPedSay_MakeThisPedJoinOurGroup_DruggedIgnore]
+		}
+	}
+
 	namespace Patches
 	{
 		static void PatchGlobalSpeechContexts(int16_t (*gSpeechContextLookup)[8])
@@ -7800,6 +7810,9 @@ void Patch_SA_10(HINSTANCE hInstance)
 		WriteOffsetValue(0x43BC13 + 2, 0x43BECD);
 		WriteOffsetValue(0x43BE14 + 1, 0x43BECD);
 		InterceptCall(0x43C0C7, orgPedSay_DismissReply, PedSay_DismissReply_WhereYouFrom);
+
+		// Play DRUGGED_IGNORE on the homie, not on CJ, when they're refusing to be recruited
+		InterceptCall(0x60C87A, orgPedSay_MakeThisPedJoinOurGroup_DruggedIgnore, PedSay_MakeThisPedJoinOurGroup_DruggedIgnore);
 	}
 
 
@@ -10460,6 +10473,14 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			}
 
 			InterceptCall(ped_say_reply, orgPedSay_DismissReply, PedSay_DismissReply_WhereYouFrom);
+		}
+		TXN_CATCH();
+
+		// Play DRUGGED_IGNORE on the homie, not on CJ, when they're refusing to be recruited
+		try
+		{
+			auto ped_say_drugged_ignore = get_pattern("6A 52 E8 ? ? ? ? 5F", 2);
+			InterceptCall(ped_say_drugged_ignore, orgPedSay_MakeThisPedJoinOurGroup_DruggedIgnore, PedSay_MakeThisPedJoinOurGroup_DruggedIgnore);
 		}
 		TXN_CATCH();
 	}
