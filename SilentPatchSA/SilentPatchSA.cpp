@@ -4295,6 +4295,27 @@ namespace RadioStationDisplayWidth
 }
 
 
+// ============= Intercept binary IPL car generator spawns to fix a Beagle spawn in Fort Carson =============
+namespace FortCarsonBeagle
+{
+	// This is technically an asset bug, but we can do a binary match on the exact spawning coordinates of that broken Beagle
+	// and fix it up with zero risk of breaking other mods.
+	static void (*orgLoadCarGenerator)(void* pFileCarGen, void* level);
+	static void LoadCarGenerator_FixupBeagle(void* pFileCarGen, void* level)
+	{
+		// XYZ + rotation + modelID of that Beagle
+		static const uint8_t beagleCargen[] = { 0xDE, 0xD3, 0x1A, 0xC2, 0x66, 0x66, 0x87, 0x44, 0x63, 0x7F, 0x99, 0x41, 0xD5, 0xB8, 0xB2, 0x3D, 0xFF, 0x01, 0x00, 0x00 };
+		if (memcmp(beagleCargen, pFileCarGen, sizeof(beagleCargen)) == 0)
+		{
+			int32_t* modelID = reinterpret_cast<int32_t*>(static_cast<char*>(pFileCarGen) + 0x10);
+			// Replace it with a BMX
+			*modelID = 481;
+		}
+		orgLoadCarGenerator(pFileCarGen, level);
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -7879,6 +7900,14 @@ void Patch_SA_10(HINSTANCE hInstance)
 	{
 		Patch<uint8_t>(0x6A806F, 0xEB);
 	}
+
+
+	// Intercept binary IPL car generator spawns to fix a Beagle spawn in Fort Carson
+	{
+		using namespace FortCarsonBeagle;
+
+		InterceptCall(0x406267, orgLoadCarGenerator, LoadCarGenerator_FixupBeagle);
+	}
 }
 
 void Patch_SA_11()
@@ -10580,6 +10609,17 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	{
 		auto vehicle_damage = get_pattern("75 1C 8B 86 ? ? ? ? 85 C0");
 		Patch<uint8_t>(vehicle_damage, 0xEB);
+	}
+	TXN_CATCH();
+
+
+	// Intercept binary IPL car generator spawns to fix a Beagle spawn in Fort Carson
+	try
+	{
+		using namespace FortCarsonBeagle;
+
+		auto load_car_generator = get_pattern("E8 ? ? ? ? 0F BF 57 10");
+		InterceptCall(load_car_generator, orgLoadCarGenerator, LoadCarGenerator_FixupBeagle);
 	}
 	TXN_CATCH();
 }
