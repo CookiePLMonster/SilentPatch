@@ -73,6 +73,7 @@ All the remaining, non-critical fixes.
 * Fixed a bug where criminals mugging other peds would immediately cancel their objective.
 * Shadows and lights now cast correctly on map objects rotated along the X axis.
 * Securicars are now tougher when damaged by the player.
+* Radar blips now use bilinear filtering also in the Blips Only mode.
 * ⚙️ Fixed siren corona placements in Police, Firetruck, Ambulance, Enforcer, Vice Cheetah, and FBI Washington.
 * ⚙️ Added siren corona to FBI Washington.
 * ⚙️ Fixed taxi light corona placement for Taxi.

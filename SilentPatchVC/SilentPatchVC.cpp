@@ -3670,6 +3670,15 @@ void Patch_VC_Common()
 		Patch<uint8_t>(vehicle_damage, 0xEB);
 	}
 	TXN_CATCH();
+
+
+	// Set bilinear filtering on map blips so they are bilinear filtered also when the radar is off
+	try
+	{
+		auto set_texture_filter_blips = get_pattern("6A 01 6A 09 E8 ? ? ? ? 59 59 E8", 1);
+		Patch<uint8_t>(set_texture_filter_blips, rwFILTERLINEAR);
+	}
+	TXN_CATCH();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
