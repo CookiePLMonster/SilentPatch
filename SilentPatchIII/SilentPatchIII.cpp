@@ -1795,6 +1795,19 @@ namespace CastShadowEntityFix
 }
 
 
+// ============= Stop the mission audio on CLEAR_MISSION_AUDIO, like in Vice City =============
+namespace ClearMissionAudioFix
+{
+	static void** pSampleManager;
+	static void (__thiscall *StopStreamedFile)(void*, uint8_t fileNo);
+
+	static void StopStreamedFileStub()
+	{
+		StopStreamedFile(*pSampleManager, 1);
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -3431,6 +3444,27 @@ void Patch_III_Common()
 		InjectHook(cast_shadow_entity.get<void>(14), TransformShadowPoint3D, HookType::Call);
 		Patch(cast_shadow_entity.get<void>(19), { 0x59, 0x41 }); // pop ecx / inc ecx
 		InjectHook(cast_shadow_entity.get<void>(21), cast_shadow_entity_end, HookType::Jump);
+	}
+	TXN_CATCH();
+
+
+	// Stop the mission audio on CLEAR_MISSION_AUDIO, like in Vice City
+	try
+	{
+		using namespace ClearMissionAudioFix;
+
+		// Because of how small the space after cAudioManager::ClearMissionAudio is,
+		// we need to trampoline our call directly before the function (if possible).
+		auto clear_mission_audio_epilogue = get_pattern("C6 81 ? ? ? ? 01 C7 81 ? ? ? ? 00 00 00 00 C3", 0x11);
+		auto clear_mission_audio_prologue = get_pattern("00 00 00 00 00 80 39 00 74 37");
+
+		auto sample_manager_ptr = pattern("B9 ? ? ? ? 6A 01 E8 ? ? ? ? C6 05").get_one();
+
+		pSampleManager = sample_manager_ptr.get<void*>(1);
+		ReadCall(sample_manager_ptr.get<void*>(7), StopStreamedFile);
+
+		Patch(clear_mission_audio_epilogue, { 0xEB, 0xBD });
+		InjectHook(clear_mission_audio_prologue, StopStreamedFileStub, HookType::Jump);
 	}
 	TXN_CATCH();
 }
