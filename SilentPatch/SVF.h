@@ -11,6 +11,9 @@ namespace SVF
 
 #if _GTA_III || _GTA_VC
 		TAXI_LIGHT, // Corrected light placement for Taxi
+#endif
+
+#if _GTA_III
 		SIT_IN_BOAT, // Sitting animation in the boat, used in Speeder
 #endif
 
@@ -18,6 +21,7 @@ namespace SVF
 		FBI_RANCHER_SIREN,
 		FBI_WASHINGTON_SIREN,
 		VICE_CHEETAH_SIREN,
+		MOVING_BOAT_RADAR,
 
 		DRAW_BACKFACES, // Not vehicle specific, but it'll do
 		DONT_DRAW_BACKFACES,

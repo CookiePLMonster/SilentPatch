@@ -41,6 +41,8 @@ public:
 		{ m_pBombOwner = owner; }
 
 	int32_t GetOneShotOwnerID_SilentPatch() const;
+
+	static bool HasMovingBoatRadar(int32_t modelID);
 };
 
 class CAutomobile : public CVehicle

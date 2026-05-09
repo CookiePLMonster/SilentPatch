@@ -2643,6 +2643,46 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	}
 	TXN_CATCH();
 
+
+	// Add support for boat extras (Rio has one) + 'boat_moving_high' typo from Tropic
+	try
+	{
+		// Only patch the hierarchy if no other mod does it
+		RwObjectNameIdAssocation** vehicleDescs = *get_pattern<RwObjectNameIdAssocation**>("81 C5 ? ? ? ? C6 43 48 00", 2);
+		if (ModCompat::Utils::GetModuleHandleFromAddress(vehicleDescs) == hGameModule)
+		{
+			RwObjectNameIdAssocation* orgBoatIds = vehicleDescs[1];
+			if (ModCompat::Utils::GetModuleHandleFromAddress(orgBoatIds) == hGameModule)
+			{
+				// This vector is "null terminated" with an empty entry
+				static std::vector<RwObjectNameIdAssocation> boatIds;
+
+				// Copy the original hierarchy, then add ours
+				while (orgBoatIds->pName != nullptr)
+				{
+					boatIds.push_back(*orgBoatIds++);
+				}
+
+				// Typo present on Tropic
+				boatIds.push_back({"boat_moving_high", 1, 0});
+
+				// Add extras
+				const uint32_t flags = 0x601; // VEHICLE_FLAG_DRAWLAST | VEHICLE_FLAG_COMP | CLUMP_FLAG_NO_HIERID
+				boatIds.push_back({"extra1", 0, flags});
+				boatIds.push_back({"extra2", 0, flags});
+				boatIds.push_back({"extra3", 0, flags});
+				boatIds.push_back({"extra4", 0, flags});
+				boatIds.push_back({"extra5", 0, flags});
+				boatIds.push_back({"extra6", 0, flags});
+
+				boatIds.push_back({});
+
+				Patch(&vehicleDescs[1], boatIds.data());
+			}
+		}
+	}
+	TXN_CATCH();
+
 	FLAUtils::Init(moduleList);
 }
 
@@ -3704,6 +3744,21 @@ void Patch_VC_Common()
 	{
 		auto set_texture_filter_blips = get_pattern("6A 01 6A 09 E8 ? ? ? ? 59 59 E8", 1);
 		Patch<uint8_t>(set_texture_filter_blips, rwFILTERLINEAR);
+	}
+	TXN_CATCH();
+
+
+	// Animate boat_moving_hi on Tropic
+	try
+	{
+		auto moving_radar_id_check = pattern("3D ? ? ? ? 74 0B 3D ? ? ? ? 0F 85 ? ? ? ? 8B 83").get_one();
+
+		// push eax \ call CVehicle::HasMovingBoatRadar \ add esp, 4 \ test al, al \ nop
+		Patch<uint8_t>(moving_radar_id_check.get<void>(), 0x50);
+		InjectHook(moving_radar_id_check.get<void>(1), &CVehicle::HasMovingBoatRadar, HookType::Call);
+		Patch(moving_radar_id_check.get<void>(6), { 0x83, 0xC4, 0x04, 0x84, 0xC0 });
+		Nop(moving_radar_id_check.get<void>(11), 1);
+		Patch<uint8_t>(moving_radar_id_check.get<void>(12 + 1), 0x84); // jnz -> jz
 	}
 	TXN_CATCH();
 }

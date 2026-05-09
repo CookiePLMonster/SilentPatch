@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "VehicleVC.h"
+#include "SVF.h"
 
 int32_t CVehicle::GetOneShotOwnerID_SilentPatch() const
 {
@@ -12,4 +13,9 @@ int32_t CVehicle::GetOneShotOwnerID_SilentPatch() const
 
 	// Fallback
 	return m_audioEntityId;
+}
+
+bool CVehicle::HasMovingBoatRadar(int32_t modelID)
+{
+	return SVF::ModelHasFeature(modelID, SVF::Feature::MOVING_BOAT_RADAR);
 }

@@ -74,6 +74,8 @@ All the remaining, non-critical fixes.
 * Shadows and lights now cast correctly on map objects rotated along the X axis.
 * Securicars are now tougher when damaged by the player.
 * Radar blips now use bilinear filtering also in the Blips Only mode.
+* Extra parts now work correctly on boats. This makes Rio's canopy an optional part.
+* Tropic's radar is now animated.
 * ⚙️ Fixed siren corona placements in Police, Firetruck, Ambulance, Enforcer, Vice Cheetah, and FBI Washington.
 * ⚙️ Added siren corona to FBI Washington.
 * ⚙️ Fixed taxi light corona placement for Taxi.

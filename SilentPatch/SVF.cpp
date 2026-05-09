@@ -12,6 +12,9 @@ namespace SVF
 		constexpr std::pair< const char*, Feature > features[] = {
 #if _GTA_III || _GTA_VC
 			{ "TAXI_LIGHT", Feature::TAXI_LIGHT },
+#endif
+
+#if _GTA_III
 			{ "SIT_IN_BOAT", Feature::SIT_IN_BOAT },
 #endif
 
@@ -19,6 +22,7 @@ namespace SVF
 			{ "FBI_RANCHER_SIREN", Feature::FBI_RANCHER_SIREN },
 			{ "FBI_WASHINGTON_SIREN", Feature::FBI_WASHINGTON_SIREN },
 			{ "VICE_CHEETAH_SIREN", Feature::VICE_CHEETAH_SIREN },
+			{ "MOVING_BOAT_RADAR", Feature::MOVING_BOAT_RADAR },
 			{ "DRAW_BACKFACES", Feature::DRAW_BACKFACES },
 #endif
 
@@ -71,6 +75,10 @@ namespace SVF
 		_registerFeatureInternal( 150, Feature::TAXI_LIGHT ),
 		_registerFeatureInternal( 220, Feature::FBI_RANCHER_SIREN ),
 		_registerFeatureInternal( 236, Feature::VICE_CHEETAH_SIREN ),
+		_registerFeatureInternal( 160, Feature::MOVING_BOAT_RADAR ),
+		_registerFeatureInternal( 183, Feature::MOVING_BOAT_RADAR ),
+		_registerFeatureInternal( 184, Feature::MOVING_BOAT_RADAR ), // Missing in the original game
+
 #elif _GTA_SA
 		_registerFeatureInternal( 432, Feature::RHINO_WHEELS ),
 		_registerFeatureInternal( 511, Feature::EXTRA_AILERONS1 ),

@@ -1473,13 +1473,6 @@ namespace FixedLineWraps
 // ============= Restore the 'brakelights' dummy as it's vanished from the III PC code =============
 namespace BrakelightsDummy
 {
-	struct RwObjectNameIdAssocation
-	{
-		const char*	pName;
-		int32_t		hierId;
-		uint32_t	flags;
-	};
-
 	// This vector is "null terminated" with an empty entry
 	std::vector<RwObjectNameIdAssocation> carIds;
 

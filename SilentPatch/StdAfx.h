@@ -11,3 +11,10 @@
 #include "Utils/MemoryMgr.h"
 #include "MemoryMgr.GTA.h"
 #include "Utils/Patterns.h"
+
+struct RwObjectNameIdAssocation
+{
+	const char*	pName;
+	int32_t		hierId;
+	uint32_t	flags;
+};
