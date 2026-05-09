@@ -2616,6 +2616,33 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	}
 	TXN_CATCH();
 
+
+	// "Property" map blip
+	if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ShowPropertyBlips", -1, wcModulePath); INIoption != -1) try
+	{
+		// Fix inconsistent display settings + toggleability via the INI file/debug menu
+		auto draw_entity_blip_high_priority = get_pattern("66 83 BD ? ? ? ? 19 75 22 80 3D", 8);
+		auto exclude_entity_blip_normal_priority = get_pattern("66 83 F8 19 74 28", 4);
+		static auto property_blip_ptr = get_pattern("66 83 F8 19 74 2E", 3);
+
+		Patch<uint8_t>(draw_entity_blip_high_priority, 0xEB); // Disable the code paths
+		Nop(exclude_entity_blip_normal_priority, 2);
+
+		if (INIoption != 0)
+		{
+			Patch<int8_t>(property_blip_ptr, -1);
+		}
+
+		if (bHasDebugMenu)
+		{
+			static bool bIconEnabled = INIoption != 0;
+			DebugMenuAddVar("SilentPatch", "Show property blips", &bIconEnabled, [] {
+				Memory::VP::Patch<int8_t>(property_blip_ptr, bIconEnabled ? -1 : 0x19);
+			});
+		}
+	}
+	TXN_CATCH();
+
 	FLAUtils::Init(moduleList);
 }
 
