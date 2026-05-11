@@ -1145,7 +1145,7 @@ namespace Credits
 		PrintCreditSpace( 1.5f, pos );
 
 		{
-			wchar_t spText[] = { 'A'_xv, 'N'_xv, 'D'_xv, '\0'_xv };
+			wchar_t spText[] = { 'A'_xv, 'N'_xv, 'D'_xv, '\0'_xv, '\0'_xv };
 
 			for ( auto& ch : spText ) ch = xvChar(ch);
 			PrintCreditText( 1.1f, 0.8f, spText, pos, timeOffset );
@@ -1155,7 +1155,7 @@ namespace Credits
 
 		{
 			wchar_t spText[] = { 'A'_xv, 'D'_xv, 'R'_xv, 'I'_xv, 'A'_xv, 'N'_xv, ' '_xv, '\''_xv, 'S'_xv, 'I'_xv, 'L'_xv, 'E'_xv, 'N'_xv, 'T'_xv, '\''_xv, ' '_xv,
-				'Z'_xv, 'D'_xv, 'A'_xv, 'N'_xv, 'O'_xv, 'W'_xv, 'I'_xv, 'C'_xv, 'Z'_xv, '\0'_xv };
+				'Z'_xv, 'D'_xv, 'A'_xv, 'N'_xv, 'O'_xv, 'W'_xv, 'I'_xv, 'C'_xv, 'Z'_xv, '\0'_xv, '\0'_xv };
 
 			for ( auto& ch : spText ) ch = xvChar(ch);
 			PrintCreditText( 1.1f, 1.1f, spText, pos, timeOffset );
