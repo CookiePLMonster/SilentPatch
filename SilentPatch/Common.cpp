@@ -360,6 +360,17 @@ namespace Common {
 				}
 				TXN_CATCH();
 			}
+
+
+			// Fix PrintString over-reading strings by one character
+			try
+			{
+				auto print_string = get_pattern("66 83 7F 02 00 75 0B 66 83 F8 20");
+
+				// Swap the order of cmp word ptr [edi+2], 0 and cmp ax, 20h
+				Patch(print_string, { 0x66, 0x83, 0xF8, 0x20, 0x75, 0x0C, 0x66, 0x83, 0x7F, 0x02, 0x00 });
+			}
+			TXN_CATCH();
 		}
 
 		void III_VC_SetDelayedPatchesFunc( void(*func)() )
