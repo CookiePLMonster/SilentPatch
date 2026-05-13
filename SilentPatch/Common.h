@@ -13,6 +13,5 @@ namespace Common
 	{
 		void III_VC_DelayedCommon( bool hasDebugMenu, const wchar_t* iniPath );
 		void III_VC_Common();
-		void III_VC_SetDelayedPatchesFunc( void(*func)() );
 	}
 };

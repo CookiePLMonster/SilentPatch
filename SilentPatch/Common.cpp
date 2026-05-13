@@ -154,10 +154,10 @@ namespace ExtraCompSpecularity
 }
 
 // ============= Delayed patches =============
+extern void InjectDelayedPatches();
 namespace DelayedPatches
 {
 	static bool delayedPatchesDone = false;
-	void (*Func)();
 
 	static BOOL (*RsEventHandler)(int, void*);
 	static void (WINAPI **OldSetPreference)(int a, int b);
@@ -166,7 +166,7 @@ namespace DelayedPatches
 		(*OldSetPreference)(a, b);
 		if ( !std::exchange(delayedPatchesDone, true) )
 		{
-			if ( Func != nullptr ) Func();
+			InjectDelayedPatches();
 			// So we don't have to revert patches
 			HMODULE		hDummyHandle;
 			GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, TEXT(""), &hDummyHandle);
@@ -178,9 +178,9 @@ namespace DelayedPatches
 	{
 		if ( RsEventHandler(a, b) )
 		{
-			if ( !std::exchange(delayedPatchesDone, true) && Func != nullptr )
+			if ( !std::exchange(delayedPatchesDone, true) )
 			{
-				Func();
+				InjectDelayedPatches();
 			}
 			return TRUE;
 		}
@@ -371,11 +371,6 @@ namespace Common {
 				Patch(print_string, { 0x66, 0x83, 0xF8, 0x20, 0x75, 0x0C, 0x66, 0x83, 0x7F, 0x02, 0x00 });
 			}
 			TXN_CATCH();
-		}
-
-		void III_VC_SetDelayedPatchesFunc( void(*func)() )
-		{
-			DelayedPatches::Func = std::move(func);
 		}
 
 		void III_VC_DelayedCommon( bool /*hasDebugMenu*/, const wchar_t* wcModulePath )

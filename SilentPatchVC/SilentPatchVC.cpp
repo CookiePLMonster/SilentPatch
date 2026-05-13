@@ -2686,7 +2686,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	FLAUtils::Init(moduleList);
 }
 
-void InjectDelayedPatches_VC_Common()
+void InjectDelayedPatches()
 {
 	auto Protect = ScopedUnprotect::SectionOrFullModule(GetModuleHandle(nullptr), ".text");
 
@@ -3788,8 +3788,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			Patch_VC_Common();
 			Common::Patches::III_VC_Common();
 			Common::Patches::DDraw_Common();
-
-			Common::Patches::III_VC_SetDelayedPatchesFunc( InjectDelayedPatches_VC_Common );
 		}
 
 		Common::Patches::FixRwcseg_Patterns();
