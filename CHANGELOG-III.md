@@ -15,6 +15,7 @@ Compatibility issues, crashes, progression blockers.
 * Path to the User Files directory is now obtained using a dedicated API call rather than a legacy registry entry, future-proofing the games more.
 * Fixed an issue that would cause games to freeze if III/VC/SA were running at the same time.
 * Fixed a crash after playing the game for a short amount of time without a sound card.
+* Fixed a rare, random crash that could occur when the game displayed texts added by other mods outside of the GXT file.
 
 ## Other fixes
 All the remaining, non-critical fixes.

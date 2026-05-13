@@ -15,6 +15,7 @@ Compatibility issues, crashes, progression blockers.
 * The "<samp>Cannot find enough available video memory</samp>" error showing on some computers has been resolved.
 * Path to the User Files directory is now obtained using a dedicated API call rather than a legacy registry entry, future-proofing the games more.
 * Fixed an issue that would cause games to freeze if III/VC/SA were running at the same time.
+* Fixed a rare, random crash that could occur when the game displayed texts added by other mods outside of the GXT file.
 
 ## Other fixes
 All the remaining, non-critical fixes.
