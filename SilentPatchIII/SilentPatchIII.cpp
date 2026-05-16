@@ -3467,6 +3467,25 @@ void Patch_III_Common()
 		InjectHook(clear_mission_audio_prologue, StopStreamedFileStub, HookType::Jump);
 	}
 	TXN_CATCH();
+
+
+	// Display the actual number of hidden packages in Stats instead of a faux percentage value
+	try
+	{
+		auto collected_packages = pattern("89 6C 24 ? DB 44 24 ? DB 83 ? ? ? ? D8 0D ? ? ? ? DE F1").get_one();
+		auto total_packages = pattern("C7 44 24 ? 64 00 00 00 DB 5C 24").get_one();
+
+		// Save m_nTotalPackages on the stack instead of hardcoded 100
+		Patch<uint8_t>(collected_packages.get<void>(3), *total_packages.get<uint8_t>(3));
+
+		// Make st(0) hold just m_nCollectedPackages
+		Nop(collected_packages.get<void>(4), 4);
+		Nop(collected_packages.get<void>(14), 8);
+
+		// Total packages was already set above
+		Nop(total_packages.get<void>(0), 8);
+	}
+	TXN_CATCH();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

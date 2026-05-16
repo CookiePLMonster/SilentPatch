@@ -80,6 +80,7 @@ All the remaining, non-critical fixes.
 * Flare effects now scale to resolution correctly.
 * Shadows and lights now cast correctly on map objects rotated along the X axis.
 * Mission audio now stops immediately when it's cleared from the script.
+* The Stats menu now displays the actual number of Hidden Packages, instead of displaying a percentage collected + "out of 100". This fixes the stat display for mods that remove or add additional Hidden Packages.
 * ⚙️ Fixed siren corona placements in Firetruck, Ambulance, and Enforcer.
 * ⚙️ Fixed taxi light corona placement for Taxi.
 * ⚙️ Fixed police chopper's searchlight placement.

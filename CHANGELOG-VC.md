@@ -77,6 +77,7 @@ All the remaining, non-critical fixes.
 * Radar blips now use bilinear filtering also in the Blips Only mode.
 * Extra parts now work correctly on boats. This makes Rio's canopy an optional part.
 * Tropic's radar is now animated.
+* The Stats menu now displays the actual number of Hidden Packages, instead of displaying a percentage collected + "out of 100". This fixes the stat display for mods that remove or add additional Hidden Packages.
 * ⚙️ Fixed siren corona placements in Police, Firetruck, Ambulance, Enforcer, Vice Cheetah, and FBI Washington.
 * ⚙️ Added siren corona to FBI Washington.
 * ⚙️ Fixed taxi light corona placement for Taxi.
