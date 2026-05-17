@@ -5778,8 +5778,11 @@ BOOL InjectDelayedPatches_10()
 		// Make the game use the desktop refresh rate instead of a fixed 60Hz
 		if (GetPrivateProfileIntW(L"SilentPatch", L"UseDesktopRefreshRate", 0, wcModulePath) != 0)
 		{
-			// xor eax, eax \ retn
-			Patch(0x7460A0, { 0x31, 0xC0, 0xC3 });
+			if (MemEquals(0x7460A0, { 0x83, 0xEC, 0x10 }))
+			{
+				// xor eax, eax \ retn
+				Patch(0x7460A0, { 0x31, 0xC0, 0xC3 });
+			}
 		}
 
 
@@ -6462,7 +6465,7 @@ BOOL InjectDelayedPatches_NewBinaries()
 		// Make the game use the desktop refresh rate instead of a fixed 60Hz
 		if (GetPrivateProfileIntW(L"SilentPatch", L"UseDesktopRefreshRate", 0, wcModulePath) != 0) try
 		{
-			auto get_best_refresh_rate = get_pattern("56 57 6A 20 E8", -7);
+			auto get_best_refresh_rate = get_pattern("55 8B EC 83 EC 14 53 56 57 6A 20");
 
 			// xor eax, eax \ retn
 			Patch(get_best_refresh_rate, { 0x31, 0xC0, 0xC3 });
