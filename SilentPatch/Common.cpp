@@ -381,7 +381,7 @@ namespace Common {
 			ExtraCompSpecularity::ReadExtraCompSpecularityExceptions(wcModulePath);
 
 			// Corrected taxi light placement for Taxi
-			if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableVehicleCoronaFixes", -1, wcModulePath) == 1 ) try
+			if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableVehicleCoronaFixes", 0, wcModulePath) != 0 ) try
 			{
 				using namespace TaxiCoronaFix;
 

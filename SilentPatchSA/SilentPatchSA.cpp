@@ -5229,7 +5229,7 @@ BOOL InjectDelayedPatches_10()
 			}
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", 0, wcModulePath) != 0 )
 		{
 			using namespace ScriptFixes;
 
@@ -5247,7 +5247,7 @@ BOOL InjectDelayedPatches_10()
 			HookEach_SCMFixes(wipeLocalVars, InterceptCall);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", -1, wcModulePath) == 1 )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", 0, wcModulePath) != 0 )
 		{
 			// Skip the damn intro splash
 			Patch<WORD>(AddressByRegion_10<DWORD>(0x748AA8), 0x3DEB);
@@ -5269,7 +5269,7 @@ BOOL InjectDelayedPatches_10()
 
 			}
 
-			if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == 1 )
+			if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", 0, wcModulePath) != 0 )
 			{
 				// We're on 1.0 - make texts smaller
 				ToggleSteamTexts( true );
@@ -5835,7 +5835,7 @@ BOOL InjectDelayedPatches_11()
 
 		ReadRotorFixExceptions(wcModulePath);
 
-		if (!bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == 1)
+		if (!bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", 0, wcModulePath) != 0)
 		{
 			using namespace SunSizeHack;
 
@@ -5883,7 +5883,7 @@ BOOL InjectDelayedPatches_11()
 			}
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", 0, wcModulePath) != 0 )
 		{
 			using namespace ScriptFixes;
 
@@ -5901,13 +5901,13 @@ BOOL InjectDelayedPatches_11()
 			HookEach_SCMFixes(wipeLocalVars, InterceptCall);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", -1, wcModulePath) == 1 )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", 0, wcModulePath) != 0 )
 		{
 			// Skip the damn intro splash
 			Patch<WORD>(AddressByRegion_11<DWORD>(0x749388), 0x62EB);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == 1 )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", 0, wcModulePath) != 0 )
 		{
 			// We're on 1.01 - make texts smaller
 			Patch<const void*>(0x58CB57, &fSteamSubtitleSizeY);
@@ -6027,7 +6027,7 @@ BOOL InjectDelayedPatches_Steam()
 
 		ReadRotorFixExceptions(wcModulePath);
 
-		if (!bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == 1)
+		if (!bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", 0, wcModulePath) != 0)
 		{
 			using namespace SunSizeHack;
 
@@ -6076,7 +6076,7 @@ BOOL InjectDelayedPatches_Steam()
 			}
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", 0, wcModulePath) != 0 )
 		{
 			using namespace ScriptFixes;
 
