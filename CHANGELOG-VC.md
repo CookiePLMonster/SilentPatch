@@ -16,6 +16,7 @@ Compatibility issues, crashes, progression blockers.
 * Path to the User Files directory is now obtained using a dedicated API call rather than a legacy registry entry, future-proofing the games more.
 * Fixed an issue that would cause games to freeze if III/VC/SA were running at the same time.
 * Fixed a rare, random crash that could occur when the game displayed texts added by other mods outside of the GXT file.
+* ⚙️ Made the game default to the desktop refresh rate instead of 60Hz, so Alt+Tab and startup no longer flicker on high refresh rate monitors.
 
 ## Other fixes
 All the remaining, non-critical fixes.

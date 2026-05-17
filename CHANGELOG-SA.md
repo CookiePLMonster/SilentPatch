@@ -29,6 +29,7 @@ Compatibility issues, crashes, progression blockers.
 * Traveling far away from the map will no longer trigger the extra gang territories glitch, nor will it corrupt the Taxi Driver submission.
 * A 1.0 no-DVD-only bug where recruiting gang members would stop working after activating a replay has been fixed (contributed by **Wesser**).
 * Fixed a 1.01 only tiny memory leak which occurred every time the player switched a radio station.
+* ➕ ⚙️ Made the game default to the desktop refresh rate instead of 60Hz, so Alt+Tab and startup no longer flicker on high refresh rate monitors.
 * ⚙️ The gym glitch ("You have worked out enough..." showing infinitely) has been fixed.
 * ⚙️ Saving in Madd Dogg's mansion will no longer trigger the missing basketball glitch.
 * ⚙️ Fixed an occasional soft lock in "Mountain Cloud Boys" - the player will not freeze after arriving at the meeting anymore.

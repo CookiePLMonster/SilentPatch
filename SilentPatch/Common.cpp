@@ -391,6 +391,17 @@ namespace Common {
 				InjectHook( getTaxiLightPos.get<void>(), GetTransformedCoronaPos );
 			}
 			TXN_CATCH();
+
+
+			// Make the game use the desktop refresh rate instead of a fixed 60Hz
+			if (GetPrivateProfileIntW(L"SilentPatch", L"UseDesktopRefreshRate", 0, wcModulePath) != 0) try
+			{
+				auto get_best_refresh_rate = get_pattern("57 55 83 EC 18 8B 74 24 34", -2);
+
+				// xor eax, eax \ retn
+				Patch(get_best_refresh_rate, { 0x31, 0xC0, 0xC3 });
+			}
+			TXN_CATCH();
 		}
 	}
 }

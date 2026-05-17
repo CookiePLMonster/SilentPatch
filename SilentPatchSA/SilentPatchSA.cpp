@@ -5775,6 +5775,14 @@ BOOL InjectDelayedPatches_10()
 		}
 
 
+		// Make the game use the desktop refresh rate instead of a fixed 60Hz
+		if (GetPrivateProfileIntW(L"SilentPatch", L"UseDesktopRefreshRate", 0, wcModulePath) != 0)
+		{
+			// xor eax, eax \ retn
+			Patch(0x7460A0, { 0x31, 0xC0, 0xC3 });
+		}
+
+
 #ifndef NDEBUG
 		if ( const int QPCDays = GetPrivateProfileIntW(L"Debug", L"AddDaysToQPC", 0, wcModulePath); QPCDays != 0 )
 		{
@@ -6447,6 +6455,17 @@ BOOL InjectDelayedPatches_NewBinaries()
 			{
 				Patches::PatchPedVoiceNameLookups(gSpecialPedVoiceLookup, gSpecialPedVoiceNameLookup, numPedVoiceLookups);
 			}
+		}
+		TXN_CATCH();
+
+
+		// Make the game use the desktop refresh rate instead of a fixed 60Hz
+		if (GetPrivateProfileIntW(L"SilentPatch", L"UseDesktopRefreshRate", 0, wcModulePath) != 0) try
+		{
+			auto get_best_refresh_rate = get_pattern("56 57 6A 20 E8", -7);
+
+			// xor eax, eax \ retn
+			Patch(get_best_refresh_rate, { 0x31, 0xC0, 0xC3 });
 		}
 		TXN_CATCH();
 
