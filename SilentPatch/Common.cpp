@@ -371,6 +371,16 @@ namespace Common {
 				Patch(print_string, { 0x66, 0x83, 0xF8, 0x20, 0x75, 0x0C, 0x66, 0x83, 0x7F, 0x02, 0x00 });
 			}
 			TXN_CATCH();
+
+
+			// Do not remove weapons twice when the player is busted
+			// "Get out of jail free" now lets the player keep their weapons (once), as it was seemingly intended
+			try
+			{
+				auto clear_weapons = get_pattern("8B 0B 83 C4 14 E8", 5);
+				Nop(clear_weapons, 5);
+			}
+			TXN_CATCH();
 		}
 
 		void III_VC_DelayedCommon( bool /*hasDebugMenu*/, const wchar_t* wcModulePath )

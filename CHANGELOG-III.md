@@ -83,6 +83,7 @@ All the remaining, non-critical fixes.
 * Mission audio now stops immediately when it's cleared from the script.
 * The Stats menu now displays the actual number of Hidden Packages, instead of displaying a percentage collected + "out of 100". This fixes the stat display for mods that remove or add additional Hidden Packages.
 * Script sprites now have bilinear filtering applied.
+* A one-time 'get out of jail free' bonus granted for catching 10 criminals in a row now also lets the player keep their weapons.
 * ⚙️ Fixed siren corona placements in Firetruck, Ambulance, and Enforcer.
 * ⚙️ Fixed taxi light corona placement for Taxi.
 * ⚙️ Fixed police chopper's searchlight placement.
