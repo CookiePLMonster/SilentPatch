@@ -1433,11 +1433,13 @@ DWORD WINAPI CdStreamSetFilePointer( HANDLE hFile, uint32_t distanceToMove, PLON
 }
 static auto* const pCdStreamSetFilePointer = CdStreamSetFilePointer;
 
-static void (*orgDrawScriptSpritesAndRectangles)(uint8_t);
-void DrawScriptSpritesAndRectangles( uint8_t arg )
+static void (*orgDrawScriptSpritesAndRectangles)(void* arg);
+void DrawScriptSpritesAndRectangles(void* arg)
 {
+	RwScopedRenderState<rwRENDERSTATETEXTUREFILTER> state;
+
 	RwRenderStateSet( rwRENDERSTATETEXTUREFILTER, (void*)rwFILTERLINEAR );
-	orgDrawScriptSpritesAndRectangles( arg );
+	orgDrawScriptSpritesAndRectangles(arg);
 }
 
 // Now in VehicleSA.cpp

@@ -1809,6 +1809,80 @@ namespace CastShadowEntityFix
 }
 
 
+// ============= Apply bilinear filtering on script sprites and scale them to resolution =============
+namespace ScriptSpritesScaling
+{
+	// We always scale up to resolution from 640x448, deliberately ignoring the aspect ratio or widescreen fix scaling.
+	// This is so the scale is always fullscreen, regardless of how the wsfix is configured, and so the initial state in III/VC
+	// is the same as in SA, so wsfix can work with that consistently.
+
+	// Bilinar filtering and scaling are in different hooks, so filtering can be applied unconditionally,
+	// while scaling is gated off behind an INI option.
+	static bool bScaleScriptSprites = false;
+
+	template<std::size_t Index>
+	static void (__thiscall* orgSprite2dDraw_Bilinear)(void* obj, void* rect, void* color);
+
+	template<std::size_t Index>
+	static void __fastcall Sprite2dDraw_Bilinear(void* obj, void*, void* rect, void* color)
+	{
+		RwScopedRenderState<rwRENDERSTATETEXTUREFILTER> state;
+
+		RwRenderStateSet(rwRENDERSTATETEXTUREFILTER, (void*)rwFILTERLINEAR);
+		orgSprite2dDraw_Bilinear<Index>(obj, rect, color);
+	}
+
+	static CRect ScaleSpriteRect(CRect rect)
+	{
+		const float WidthScale = RsGlobal->MaximumWidth / 640.0f;
+		const float HeightScale = RsGlobal->MaximumHeight / 448.0f;
+
+		rect.x1 *= WidthScale;
+		rect.x2 *= WidthScale;
+		rect.y1 *= HeightScale;
+		rect.y2 *= HeightScale;
+
+		return rect;
+	}
+
+	template<std::size_t Index>
+	static void (__thiscall* orgSprite2dDraw_Scaling)(void* obj, const CRect& rect, void* color);
+
+	template<std::size_t Index>
+	static void __fastcall Sprite2dDraw_Scaling(void* obj, void*, const CRect& rect, void* color)
+	{
+		if (bScaleScriptSprites)
+		{
+			orgSprite2dDraw_Scaling<Index>(obj, ScaleSpriteRect(rect), color);
+		}
+		else
+		{
+			orgSprite2dDraw_Scaling<Index>(obj, rect, color);
+		}
+	}
+
+	template<std::size_t Index>
+	static void (*orgDrawRect_Scaling)(const CRect& rect, void* color);
+
+	template<std::size_t Index>
+	static void DrawRect_Scaling(const CRect& rect, void* color)
+	{
+		if (bScaleScriptSprites)
+		{
+			orgDrawRect_Scaling<Index>(ScaleSpriteRect(rect), color);
+		}
+		else
+		{
+			orgDrawRect_Scaling<Index>(rect, color);
+		}
+	}
+
+	HOOK_EACH_INIT(Bilinear_Sprite2d, orgSprite2dDraw_Bilinear, Sprite2dDraw_Bilinear);
+	HOOK_EACH_INIT(Scaling_Sprite2d, orgSprite2dDraw_Scaling, Sprite2dDraw_Scaling);
+	HOOK_EACH_INIT(Scaling_DrawRect, orgDrawRect_Scaling, DrawRect_Scaling);
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -2679,6 +2753,35 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 
 				Patch(&vehicleDescs[1], boatIds.data());
 			}
+		}
+	}
+	TXN_CATCH();
+
+
+	// Apply bilinear filtering on script sprites and scale them to resolution
+	if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ScaleScriptSprites", -1, wcModulePath); INIoption != -1) try
+	{
+		using namespace ScriptSpritesScaling;
+
+		bScaleScriptSprites = INIoption != 0;
+
+		auto sprite2d_draw_pattern = pattern("0F BF CA 8D 0C 8D 00 00 00 00 81 C1 ? ? ? ? E8").count(2);
+		auto drawrect_pattern = pattern("8D ? 14 52 50 E8 ? ? ? ? 59 59 EB").count(2);
+		std::array<void*, 2> sprite2d_draw = {
+			sprite2d_draw_pattern.get(0).get<void>(0x10),
+			sprite2d_draw_pattern.get(1).get<void>(0x10),
+		};
+		std::array<void*, 2> drawrect = {
+			drawrect_pattern.get(0).get<void>(5),
+			drawrect_pattern.get(1).get<void>(5),
+		};
+
+		HookEach_Scaling_Sprite2d(sprite2d_draw, InterceptCall);
+		HookEach_Scaling_DrawRect(drawrect, InterceptCall);
+
+		if (bHasDebugMenu)
+		{
+			DebugMenuAddVar("SilentPatch", "Scale script sprites", &bScaleScriptSprites, nullptr);
 		}
 	}
 	TXN_CATCH();
@@ -3778,6 +3881,23 @@ void Patch_VC_Common()
 
 		// Total packages was already set above
 		Nop(total_packages.get<void>(0), 8);
+	}
+	TXN_CATCH();
+
+
+	// Apply bilinear filtering on script sprites and scale them to resolution
+	try
+	{
+		using namespace ScriptSpritesScaling;
+
+		// Bilinear filtering part only, scaling part is gated off behind the INI option
+		auto sprite2d_draw_pattern = pattern("0F BF CA 8D 0C 8D 00 00 00 00 81 C1 ? ? ? ? E8").count(2);
+		std::array<void*, 2> sprite2d_draw = {
+			sprite2d_draw_pattern.get(0).get<void>(0x10),
+			sprite2d_draw_pattern.get(1).get<void>(0x10),
+		};
+
+		HookEach_Bilinear_Sprite2d(sprite2d_draw, InterceptCall);
 	}
 	TXN_CATCH();
 }
