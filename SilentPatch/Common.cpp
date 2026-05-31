@@ -3,6 +3,7 @@
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
 #include "Utils/HookEach.hpp"
+#include "ExternalBindings.hpp"
 #include "StoredCar.h"
 #include "SVF.h"
 #include "ParseUtils.hpp"
@@ -15,7 +16,7 @@
 
 #include <rwcore.h>
 
-RwCamera*& Camera = **hook::get_pattern<RwCamera**>( "A1 ? ? ? ? D8 88 ? ? ? ?", 1 );
+static ExternalRef<RwCamera*> Camera("A1 ? ? ? ? D8 88 ? ? ? ?", 1);
 
 // ============= handling.cfg name matching fix =============
 namespace HandlingNameLoadFix
@@ -38,7 +39,7 @@ namespace CoronaLinesFix
 	static RwBool RenderLine_SetRecipZ( RwIm2DVertex *vertices, RwInt32 numVertices, RwInt32 vert1, RwInt32 vert2 )
 	{
 		const RwReal nearScreenZ = RwIm2DGetNearScreenZ();
-		const RwReal nearZ = RwCameraGetNearClipPlane( Camera );
+		const RwReal nearZ = RwCameraGetNearClipPlane( Camera.Get() );
 		const RwReal recipZ = 1.0f / nearZ;
 
 		for ( RwInt32 i = 0; i < numVertices; i++ )
@@ -118,12 +119,20 @@ namespace TaxiCoronaFix
 // ============= Reset requested extras if created vehicle has no extras =============
 namespace CompsToUseFix
 {
-	static int8_t* ms_compsUsed = *hook::get_pattern<int8_t*>( "89 E9 88 1D", 4 );
-	static int8_t* ms_compsToUse = *hook::get_pattern<int8_t*>( "0F BE 05 ? ? ? ? 83 C4 28", 3 );
+	static ExternalRef<int8_t[2]> ms_compsUsed("89 E9 88 1D", 4);
+	static ExternalRef<int8_t[2]> ms_compsToUse("0F BE 05 ? ? ? ? 83 C4 28", 3);
 	static void ResetCompsForNoExtras()
 	{
-		ms_compsUsed[0] = ms_compsUsed[1] = -1;
-		ms_compsToUse[0] = ms_compsToUse[1] = -2;
+		auto& compsUsed = ms_compsUsed.Get();
+		auto& compsToUse = ms_compsToUse.Get();
+
+		compsUsed[0] = compsUsed[1] = -1;
+		compsToUse[0] = compsToUse[1] = -2;
+	}
+
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(ms_compsUsed, ms_compsToUse);
 	}
 };
 
@@ -216,12 +225,11 @@ namespace Common {
 
 
 			// Fixed bomb ownership/bombs saving for bikes
-			try
+			if (CStoredCar::HasGameBindings()) try
 			{
 				auto addr = get_pattern( "83 3C 33 00 74 19 89 F9 E8", 8 );
 
-				ReadCall( addr, CStoredCar::orgRestoreCar );
-				InjectHook( addr, &CStoredCar::RestoreCar_SilentPatch );
+				InterceptCall( addr, CStoredCar::orgRestoreCar, &CStoredCar::RestoreCar_SilentPatch );
 			}
 			TXN_CATCH();
 
@@ -240,7 +248,7 @@ namespace Common {
 
 
 			// Fixed corona lines rendering on non-nvidia cards
-			try
+			if (EnsureBindings(Camera)) try
 			{
 				using namespace CoronaLinesFix;
 	
@@ -285,7 +293,7 @@ namespace Common {
 
 
 			// Reset requested extras if created vehicle has no extras
-			try
+			if (CompsToUseFix::HasGameBindings()) try
 			{
 				using namespace CompsToUseFix;
 

@@ -1,64 +1,67 @@
 #include "StdAfx.h"
 #include "Timer.h"
 
-#include "Utils/Patterns.h"
-
-int&			CTimer::m_snTimeInMilliseconds = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", -20 + 1 );
+ExternalRef<int>	CTimer::m_snTimeInMilliseconds("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", -20 + 1);
 
 #if _GTA_III
 
-float&			CTimer::ms_fTimeScale = **hook::get_pattern<float*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x66 + 2 );
-float&			CTimer::ms_fTimeStep = **hook::get_pattern<float*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xE1 + 2 );
-bool&			CTimer::m_UserPause = **hook::get_pattern<bool*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xBE + 2 );
-bool&			CTimer::m_CodePause = **hook::get_pattern<bool*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xD8 + 2 );
-int&			CTimer::m_snTimeInMillisecondsNonClipped = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x129 + 1 );
-int&			CTimer::m_snTimeInMillisecondsPauseMode = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x8E + 1 );
+ExternalRef<float>	CTimer::ms_fTimeScale("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x66 + 2);
+ExternalRef<float>	CTimer::ms_fTimeStep("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xE1 + 2);
+ExternalRef<bool>	CTimer::m_UserPause("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xBE + 2);
+ExternalRef<bool>	CTimer::m_CodePause("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xD8 + 2);
+ExternalRef<int>	CTimer::m_snTimeInMillisecondsNonClipped("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x129 + 1);
+ExternalRef<int>	CTimer::m_snTimeInMillisecondsPauseMode("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x8E + 1);
 
 #elif _GTA_VC
 
-float&			CTimer::ms_fTimeScale = **hook::get_pattern<float*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x70 + 2 );
-float&			CTimer::ms_fTimeStep = **hook::get_pattern<float*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xF3 + 2 );
-bool&			CTimer::m_UserPause = **hook::get_pattern<bool*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x4A + 2 );
-bool&			CTimer::m_CodePause = **hook::get_pattern<bool*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x67 + 2 );
-int&			CTimer::m_snTimeInMillisecondsNonClipped = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x13B + 1 );
-int&			CTimer::m_snTimeInMillisecondsPauseMode = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x9C + 1 );
+ExternalRef<float>	CTimer::ms_fTimeScale("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x70 + 2);
+ExternalRef<float>	CTimer::ms_fTimeStep("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xF3 + 2);
+ExternalRef<bool>	CTimer::m_UserPause("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x4A + 2);
+ExternalRef<bool>	CTimer::m_CodePause("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x67 + 2);
+ExternalRef<int>	CTimer::m_snTimeInMillisecondsNonClipped("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x13B + 1);
+ExternalRef<int>	CTimer::m_snTimeInMillisecondsPauseMode("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x9C + 1);
 
 #endif
 
-static uint32_t& timerFrequency = **hook::get_pattern<uint32_t*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", -8 + 1 );
-static LARGE_INTEGER& prevTimer = **hook::get_pattern<LARGE_INTEGER*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 62 + 2 );
+static ExternalRef<uint32_t> timerFrequency("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", -8 + 1);
+static ExternalRef<LARGE_INTEGER> prevTimer("83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 62 + 2);
 
+bool CTimer::HasGameBindings()
+{
+	return EnsureBindings(m_snTimeInMilliseconds, ms_fTimeScale, ms_fTimeStep, m_UserPause, m_CodePause, m_snTimeInMillisecondsNonClipped, m_snTimeInMillisecondsPauseMode,
+							timerFrequency, prevTimer);
+}
 
 void CTimer::Update_SilentPatch()
 {
 	LARGE_INTEGER perfCount;
 	QueryPerformanceCounter( &perfCount );
 
-	double diff = double(perfCount.QuadPart - prevTimer.QuadPart);
+	double diff = double(perfCount.QuadPart - prevTimer.Get().QuadPart);
 #if _GTA_VC
-	if ( !m_UserPause && !m_CodePause )
+	if ( !m_UserPause.Get() && !m_CodePause.Get() )
 #endif
 	{
-		diff *= ms_fTimeScale;
+		diff *= ms_fTimeScale.Get();
 	}
 
-	prevTimer = perfCount;
+	prevTimer.Get() = perfCount;
 
 	static double DeltaRemainder = 0.0;
-	const double delta = diff / timerFrequency;
+	const double delta = diff / timerFrequency.Get();
 	double deltaIntegral;
 	DeltaRemainder = modf( delta + DeltaRemainder, &deltaIntegral );
 
 	const int deltaInteger = int(deltaIntegral);
-	m_snTimeInMillisecondsPauseMode += deltaInteger;
-	if ( !m_UserPause && !m_CodePause )
+	m_snTimeInMillisecondsPauseMode.Get() += deltaInteger;
+	if ( !m_UserPause.Get() && !m_CodePause.Get() )
 	{
-		m_snTimeInMillisecondsNonClipped += deltaInteger;
-		m_snTimeInMilliseconds += deltaInteger;
-		ms_fTimeStep = float(delta * 0.05);
+		m_snTimeInMillisecondsNonClipped.Get() += deltaInteger;
+		m_snTimeInMilliseconds.Get() += deltaInteger;
+		ms_fTimeStep.Get() = float(delta * 0.05);
 	}
 	else
 	{
-		ms_fTimeStep = 0.0f;
+		ms_fTimeStep.Get() = 0.0f;
 	}
 }

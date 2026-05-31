@@ -25,6 +25,8 @@ public:
 	static CVehicle* (CStoredCar::*orgRestoreCar)();
 
 	CVehicle* RestoreCar_SilentPatch();
+
+	static bool HasGameBindings();
 };
 
 static_assert(sizeof(CStoredCar) == 0x28, "Wrong size: CStoredCar");

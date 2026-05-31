@@ -1,15 +1,20 @@
 #include "StdAfx.h"
 
 #include "StoredCar.h"
-#include "Utils/Patterns.h"
+#include "ExternalBindings.hpp"
 
 #if _GTA_III
-static auto FindPlayerPed = hook::get_pattern<class CEntity*()>( "6B C0 4F 8B 04 85 ? ? ? ? C3", -7 );
+static ExternalFunc<class CEntity*()> FindPlayerPed("6B C0 4F 8B 04 85 ? ? ? ? C3", -7);
 #elif _GTA_VC
-static auto FindPlayerPed = hook::get_pattern<class CEntity*()>( "6B C0 2E 8B 04 C5 ? ? ? ? C3", -7 );
+static ExternalFunc<class CEntity*()> FindPlayerPed("6B C0 2E 8B 04 C5 ? ? ? ? C3", -7);
 #endif
 
 CVehicle* (CStoredCar::*CStoredCar::orgRestoreCar)();
+
+bool CStoredCar::HasGameBindings()
+{
+	return EnsureBindings(FindPlayerPed);
+}
 
 CVehicle* CStoredCar::RestoreCar_SilentPatch()
 {
@@ -22,10 +27,10 @@ CVehicle* CStoredCar::RestoreCar_SilentPatch()
 		if ( vehicle->GetClass() == VEHICLE_AUTOMOBILE || vehicle->GetClass() == VEHICLE_BIKE )
 		{
 			vehicle->SetBombOnBoard( m_bombType );
-			vehicle->SetBombOwner( FindPlayerPed() );
+			vehicle->SetBombOwner( FindPlayerPed.Call() );
 		}
 #elif _GTA_III
-		static_cast<CAutomobile*>(vehicle)->SetBombOwner( FindPlayerPed() );
+		static_cast<CAutomobile*>(vehicle)->SetBombOwner( FindPlayerPed.Call() );
 #endif
 	}
 

@@ -4,11 +4,16 @@
 
 #include "RWUtils.hpp"
 
-RpAtomic* (*CVehicleModelInfo::SetEnvironmentMapCB)(RpAtomic* atomic, void* data) = hook::get_pattern<RpAtomic*(RpAtomic*, void*)>("8B 5C 24 14 C6 44 24", -5);
+ExternalFunc<RpAtomic*(RpAtomic* atomic, void* data)> CVehicleModelInfo::SetEnvironmentMapCB("8B 5C 24 14 C6 44 24", -5);
 
 // This is actually CBaseModelInfo, but we currently don't have it defined
-CVehicleModelInfo**& ms_modelInfoPtrs = *hook::get_pattern<CVehicleModelInfo**>("8B 2C 85 ? ? ? ? 89 E9", 3);
-int32_t& numModelInfos = *hook::get_pattern<int32_t>("81 FD ? ? ? ? 7C B7 31 C0", 2);
+ExternalRef<CVehicleModelInfo*[]> ms_modelInfoPtrs("8B 2C 85 ? ? ? ? 89 E9", 3);
+ExternalValue<int32_t> numModelInfos("81 FD ? ? ? ? 7C B7 31 C0", 2);
+
+bool CVehicleModelInfo::HasGameBindings()
+{
+	return EnsureBindings(SetEnvironmentMapCB, ms_modelInfoPtrs, numModelInfos);
+}
 
 static void RemoveSpecularityFromAtomic(RpAtomic* atomic)
 {
@@ -50,8 +55,9 @@ void CVehicleModelInfo::SetEnvironmentMap_ExtraComps()
 {
 	std::invoke(orgSetEnvironmentMap, this);
 
-	const int32_t modelID = std::distance(ms_modelInfoPtrs, std::find(ms_modelInfoPtrs, ms_modelInfoPtrs+numModelInfos, this));
+	const int32_t modelID = std::distance(ms_modelInfoPtrs.Get(), std::find(ms_modelInfoPtrs.Get(), ms_modelInfoPtrs.Get()+numModelInfos.Get(), this));
 	const bool bRemoveSpecularity = ExtraCompSpecularity::SpecularityExcluded(modelID);
+
 	for (int32_t i = 0; i < m_numComps; i++)
 	{
 		if (bRemoveSpecularity)
@@ -59,7 +65,7 @@ void CVehicleModelInfo::SetEnvironmentMap_ExtraComps()
 			RemoveSpecularityFromAtomic(m_comps[i]);
 		}
 
-		SetEnvironmentMapCB(m_comps[i], m_envMap);
+		SetEnvironmentMapCB.Call(m_comps[i], m_envMap);
 		AttachCarPipeToRwObject(reinterpret_cast<RwObject*>(m_comps[i]));
 	}
 }

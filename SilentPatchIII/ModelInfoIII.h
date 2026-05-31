@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include "Maths.h"
+#include "ExternalBindings.hpp"
 
 #include <rwcore.h>
 #include <rpworld.h>
@@ -104,7 +105,7 @@ private:
 	int32_t		m_numComps;
 
 public:
-	static RpAtomic* (*SetEnvironmentMapCB)(RpAtomic* atomic, void* data);
+	static ExternalFunc<RpAtomic*(RpAtomic* atomic, void* data)> SetEnvironmentMapCB;
 
 	static inline void (CVehicleModelInfo::*orgSetEnvironmentMap)();
 	void SetEnvironmentMap_ExtraComps();
@@ -112,5 +113,7 @@ public:
 	// For SkyGfx interop
 	static void AttachCarPipeToRwObject_Default(RwObject*) { }
 	static inline void (*AttachCarPipeToRwObject)(RwObject* object) = &AttachCarPipeToRwObject_Default;
+
+	static bool HasGameBindings();
 };
 static_assert(sizeof(CVehicleModelInfo) == 0x1F8, "Wrong size: CVehicleModelInfo");

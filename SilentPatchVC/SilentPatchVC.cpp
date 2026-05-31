@@ -3091,7 +3091,7 @@ void Patch_VC_Common()
 
 
 	// New timers fix
-	try
+	if (CTimer::HasGameBindings()) try
 	{
 		auto hookPoint = pattern( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08" ).get_one();
 		auto jmpPoint = get_pattern( "DD D8 E9 31 FF FF FF" );
