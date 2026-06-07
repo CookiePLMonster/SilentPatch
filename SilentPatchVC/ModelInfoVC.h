@@ -24,6 +24,8 @@ public:
 	RwFrame*		GetExtrasFrame( RpClump* clump );
 	const char*		GetModelName() const { return m_name; }
 
+	static bool		HasGameBindings_Extras();
+
 	// For SkyGfx interop
 	static void AttachCarPipeToRwObject_Default(RwObject*) { }
 	static inline void (*AttachCarPipeToRwObject)(RwObject* object) = &AttachCarPipeToRwObject_Default;
