@@ -1,11 +1,7 @@
 #include "StdAfxSA.h"
 #include "ModelInfoSA.h"
 
-static void* BaseModelInfoShutdown = AddressByVersion<void*>(0x4C4D50, 0x4C4DD0, 0x4CF590);
-WRAPPER void CBaseModelInfo::Shutdown() { VARJMP(BaseModelInfoShutdown); }
-
-static void* varSetVehicleColour = AddressByVersion<void*>( 0x4C84B0, 0x4C86B0, 0x4D2DB0 );
-WRAPPER void CVehicleModelInfo::SetVehicleColour( int32_t color1, int32_t color2, int32_t color3, int32_t color4 ) { VARJMP(varSetVehicleColour); }
+#include "ExternalBindings.hpp"
 
 RwTexture* (*CCustomCarPlateMgr::CreatePlateTexture)(const char* pText, signed char nDesign) = AddressByVersion<RwTexture*(*)(const char*,signed char)>(0x6FDEA0, 0x6FE6D0, 0x736AC0);
 signed char (*CCustomCarPlateMgr::GetMapRegionPlateDesign)() = AddressByVersion<signed char(*)()>(0x6FD7A0, 0x6FDFD0, 0x7363E0);
@@ -18,15 +14,23 @@ CBaseModelInfo** const			ms_modelInfoPtrs = *AddressByVersion<CBaseModelInfo***>
 int8_t* CVehicleModelInfo::ms_compsUsed = *AddressByVersion<int8_t**>( 0x4C973B + 2, Memory::PatternAndOffset("8B CE A2 ? ? ? ? E8", 2 + 1) );
 int8_t* CVehicleModelInfo::ms_compsToUse = *AddressByVersion<int8_t**>( 0x4C8057 + 2, Memory::PatternAndOffset("0F BE C0 C6 05 ? ? ? ? FE 5E", 3 + 2) );
 
+static ExternalRef ms_aDirtTextures(AddressByVersion<RwTexture*(**)[16]>( 0x5D5DCC + 3, 0, 0x5F259C + 3 ));
 
-static RwTexture** const		ms_aDirtTextures = *AddressByVersion<RwTexture***>( 0x5D5DCC + 3, 0, 0x5F259C + 3 );
+extern ExternalFunc<RpMaterial*(RpMaterial* material, RwTexture* texture)> fnBind_RpMaterialSetTexture;
+
+bool HasGameBindings_DirtRemapFix()
+{
+	return EnsureBindings(ms_aDirtTextures, fnBind_RpMaterialSetTexture);
+}
+
 void RemapDirt( CVehicleModelInfo* modelInfo, uint32_t dirtID )
 {
 	RpMaterial** materials = modelInfo->m_numDirtMaterials > CVehicleModelInfo::IN_PLACE_BUFFER_DIRT_SIZE ? modelInfo->m_dirtMaterials : modelInfo->m_staticDirtMaterials;
 
+	auto& aDirtTextures = ms_aDirtTextures.Get();
 	for ( size_t i = 0; i < modelInfo->m_numDirtMaterials; i++ )
 	{
-		RpMaterialSetTexture( materials[i], ms_aDirtTextures[dirtID] );
+		RpMaterialSetTexture( materials[i], aDirtTextures[dirtID] );
 	}
 }
 
@@ -40,12 +44,13 @@ uint32_t CVehicleModelInfo::GetNumRemaps() const
 	return count;
 }
 
-void CVehicleModelInfo::Shutdown()
+void (CClumpModelInfo::*CVehicleModelInfo::orgShutdown_CarDirtFix)();
+void CVehicleModelInfo::Shutdown_CarDirtFix()
 {
-	CBaseModelInfo::Shutdown();
-
 	delete[] m_dirtMaterials;
 	m_dirtMaterials = nullptr;
+
+	std::invoke(orgShutdown_CarDirtFix, this);
 }
 
 void CVehicleModelInfo::FindEditableMaterialList()

@@ -379,6 +379,23 @@ private:
 	fnptr_type m_func = nullptr;
 };
 
+
+// ExternalFunc and ExternalMethod need deduction guides
+template<typename R, typename... Args>
+ExternalFunc(R(__cdecl*)(Args...)) -> ExternalFunc<R __cdecl(Args...)>;
+
+template<typename R, typename... Args>
+ExternalFunc(R(__stdcall*)(Args...)) -> ExternalFunc<R __stdcall(Args...)>;
+
+template<typename R, typename... Args>
+ExternalFunc(R(__fastcall*)(Args...)) -> ExternalFunc<R __fastcall(Args...)>;
+
+template<typename C, typename R, typename... Args>
+ExternalMethod(R(__thiscall*)(C*, Args...)) -> ExternalMethod<C, R(Args...)>;
+
+template<typename C, typename R, typename... Args>
+ExternalMethod(R(__thiscall*)(const C*, Args...)) -> ExternalMethod<C, R(Args...) const>;
+
 template<typename... Bindings>
 [[nodiscard]] bool EnsureBindings(const Bindings&... bindings)
 {

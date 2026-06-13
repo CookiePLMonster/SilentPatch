@@ -3,8 +3,7 @@
 
 bool			CAEDataStream::m_bUseNewStruct;
 
-static void* CAEDataStream__Initialise = AddressByVersion<void*>(0x4DC2B0, 0x4DC7A0, 0x4E7550);
-WRAPPER bool CAEDataStream::Initialise() { VARJMP(CAEDataStream__Initialise); }
+ExternalMethod<CAEDataStream, bool()> CAEDataStream::Initialise(AddressByVersion<bool (__thiscall*)(CAEDataStream*)>(0x4DC2B0, 0x4DC7A0, 0x4E7550));
 
 // Work around libflac linking issues with older MSVC
 #if _MSC_VER < 1930

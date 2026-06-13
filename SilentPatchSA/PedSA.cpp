@@ -17,7 +17,6 @@ static void* varRenderJetPack = AddressByVersion<void*>(0x67F6A0, 0x67FEC0, 0x6A
 WRAPPER void CTaskSimpleJetPack::RenderJetPack(CPed* pPed) { WRAPARG(pPed); VARJMP(varRenderJetPack); }
 
 void (CPed::*CPed::orgGiveWeapon)(uint32_t weapon, uint32_t ammo, bool flag);
-void (CPlayerPed::*CPlayerPed::orgDoStuffToGoOnFire)();
 
 void (*CClothes::RebuildPlayer)(CPlayerPed* ped, bool bForReplay) = AddressByVersion<void(*)(CPlayerPed*, bool)>(0x5A82C0, { "8B 8E ? ? ? ? 83 C4 04 6A 05", -0x11 });
 

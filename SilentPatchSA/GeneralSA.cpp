@@ -5,6 +5,8 @@
 #include "ModelInfoSA.h"
 #include "PoolsSA.h"
 
+#include "ExternalBindings.hpp"
+
 #include <algorithm>
 
 // Wrappers
@@ -19,11 +21,14 @@ WRAPPER void CShadowCamera::InvertRaster() { VARJMP(varInvertRaster); }
 
 CWeaponInfo* (*CWeaponInfo::GetWeaponInfo)(eWeaponType, signed char) = AddressByVersion<CWeaponInfo*(*)(eWeaponType, signed char)>(0x743C60, 0x744490, 0x77D940);
 
-static RwTexture*& ms_pRemapTexture = **AddressByVersion<RwTexture***>(0x59F1BD, 0x6D6E53, 0x5B811D);
-
-auto	SetEditableMaterialsCB = AddressByVersion<RpAtomic*(*)(RpAtomic*,void*)>(0x4C83E0, 0x4C8460, 0x4D2CE0);
+static ExternalFunc SetEditableMaterialsCB(AddressByVersion<RpAtomic*(*)(RpAtomic*,void*)>(0x4C83E0, 0x4C8460, 0x4D2CE0));
 
 void*	(CEntity::*CEntity::orgGetColModel)();
+
+bool HasGameBindings_DetachedPartRenderingFix()
+{
+	return EnsureBindings(SetEditableMaterialsCB);
+}
 
 static void ResetEditableMaterials(std::pair<void**,void*> pData[], size_t num)
 {
@@ -61,27 +66,26 @@ void CEntity::SetPositionAndAreaCode( CVector position )
 	}
 }
 
-void CObject::Render()
+void (CEntity::*CObject::orgRender_DetachedPartRenderingFix)();
+void CObject::Render_DetachedPartRenderingFix()
 {
-	if ( m_bDoNotRender || !m_pRwObject )
-		return;
-
 	std::pair<void**,void*> materialRestoreData[256];
 	size_t numMaterialsToRestore = 0;
 
 	RwScopedRenderState<rwRENDERSTATECULLMODE> cullState;
 
-	const int32_t carPartModelIndex = m_wCarPartModelIndex.Get();
-	if ( carPartModelIndex != -1 && m_objectCreatedBy == TEMP_OBJECT && bUseVehicleColours && RwObjectGetType(m_pRwObject) == rpATOMIC )
+	if (m_pRwObject != nullptr && m_wCarPartModelIndex.Get() != -1 && m_objectCreatedBy == TEMP_OBJECT && bUseVehicleColours)
 	{
 		auto* pData = materialRestoreData;
 
-		ms_pRemapTexture = m_pPaintjobTex;
-
-		static_cast<CVehicleModelInfo*>(ms_modelInfoPtrs[ carPartModelIndex ])->SetVehicleColour( m_nCarColor[0].Get(), 
-						m_nCarColor[1].Get(), m_nCarColor[2].Get(), m_nCarColor[3].Get() );
-
-		SetEditableMaterialsCB(reinterpret_cast<RpAtomic*>(m_pRwObject), &pData);
+		if (RwObjectGetType(m_pRwObject) == rpATOMIC)
+		{
+			SetEditableMaterialsCB.Call(reinterpret_cast<RpAtomic*>(m_pRwObject), &pData);
+		}
+		else
+		{
+			RpClumpForAllAtomics(reinterpret_cast<RpClump*>(m_pRwObject), SetEditableMaterialsCB.Address(), &pData);
+		}
 		assert( pData >= std::begin(materialRestoreData) && pData < std::end(materialRestoreData) );
 		numMaterialsToRestore = std::distance(materialRestoreData, pData);
 
@@ -89,7 +93,7 @@ void CObject::Render()
 		RwRenderStateSet(rwRENDERSTATECULLMODE, reinterpret_cast<void*>(rwCULLMODECULLNONE));
 	}
 
-	CEntity::Render();
+	std::invoke(orgRender_DetachedPartRenderingFix, this);
 
 	ResetEditableMaterials(materialRestoreData, numMaterialsToRestore);
 }

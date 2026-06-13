@@ -313,6 +313,8 @@ public:
 	HOOK_EACH_INIT(DoHeadLightBeam, orgDoHeadLightBeam, &DoHeadLightBeam_LightBeamFixSaveObj);
 };
 
+bool HasGameBindings_CustomCarPlateFix();
+
 class NOVMT CAutomobile : public CVehicle
 {
 public:

@@ -10,6 +10,8 @@
 #include "SpeechContextsSA.h"
 #include "Random.h"
 
+#include "ExternalBindings.hpp"
+
 #include "SVF.h"
 
 static constexpr float PHOENIX_FLUTTER_PERIOD	= 70.0f;
@@ -299,6 +301,12 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 	pModelInfo->m_nPlateType = -1;
 
 	return true;
+}
+
+extern ExternalFunc<RpMaterial*(RpMaterial* material, RwTexture* texture)> fnBind_RpMaterialSetTexture;
+bool HasGameBindings_CustomCarPlateFix()
+{
+	return EnsureBindings(fnBind_RpMaterialSetTexture);
 }
 
 static std::vector<std::pair<RpMaterial*, RwTexture*>> originalPlateMaterials;

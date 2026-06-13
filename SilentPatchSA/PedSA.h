@@ -488,13 +488,6 @@ private:
 
 public:
 	CPed* GetMouseLockOnRecruitPed() const { return m_pMouseLockOnRecruitPed; }
-
-	static void (CPlayerPed::*orgDoStuffToGoOnFire)();
-
-	void DoStuffToGoOnFire()
-	{
-		(this->*orgDoStuffToGoOnFire)();
-	}
 };
 
 static_assert(sizeof(CPed) == 0x79C, "Wrong size: CPed");

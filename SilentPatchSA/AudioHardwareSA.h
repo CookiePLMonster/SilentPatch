@@ -1,6 +1,8 @@
 #ifndef __AUDIOHARDWARE
 #define __AUDIOHARDWARE
 
+#include "ExternalBindings.hpp"
+
 // IStream
 #include <Objidl.h>
 
@@ -142,7 +144,9 @@ public:
 		{ return m_bUseNewStruct; }
 
 	// This is handled by GTA so we can leave it that way
-	bool				Initialise();
+	static ExternalMethod<CAEDataStream, bool()> Initialise;
+
+	static bool HasGameBindings() { return EnsureBindings(Initialise); }
 
 	unsigned int		Seek(long nToSeek, int nPoint)
 	{	if ( m_bUseNewStruct ) 
@@ -181,7 +185,7 @@ public:
 		: pStream(stream)
 	{
 		if ( stream != nullptr )
-			stream->Initialise();
+			stream->Initialise.Call(stream);
 	}
 
 	inline CAEDataStream*	GetStream()

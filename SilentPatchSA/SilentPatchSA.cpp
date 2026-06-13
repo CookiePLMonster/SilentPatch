@@ -47,24 +47,46 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
 namespace ModCompat
 {
-	bool SkygfxPatchesMoonphases( HMODULE module )
+	namespace SkyGfx
 	{
-		if ( module == nullptr ) return false; // SkyGfx not installed
-
 		struct Config
 		{
 			uint32_t version;
 			// The rest isn't relevant at the moment
 		};
 
-		auto func = (Config*(*)())GetProcAddress( module, "GetConfig" );
-		if ( func == nullptr ) return false; // Old version?
+		const Config* GetConfig(HMODULE module)
+		{
+			auto func = (Config*(*)())GetProcAddress(module, "GetConfig");
+			if (func == nullptr) return nullptr; // Old version?
+			return func();
+		}
 
-		const Config* config = func();
-		if ( config == nullptr ) return false; // Old version/error?
+		bool PatchesMoonphases(HMODULE module)
+		{
+			if (module == nullptr) return false; // SkyGfx not installed
 
-		constexpr uint32_t SKYGFX_VERSION_WITH_MOONPHASES = 0x360;
-		return config->version >= SKYGFX_VERSION_WITH_MOONPHASES;
+			const Config* config = GetConfig(module);
+			if (config == nullptr) return false; // Old version/error?
+
+			constexpr uint32_t SKYGFX_VERSION_WITH_MOONPHASES = 0x360;
+			return config->version >= SKYGFX_VERSION_WITH_MOONPHASES;
+		}
+
+		bool BreaksDetachedComponentColors(HMODULE module)
+		{
+			if (module == nullptr) return false; // SkyGfx not installed
+
+			const Config* config = GetConfig(module);
+			if (config == nullptr) return true; // Old version/error? Err on the safe side and assume a very old version.
+
+			// All current versions of SkyGfx fail to apply remapped colors on detached components.
+			// Assume that future versions (if they ever happen) will fix it, and that all currently releases are broken.
+			// Technically if the PC vehicle pipeline is used this is not an issue, but checking for that is overkill.
+			// SkyGfx Extended doesn't seem to be bumping this version up at the moment either.
+			constexpr uint32_t SKYGFX_VERSION_NEWEST_AS_OF_NOW = 0x370;
+			return config->version <= SKYGFX_VERSION_NEWEST_AS_OF_NOW;
+		}
 	}
 
 	bool bCdStreamFallBackForOldML = false;
@@ -128,8 +150,10 @@ static void* varRwRasterCreate = AddressByVersion<void*>(0x7FB230, 0x7FBB30, 0x8
 WRAPPER RwRaster* RwRasterCreate(RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 flags) { WRAPARG(width); WRAPARG(height); WRAPARG(depth); WRAPARG(flags); VARJMP(varRwRasterCreate); }
 static void* varRwImageDestroy = AddressByVersion<void*>(0x802740, 0x803040, 0x83C700);
 WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); VARJMP(varRwImageDestroy); }
-static void* varRpMaterialSetTexture = AddressByVersion<void*>(0x74DBC0, 0x74E4D0, 0x787B80);
-WRAPPER RpMaterial* RpMaterialSetTexture(RpMaterial* material, RwTexture* texture) { VARJMP(varRpMaterialSetTexture); }
+
+ExternalFunc fnBind_RpMaterialSetTexture(AddressByVersion<RpMaterial* (*)(RpMaterial* material, RwTexture* texture)>(0x74DBC0, 0x74E4D0, 0x787B80));
+RpMaterial* RpMaterialSetTexture(RpMaterial* material, RwTexture* texture) { return fnBind_RpMaterialSetTexture.Call(material, texture); }
+
 static void* varRwFrameGetLTM = AddressByVersion<void*>(0x7F0990, 0x7F1290, 0x82A950);
 WRAPPER RwMatrix* RwFrameGetLTM(RwFrame* frame) { VARJMP(varRwFrameGetLTM); }
 static void* varRwMatrixRotate = AddressByVersion<void*>(0x7F1FD0, 0x7F28D0, 0x82BF90);
@@ -1807,16 +1831,21 @@ namespace Credits
 // ============= Bicycle fire fix =============
 namespace BicycleFire
 {
-	CPed* GetVehicleDriver( const CVehicle* vehicle )
+	static CPed* GetVehicleDriver( const CVehicle* vehicle )
 	{
 		return vehicle->GetDriver();
 	}
 
-	void __fastcall DoStuffToGoOnFire_NullAndPlayerCheck( CPed* ped )
+	static void __fastcall DoStuffToGoOnFire_Noop( void* ped )
 	{
-		if ( ped != nullptr && ped->IsPlayer() )
+	}
+
+	static void (__thiscall* orgStartFire)(CFireManager* fireManager, CEntity* entity, void* attacker, void* a3, void* a4, void* a5, void* a6);
+	static void __fastcall StartFire_NullEntityCheck(CFireManager* fireManager, void*, CEntity* entity, void* attacker, void* a3, void* a4, void* a5, void* a6)
+	{
+		if (entity != nullptr)
 		{
-			static_cast<CPlayerPed*>(ped)->DoStuffToGoOnFire();
+			orgStartFire(fireManager, entity, attacker, a3, a4, a5, a6);
 		}
 	}
 }
@@ -5297,26 +5326,50 @@ BOOL InjectDelayedPatches_10()
 		}
 
 		// ImVehFt conflicts
+		bool bObjectRenderPatched = false;
 		if ( !bHasImVehFt )
 		{
 			// Lights
 			InjectHook(0x4C830C, LightMaterialsFix, HookType::Call);
 
 			// Flying components
-			InjectHook(0x59F180, &CObject::Render_Stub, HookType::Jump);
+			if (HasGameBindings_DetachedPartRenderingFix())
+			{
+				InterceptCall(0x59F1ED, CObject::orgRender_DetachedPartRenderingFix, &CObject::Render_DetachedPartRenderingFix);
+				bObjectRenderPatched = true;
+			}
 
 			// Cars getting dirty
 			// Only 1.0 and Steam
-			InjectHook( 0x5D5DB0, RemapDirt, HookType::Jump );
-			InjectHook(0x4C9648, &CVehicleModelInfo::FindEditableMaterialList, HookType::Call);
-			Patch<DWORD>(0x4C964D, 0x0FEBCE8B);
+			if (HasGameBindings_DirtRemapFix())
+			{
+				InjectHook( 0x5D5DB0, RemapDirt, HookType::Jump );
+				InjectHook(0x4C9648, &CVehicleModelInfo::FindEditableMaterialList, HookType::Call);
+				Patch<DWORD>(0x4C964D, 0x0FEBCE8B);
+
+				DWORD*		pVMT = *(DWORD**)0x4C75FC;
+				if (ModCompat::Utils::GetModuleHandleFromAddress(pVMT) == hInstance)
+				{
+					Read(&pVMT[7], CVehicleModelInfo::orgShutdown_CarDirtFix);
+					Patch(&pVMT[7], &CVehicleModelInfo::Shutdown_CarDirtFix);
+				}
+			}
 		}
 
-		if ( !bHasImVehFt && !bSAMP )
+		// Enable directional lights on flying car components
+		// This fix is technically separate from ImVehFt, but with SkyGfx, if the above fix fails to apply, detached parts will be green once they're detached,
+		// as SkyGfx lacks a fallback "fixing up" those colors to black, unlike the PC code.
+		// We then need to disable this fix, or else people think it's a regression caused by SP.
+		if (bObjectRenderPatched || !ModCompat::SkyGfx::BreaksDetachedComponentColors(skygfxModule))
+		{
+			using namespace LitFlyingComponents;
+
+			InterceptCall(0x6A8BBE, orgWorldAdd, WorldAdd_SetLightObjectFlag);
+		}
+
+		if ( !bHasImVehFt && !bSAMP && HasGameBindings_CustomCarPlateFix() )
 		{
 			// Properly random numberplates
-			DWORD*		pVMT = *(DWORD**)0x4C75FC;
-			Patch(&pVMT[7], &CVehicleModelInfo::Shutdown_Stub);
 			InjectHook(0x4C9660, &CVehicleModelInfo::SetCarCustomPlate);
 			InjectHook(0x6D6A58, &CVehicle::CustomCarPlate_TextureCreate);
 			InjectHook(0x6D651C, &CVehicle::CustomCarPlate_BeforeRenderingStart);
@@ -5486,7 +5539,7 @@ BOOL InjectDelayedPatches_10()
 
 		// Moonphases
 		// Not taking effect with new skygfx since aap has it too now
-		if ( !bSAMP && !ModCompat::SkygfxPatchesMoonphases( skygfxModule ) )
+		if ( !bSAMP && !ModCompat::SkyGfx::PatchesMoonphases( skygfxModule ) )
 		{
 			using namespace MoonphasesFix;
 
@@ -5956,14 +6009,15 @@ BOOL InjectDelayedPatches_11()
 			InjectHook(0x4C838C, LightMaterialsFix, HookType::Call);
 
 			// Flying components
-			InjectHook(0x59F950, &CObject::Render_Stub, HookType::Jump);
+			if (HasGameBindings_DetachedPartRenderingFix())
+			{
+				InterceptCall(0x59F9BD, CObject::orgRender_DetachedPartRenderingFix, &CObject::Render_DetachedPartRenderingFix);
+			}
 		}
 
-		if ( !bHasImVehFt && !bSAMP )
+		if ( !bHasImVehFt && !bSAMP && HasGameBindings_CustomCarPlateFix() )
 		{
 			// Properly random numberplates
-			DWORD*		pVMT = *(DWORD**)0x4C767C;
-			Patch(&pVMT[7], &CVehicleModelInfo::Shutdown_Stub);
 			InjectHook(0x4C984D, &CVehicleModelInfo::SetCarCustomPlate);
 			InjectHook(0x6D7288, &CVehicle::CustomCarPlate_TextureCreate);
 			InjectHook(0x6D6D4C, &CVehicle::CustomCarPlate_BeforeRenderingStart);
@@ -6143,20 +6197,28 @@ BOOL InjectDelayedPatches_Steam()
 			InjectHook(0x4D2C06, LightMaterialsFix, HookType::Call);
 
 			// Flying components
-			InjectHook(0x5B80E0, &CObject::Render_Stub, HookType::Jump);
+			if (HasGameBindings_DetachedPartRenderingFix())
+			{
+				InterceptCall(0x5B8149, CObject::orgRender_DetachedPartRenderingFix, &CObject::Render_DetachedPartRenderingFix);
+			}
 
 			// Cars getting dirty
 			// Only 1.0 and Steam
 			InjectHook( 0x5F2580, RemapDirt, HookType::Jump );
 			InjectHook(0x4D3F4D, &CVehicleModelInfo::FindEditableMaterialList, HookType::Call);
 			Patch<DWORD>(0x4D3F52, 0x0FEBCE8B);
+
+			DWORD*		pVMT = *(DWORD**)0x4D1E9A;
+			if (ModCompat::Utils::GetModuleHandleFromAddress(pVMT) == hInstance)
+			{
+				Read(&pVMT[7], CVehicleModelInfo::orgShutdown_CarDirtFix);
+				Patch(&pVMT[7], &CVehicleModelInfo::Shutdown_CarDirtFix);
+			}
 		}
 
-		if ( !bHasImVehFt && !bSAMP )
+		if ( !bHasImVehFt && !bSAMP && HasGameBindings_CustomCarPlateFix() )
 		{
 			// Properly random numberplates
-			DWORD*		pVMT = *(DWORD**)0x4D1E9A;
-			Patch(&pVMT[7], &CVehicleModelInfo::Shutdown_Stub);
 			InjectHook(0x4D3F65, &CVehicleModelInfo::SetCarCustomPlate);
 			InjectHook(0x711F28, &CVehicle::CustomCarPlate_TextureCreate);
 			InjectHook(0x71194D, &CVehicle::CustomCarPlate_BeforeRenderingStart);
@@ -6673,16 +6735,19 @@ void Patch_SA_10(HINSTANCE hInstance)
 	InjectHook(0x4D9BB5, 0x4F2FD0);
 
 	// FLAC support
-	InjectHook(0x4F373D, LoadFLAC, HookType::Jump);
-	InjectHook(0x57BEFE, FLACInit);
-	InjectHook(0x4F3787, CAEWaveDecoderInit);
+	if (CAEDataStream::HasGameBindings())
+	{
+		InjectHook(0x4F373D, LoadFLAC, HookType::Jump);
+		InjectHook(0x57BEFE, FLACInit);
+		InjectHook(0x4F3787, CAEWaveDecoderInit);
 
-	Patch<WORD>(0x4F376A, 0x18EB);
-	//Patch<BYTE>(0x4F378F, sizeof(CAEWaveDecoder));
-	Patch<const void*>(0x4F3210, UserTrackExtensions);
-	Patch<const void*>(0x4F3241, &UserTrackExtensions->Codec);
-	Patch<const void*>(0x4F35E7, &UserTrackExtensions[1].Codec);
-	Patch<BYTE>(0x4F322D, sizeof(UserTrackExtensions));
+		Patch<WORD>(0x4F376A, 0x18EB);
+		//Patch<BYTE>(0x4F378F, sizeof(CAEWaveDecoder));
+		Patch<const void*>(0x4F3210, UserTrackExtensions);
+		Patch<const void*>(0x4F3241, &UserTrackExtensions->Codec);
+		Patch<const void*>(0x4F35E7, &UserTrackExtensions[1].Codec);
+		Patch<BYTE>(0x4F322D, sizeof(UserTrackExtensions));
+	}
 
 	// Impound garages working correctly
 	InjectHook(0x425179, 0x448990); // CGarages::IsPointWithinAnyGarage
@@ -7091,16 +7156,12 @@ void Patch_SA_10(HINSTANCE hInstance)
 	{
 		using namespace BicycleFire;
 
-		Patch( 0x53A984, { 0x90, 0x57 } ); // nop \ push edi
 		Patch( 0x53A9A7, { 0x90, 0x57 } ); // nop \ push edi
-		InjectHook( 0x53A984 + 2, GetVehicleDriver );
 		InjectHook( 0x53A9A7 + 2, GetVehicleDriver );
 
-		ReadCall( 0x53A990, CPlayerPed::orgDoStuffToGoOnFire );
-		InjectHook( 0x53A990, DoStuffToGoOnFire_NullAndPlayerCheck );
+		InjectHook( 0x53A990, DoStuffToGoOnFire_Noop );
 
-		ReadCall( 0x53A9B7, CFireManager::orgStartFire );
-		InjectHook( 0x53A9B7, &CFireManager::StartFire_NullEntityCheck );
+		InterceptCall( 0x53A9B7, orgStartFire, StartFire_NullEntityCheck );
 	}
 
 
@@ -7505,14 +7566,6 @@ void Patch_SA_10(HINSTANCE hInstance)
 		using namespace ShootingStarsFix;
 
 		InterceptCall(0x714610, orgRwIm3DTransform, RwIm3DTransform_UnsetTexture);
-	}
-
-
-	// Enable directional lights on flying car components
-	{
-		using namespace LitFlyingComponents;
-
-		InterceptCall(0x6A8BBE, orgWorldAdd, WorldAdd_SetLightObjectFlag);
 	}
 
 
@@ -8057,34 +8110,37 @@ void Patch_SA_11()
 	InjectHook(0x4DA0A5, 0x4F3430);
 
 	// FLAC support
-	InjectHook(0x57C566, FLACInit);
-	if ( *(BYTE*)0x4F3A50 == 0x6A )
+	if (CAEDataStream::HasGameBindings())
 	{
-		InjectHook(0x4F3A50 + 0x14D, LoadFLAC_11, HookType::Jump);
-		InjectHook(0x4F3A50 + 0x197, CAEWaveDecoderInit);
+		InjectHook(0x57C566, FLACInit);
+		if ( *(BYTE*)0x4F3A50 == 0x6A )
+		{
+			InjectHook(0x4F3A50 + 0x14D, LoadFLAC_11, HookType::Jump);
+			InjectHook(0x4F3A50 + 0x197, CAEWaveDecoderInit);
 
-		Patch<WORD>(0x4F3A50 + 0x17A, 0x18EB);
-		Patch<const void*>(0x4F3650 + 0x20, UserTrackExtensions);
-		Patch<const void*>(0x4F3650 + 0x51, &UserTrackExtensions->Codec);
-		Patch<const void*>(0x4F3A10 + 0x37, &UserTrackExtensions[1].Codec);
-		Patch<BYTE>(0x4F3650 + 0x3D, sizeof(UserTrackExtensions));
-	}
-	else
-	{
-		// securom'd EXE
-		InjectHook(0x5B6B7B, LoadFLAC_11, HookType::Jump);
-		InjectHook(0x5B6BFB, CAEWaveDecoderInit, HookType::Jump);
-		Patch<WORD>(0x5B6BCB, 0x26EB);
+			Patch<WORD>(0x4F3A50 + 0x17A, 0x18EB);
+			Patch<const void*>(0x4F3650 + 0x20, UserTrackExtensions);
+			Patch<const void*>(0x4F3650 + 0x51, &UserTrackExtensions->Codec);
+			Patch<const void*>(0x4F3A10 + 0x37, &UserTrackExtensions[1].Codec);
+			Patch<BYTE>(0x4F3650 + 0x3D, sizeof(UserTrackExtensions));
+		}
+		else
+		{
+			// securom'd EXE
+			InjectHook(0x5B6B7B, LoadFLAC_11, HookType::Jump);
+			InjectHook(0x5B6BFB, CAEWaveDecoderInit, HookType::Jump);
+			Patch<WORD>(0x5B6BCB, 0x26EB);
 
-		if ( *(DWORD*)0x14E4954 == 0x05C70A75 )
-			VP::Patch<const void*>(0x14E4958, &UserTrackExtensions[1].Codec);
+			if ( *(DWORD*)0x14E4954 == 0x05C70A75 )
+				VP::Patch<const void*>(0x14E4958, &UserTrackExtensions[1].Codec);
 
-		// Deobfuscating an opcode
-		Patch<BYTE>(0x4EBD25, 0xBF);
-		Patch<const void*>(0x4EBD26, UserTrackExtensions);
-		Patch<const void*>(0x4EBDD4, &UserTrackExtensions->Codec);
-		Patch<WORD>(0x4EBD2A, 0x72EB);
-		Patch<BYTE>(0x4EBDC0, sizeof(UserTrackExtensions));
+			// Deobfuscating an opcode
+			Patch<BYTE>(0x4EBD25, 0xBF);
+			Patch<const void*>(0x4EBD26, UserTrackExtensions);
+			Patch<const void*>(0x4EBDD4, &UserTrackExtensions->Codec);
+			Patch<WORD>(0x4EBD2A, 0x72EB);
+			Patch<BYTE>(0x4EBDC0, sizeof(UserTrackExtensions));
+		}
 	}
 
 	// Impound garages working correctly
@@ -8410,15 +8466,18 @@ void Patch_SA_Steam()
 	InjectHook(0x4E4A8B, 0x4FF2B0);
 
 	// FLAC support
-	InjectHook(0x4FFC39, LoadFLAC_Steam, HookType::Jump);
-	InjectHook(0x591814, FLACInit_Steam);
-	InjectHook(0x4FFC83, CAEWaveDecoderInit);
+	if (CAEDataStream::HasGameBindings())
+	{
+		InjectHook(0x4FFC39, LoadFLAC_Steam, HookType::Jump);
+		InjectHook(0x591814, FLACInit_Steam);
+		InjectHook(0x4FFC83, CAEWaveDecoderInit);
 
-	Patch<WORD>(0x4FFC66, 0x18EB);
-	Patch<const void*>(0x4FF4F0, UserTrackExtensions);
-	Patch<const void*>(0x4FF523, &UserTrackExtensions->Codec);
-	Patch<const void*>(0x4FFAB6, &UserTrackExtensions[1].Codec);
-	Patch<BYTE>(0x4FF50F, sizeof(UserTrackExtensions));
+		Patch<WORD>(0x4FFC66, 0x18EB);
+		Patch<const void*>(0x4FF4F0, UserTrackExtensions);
+		Patch<const void*>(0x4FF523, &UserTrackExtensions->Codec);
+		Patch<const void*>(0x4FFAB6, &UserTrackExtensions[1].Codec);
+		Patch<BYTE>(0x4FF50F, sizeof(UserTrackExtensions));
+	}
 
 	// Impound garages working correctly
 	InjectHook(0x426B48, 0x44C950);
@@ -9465,16 +9524,12 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		auto doStuffToGoOnFire = pattern( "83 BF 94 05 00 00 0A 75 6D 6A" ).get_one(); // 0x0054A6BE
 		constexpr ptrdiff_t START_FIRE_OFFSET = 0x31;
 
-		Patch( doStuffToGoOnFire.get<void>( 9 ), { 0x90, 0x57 } ); // nop \ push edi
 		Patch( doStuffToGoOnFire.get<void>( START_FIRE_OFFSET ), { 0x90, 0x57 } ); // nop \ push edi
-		InjectHook( doStuffToGoOnFire.get<void>( 9 + 2 ), GetVehicleDriver );
 		InjectHook( doStuffToGoOnFire.get<void>( START_FIRE_OFFSET + 2 ), GetVehicleDriver );
 
-		ReadCall( doStuffToGoOnFire.get<void>( 0x15 ), CPlayerPed::orgDoStuffToGoOnFire );
-		InjectHook( doStuffToGoOnFire.get<void>( 0x15 ), DoStuffToGoOnFire_NullAndPlayerCheck );
+		InjectHook( doStuffToGoOnFire.get<void>( 0x15 ), DoStuffToGoOnFire_Noop );
 
-		ReadCall( doStuffToGoOnFire.get<void>( START_FIRE_OFFSET + 0x10 ), CFireManager::orgStartFire );
-		InjectHook( doStuffToGoOnFire.get<void>( START_FIRE_OFFSET + 0x10 ), &CFireManager::StartFire_NullEntityCheck );
+		InterceptCall( doStuffToGoOnFire.get<void>( START_FIRE_OFFSET + 0x10 ), orgStartFire, StartFire_NullEntityCheck );
 	}
 	TXN_CATCH();
 

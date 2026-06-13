@@ -326,10 +326,8 @@ public:
 	float               m_fParticlesIntensity;
 
 public:
-	inline void			Render_Stub()
-	{ CObject::Render(); }
-
-	virtual void		Render() override;
+    static void         (CEntity::*orgRender_DetachedPartRenderingFix)();
+	void		        Render_DetachedPartRenderingFix();
 
 	static void					TryToFreeUpTempObjects_SilentPatch( int numObjects );
 	static std::tuple<int,int>	TryOrFreeUpTempObjects( int numObjects, bool force );
@@ -582,5 +580,8 @@ static_assert(sizeof(CEntity) == 0x38, "Wrong size: CEntity");
 static_assert(sizeof(CPhysical) == 0x138, "Wrong size: CPhysical");
 static_assert(sizeof(CObject) == 0x17C, "Wrong size: CObject");
 static_assert(sizeof(CEscalator) == 0x150, "Wrong size: CEscalator");
+
+// Binding checks
+bool HasGameBindings_DetachedPartRenderingFix();
 
 #endif

@@ -310,14 +310,12 @@ public:
 	inline const char*		GetCustomCarPlateText()
 		{ return m_plateText[0] ? m_plateText : nullptr; }
 
-	inline void				Shutdown_Stub()
-		{ CVehicleModelInfo::Shutdown(); }
 
-	virtual void			Shutdown() override;
+	static void				(CClumpModelInfo::*orgShutdown_CarDirtFix)();
+	void					Shutdown_CarDirtFix();
 
 	void					FindEditableMaterialList();
 	void					SetCarCustomPlate();
-	void					SetVehicleColour( int32_t color1, int32_t color2, int32_t color3, int32_t color4 );
 
 	uint32_t				GetNumRemaps() const;
 
@@ -344,5 +342,7 @@ public:
 static_assert(sizeof(CBaseModelInfo) == 0x20, "Wrong size: CBaseModelInfo");
 static_assert(sizeof(CClumpModelInfo) == 0x24, "Wrong size: CClumpModelInfo");
 static_assert(sizeof(CVehicleModelInfo) == 0x308, "Wrong size: CvehicleModelInfo");
+
+bool HasGameBindings_DirtRemapFix();
 
 #endif
