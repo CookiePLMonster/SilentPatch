@@ -70,6 +70,8 @@ public:
 	int32_t*				GetDay_GymGlitch();
 };
 
+bool HasGameBindings_GymGlitch();
+
 static_assert(sizeof(CRunningScript) == 0xE0, "Wrong size: CRunningScript");
 
 #endif

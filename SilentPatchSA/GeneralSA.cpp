@@ -13,11 +13,9 @@
 static void* EntityRender = AddressByVersion<void*>(0x534310, 0x5347B0, 0x545B30);
 WRAPPER void CEntity::Render() { VARJMP(EntityRender); }
 
-static void* varEntityIsVisible = AddressByVersion<void*>( 0x536BC0, Memory::PatternAndOffset("0B F6 41 1C 80 74 05 E9", -5) );
-WRAPPER bool CEntity::IsVisible() { VARJMP(varEntityIsVisible); }
+ExternalMethod<CEntity, bool ()> CEntity::IsVisible(AddressByVersion<bool (__thiscall*)(CEntity*)>( 0x536BC0, Memory::PatternAndOffset("0B F6 41 1C 80 74 05 E9", -5) ));
 
-static void* varInvertRaster = AddressByVersion<void*>(0x705660, 0x705E90, 0x7497A0);
-WRAPPER void CShadowCamera::InvertRaster() { VARJMP(varInvertRaster); }
+ExternalMethod<CShadowCamera, void ()> CShadowCamera::InvertRaster(AddressByVersion<void (__thiscall*)(CShadowCamera*)>(0x705660, 0x705E90, 0x7497A0));
 
 ExternalFunc<CWeaponInfo* (eWeaponType weaponID, signed char bType)> CWeaponInfo::GetWeaponInfo(AddressByVersion<CWeaponInfo*(*)(eWeaponType, signed char)>(0x743C60, 0x744490, 0x77D940));
 
@@ -96,7 +94,12 @@ void CObject::Render_DetachedPartRenderingFix()
 	ResetEditableMaterials(materialRestoreData, numMaterialsToRestore);
 }
 
-extern void (*WorldRemove)(CEntity*);
+extern ExternalFunc<void (CEntity*)> WorldRemove;
+bool HasGameBindings_TryToFreeUpTempObjects()
+{
+	return CPools::HasGameBindings_ObjectPool() && EnsureBindings(CEntity::IsVisible, WorldRemove);
+}
+
 void CObject::TryToFreeUpTempObjects_SilentPatch( int numObjects )
 {
 	const auto [ numProcessed, numFreed ] = TryOrFreeUpTempObjects( numObjects, false );
@@ -120,10 +123,10 @@ std::tuple<int,int> CObject::TryOrFreeUpTempObjects( int numObjects, bool force 
 			if ( obj->m_objectCreatedBy == TEMP_OBJECT )
 			{
 				numProcessed++;
-				if ( force || !obj->IsVisible() )
+				if ( force || !obj->IsVisible.Call(obj) )
 				{
 					numFreed++;
-					WorldRemove( obj );
+					WorldRemove.Call( obj );
 					delete obj;
 				}
 			}
@@ -148,7 +151,7 @@ RwCamera* CShadowCamera::Update(CEntity* pEntity)
 				RpClumpForAllAtomics(reinterpret_cast<RpClump*>(pEntity->m_pRwObject), ShadowCameraRenderCB);
 		}
 
-		InvertRaster();
+		InvertRaster.Call(this);
 		RwCameraEndUpdate(m_pCamera);
 	}
 	return m_pCamera;

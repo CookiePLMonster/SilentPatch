@@ -3,6 +3,8 @@
 #include "GeneralSA.h"
 #include "EventsSA.h"
 
+#include "ExternalBindings.hpp"
+
 class CEntryExit;
 class CEvent;
 class CPed;
@@ -86,7 +88,7 @@ public:
 class __declspec(novtable) CTaskSimpleJetPack : public CTaskSimple
 {
 public:
-	void			RenderJetPack(class CPed* pPed);
+	static ExternalMethod<CTaskSimpleJetPack, void (class CPed* ped)> RenderJetPack;
 };
 
 class __declspec(novtable) CTaskComplexSequence : public CTaskComplex
@@ -148,7 +150,7 @@ public:
 	CTask* GetTaskPrimary() const { return m_taskManager.GetTask(CTaskManager::TASK_PRIORITY_PRIMARY); }
 	CEvent* GetCurrentEvent() const { return m_eventHandler.GetCurrentEvent(); }
 
-	class CTaskSimpleJetPack*	GetTaskJetPack() const;
+	static ExternalMethod<CPedIntelligence, class CTaskSimpleJetPack* () const> GetTaskJetPack;
 
 private:
 	CPed* m_pPed;
@@ -448,10 +450,15 @@ public:
 	bool				IsPlayer() const
 		{ return m_nPedType == PEDTYPE_PLAYER1 || m_nPedType == PEDTYPE_PLAYER2; }
 
-	uint8_t				GetWeaponSkill();
+	static ExternalMethod<CPed, uint8_t ()> GetWeaponSkill;
+	static ExternalMethod<CPed, void (bool bSecondWeapon)> SetGunFlashAlpha;
+
+	int16_t				Say(uint16_t phrase, uint32_t StartTimeDelay = 0, float Probability = 1.0f, bool bOverideSilence = false, bool bForceAudible = false, bool bFrontEnd = false)
+	{
+		return SayFunc.Call(this, phrase, StartTimeDelay, Probability, bOverideSilence, bForceAudible, bFrontEnd);
+	}
+	static ExternalMethod<CPed, int16_t (uint16_t phrase, uint32_t StartTimeDelay, float Probability, bool bOverideSilence, bool bForceAudible, bool bFrontEnd)> SayFunc;
 	void				ResetGunFlashAlpha();
-	void				SetGunFlashAlpha(bool bSecondWeapon);
-	int16_t				Say(uint16_t phrase, uint32_t StartTimeDelay = 0, float Probability = 1.0f, bool bOverideSilence = false, bool bForceAudible = false, bool bFrontEnd = false);
 
 	void				RenderWeapon(bool bWeapon, bool bMuzzleFlash, bool bForShadow);
 	void				RenderForShadow();
@@ -460,10 +467,14 @@ public:
 	void				GiveWeapon_SP( uint32_t weapon, uint32_t ammo, bool flag );
 
 	// Extension to accommodate for SA-MP hooking GetWeaponSkill in RenderWeaponPedsForPC dynamically
-	static inline uint8_t (CPed::*orgGetWeaponSkillForRenderWeaponPedsForPC)() = &GetWeaponSkill;
+	static inline ExternalMethod<CPed, uint8_t ()> orgGetWeaponSkillForRenderWeaponPedsForPC;
 	uint8_t				GetWeaponSkillForRenderWeaponPedsForPC()
 	{
-		return std::invoke( orgGetWeaponSkillForRenderWeaponPedsForPC, this );
+		if (!orgGetWeaponSkillForRenderWeaponPedsForPC.Ensure())
+		{
+			orgGetWeaponSkillForRenderWeaponPedsForPC.Bind(GetWeaponSkill.Address());
+		}
+		return orgGetWeaponSkillForRenderWeaponPedsForPC.Call(this);
 	}
 
 	uint8_t				GetWeaponSkillForRenderWeaponPedsForPC_SAMP();
@@ -478,6 +489,8 @@ public:
 		}
 		return -1;
 	}
+
+	static bool			HasGameBindings_RenderWeapon();
 };
 
 bool HasGameBindings_ShadowRenderingFixes();
@@ -498,7 +511,7 @@ static_assert(sizeof(CPlayerPed) == 0x7A4, "Wrong size: CPlayerPed");
 class CClothes
 {
 public:
-	static void (*RebuildPlayer)(CPlayerPed* ped, bool bForReplay);
+	static ExternalFunc<void (CPlayerPed* ped, bool bForReplay)> RebuildPlayer;
 };
 
 class CAEPedSpeechAudioEntity

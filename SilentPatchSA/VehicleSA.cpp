@@ -784,9 +784,9 @@ void CAutomobile::ProcessNewsvan()
 	}
 }
 
-extern ExternalFunc<RwMatrix* (RwFrame* frame)> fnBind_RwFrameGetLTM;
 bool HasGameBindings_GetTowBarPos()
 {
+	extern ExternalFunc<RwMatrix* (RwFrame* frame)> fnBind_RwFrameGetLTM;
 	return EnsureBindings(ms_modelInfoPtrs, fnBind_RwFrameGetLTM);
 }
 
@@ -813,6 +813,11 @@ bool CTrailer::GetTowBarPos(CVector& posnOut, bool defaultPos, CVehicle* trailer
 	}
 
 	return GetTowBarPos_GTA(posnOut, defaultPos, trailer);
+}
+
+bool CStoredCar::HasGameBindings_RestoreCar()
+{
+	return HasGameBindings_FindPlayer();
 }
 
 CVehicle* CStoredCar::RestoreCar_LoadBombOwnership(CVehicle* vehicle)

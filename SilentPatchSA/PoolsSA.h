@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#include "ExternalBindings.hpp"
+
 template <class T, class U = T>
 class CPool
 {
@@ -99,10 +101,12 @@ typedef CPool<class CObject, uint8_t[0x19C]> CObjectPool;
 class CPools
 {
 private:
-	static CObjectPool*& ms_pObjectPool;
+	static ExternalRef<CObjectPool*> ms_pObjectPool;
 
 public:
-	static CObjectPool& GetObjectPool() { return *ms_pObjectPool; }
+	static CObjectPool& GetObjectPool() { return *ms_pObjectPool.Get(); }
+
+	static bool HasGameBindings_ObjectPool() { return ms_pObjectPool.Ensure(); }
 };
 
 static_assert(sizeof(CPool<bool>) == 0x14, "Wrong size: CPool");

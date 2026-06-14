@@ -125,8 +125,8 @@ namespace ModCompat
 #pragma warning(disable:4733)
 
 // RW wrappers
-static void* varAtomicDefaultRenderCallBack = AddressByVersion<void*>(0x7491C0, 0x749AD0, 0x783180);
-WRAPPER RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { WRAPARG(atomic); VARJMP(varAtomicDefaultRenderCallBack); }
+ExternalFunc fnBind_AtomicDefaultRenderCallBack(AddressByVersion<RpAtomic* (*)(RpAtomic* atomic)>(0x7491C0, 0x749AD0, 0x783180));
+RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { return fnBind_AtomicDefaultRenderCallBack.Call(atomic); }
 static void* varRtPNGImageRead = AddressByVersion<void*>(0x7CF9B0, 0x7D02B0, 0x809970);
 WRAPPER RwImage* RtPNGImageRead(const RwChar* imageName) { WRAPARG(imageName); VARJMP(varRtPNGImageRead); }
 static void* varRwTextureCreate = AddressByVersion<void*>(0x7F37C0, 0x7F40C0, 0x82D780);
@@ -350,21 +350,19 @@ struct RsGlobalType
 // Other wrappers
 void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0x824EFF, 0x85E58C);
 const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0x730360, 0x769C20, { "55 8B EC A1 ? ? ? ? 85 C0 7E 05 03 45 08 5D C3", 0 });
-RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0x735270, 0x7671B0);
-auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0x4F3A10, 0x4FFA80);
+ExternalFunc			GetAnimHierarchyFromSkinClump(AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0x735270, 0x7671B0));
 auto					RpAnimBlendClumpGetAssociation = AddressByVersion<CAnimBlendAssociation*(*)(RpClump*, uint32_t)>(0x4D68B0, { "8B 0D ? ? ? ? 8B 14 01 8B 02 85 C0 74 11 8B 4D 0C", -6 });
-auto					GetAnimationBlockIndex = AddressByVersion<int32_t(*)(const char* animBlock)>(0x4D3990, 0x4D3B80, 0x4DE2F0, { "83 C4 04 85 C0 75 05", -0xC });
-auto					RequestModel = AddressByVersion<void(*)(int modelID, int priority)>(0x4087E0, { "57 8D 3C 9B", -0x8 });
-auto					LoadAllRequestedModels = AddressByVersion<void(*)(bool bBlock)>(0x40EA10, { "A1 ? ? ? ? 03 C0", -0x20 });
-auto					ClearAtomicFlag = AddressByVersion<void(*)(RpAtomic*, int)>(0x732310, 0x732B40, 0x76C4B0, { "55 8B EC 8B 55 0C A1", 0 });
+ExternalFunc			GetAnimationBlockIndex(AddressByVersion<int32_t(*)(const char* animBlock)>(0x4D3990, 0x4D3B80, 0x4DE2F0, { "83 C4 04 85 C0 75 05", -0xC }));
+ExternalFunc			RequestModel(AddressByVersion<void(*)(int modelID, int priority)>(0x4087E0, { "57 8D 3C 9B", -0x8 }));
+ExternalFunc			LoadAllRequestedModels(AddressByVersion<void(*)(bool bBlock)>(0x40EA10, { "A1 ? ? ? ? 03 C0", -0x20 }));
+ExternalFunc			ClearAtomicFlag(AddressByVersion<void(*)(RpAtomic*, int)>(0x732310, 0x732B40, 0x76C4B0, { "55 8B EC 8B 55 0C A1", 0 }));
 
 auto					IsPlayerOnAMission = AddressByVersion<bool(*)()>(0x464D50, {"85 C0 74 0C 83 B8 ? ? ? ? ? 75 03 B0 01 C3", -5});
 
-static void				(__thiscall* SetVolume)(void*,float);
 static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
 
-auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, { "8B 06 8B 50 0C 8B CE FF D2 8A 46 36 24 07 3C 01 76 0D", -7 });
+ExternalFunc			WorldRemove(AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, { "8B 06 8B 50 0C 8B CE FF D2 8A 46 36 24 07 3C 01 76 0D", -7 }));
 
 
 // SA variables
@@ -372,30 +370,17 @@ void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194, {
 
 RsGlobalType*			RsGlobal = *AddressByVersion<RsGlobalType**>(0x619602 + 2, { "33 C0 C7 05 ? ? ? ? ? ? ? ? C7 05", 2 + 2 });
 
-unsigned char&			nGameClockDays = **AddressByVersion<unsigned char**>(0x4E841D, 0x4E886D, 0x4F3871);
-unsigned char&			nGameClockMonths = **AddressByVersion<unsigned char**>(0x4E842D, 0x4E887D, 0x4F3861);
-void*&					pUserTracksStuff = **AddressByVersion<void***>(0x4D9B7B, 0x4DA06C, 0x4E4A43);
+ExternalRef				nGameClockDays(AddressByVersion<uint8_t**>(0x4E841D, 0x4E886D, 0x4F3871));
+ExternalRef				nGameClockMonths(AddressByVersion<uint8_t**>(0x4E842D, 0x4E887D, 0x4F3861));
 
 CZoneInfo*&				pCurrZoneInfo = **AddressByVersion<CZoneInfo***>(0x58ADB1, 0x58B581, 0x407F93);
 CRGBA*					HudColour = *AddressByVersion<CRGBA**>(0x58ADF6, 0x58B5C6, 0x440648);
 
-CLinkListSA<CPed*>&			ms_weaponPedsForPC = **AddressByVersion<CLinkListSA<CPed*>**>(0x53EACA, 0x53EF6A, 0x551101);
+ExternalRef				ms_weaponPedsForPC(AddressByVersion<CLinkListSA<CPed*>**>(0x53EACA, 0x53EF6A, 0x551101));
 
 uint32_t&				bDrawCrossHair = **AddressByVersion<uint32_t**>(0x58E7BF + 2, {"83 3D ? ? ? ? ? 74 29", 2});
 
 DebugMenuAPI gDebugMenuAPI;
-
-// Custom variables
-static struct
-{
-	char			Extension[8];
-	unsigned int	Codec;
-} UserTrackExtensions[] = { { ".ogg", DECODER_VORBIS }, { ".mp3", DECODER_QUICKTIME },
-							{ ".wav", DECODER_WAVE }, { ".wma", DECODER_WINDOWSMEDIA },
-							{ ".wmv", DECODER_WINDOWSMEDIA }, { ".aac", DECODER_QUICKTIME },
-							{ ".m4a", DECODER_QUICKTIME }, { ".mov", DECODER_QUICKTIME },
-							{ ".fla", DECODER_FLAC }, { ".flac", DECODER_FLAC } };
-
 static bool IgnoresWeaponPedsForPCFix();
 
 // ============= Fixed atomic render functions for blurred rotors/propellers =============
@@ -476,6 +461,11 @@ namespace BlurredRotorsAtomicRender
 // ============= Hunter door render flag fix (interior no longer vanishing when looking at it from the right side) =============
 namespace HunterDoorRenderFlagFix
 {
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(GetAnimationBlockIndex, ClearAtomicFlag);
+	}
+
 	static void (__thiscall *orgPreprocessHierarchy)(CVehicleModelInfo* modelInfo);
 	static void __fastcall PreprocessHierarchy_UnmarkHunterDoor(CVehicleModelInfo* modelInfo)
 	{
@@ -485,14 +475,14 @@ namespace HunterDoorRenderFlagFix
 		const int VehicleAnimFileIndex = modelInfo->GetAnimFileIndex();
 		if (VehicleAnimFileIndex != -1)
 		{
-			static const int RustlerAnimFileIndex = GetAnimationBlockIndex("rustler");
+			static const int RustlerAnimFileIndex = GetAnimationBlockIndex.Call("rustler");
 			if (VehicleAnimFileIndex == RustlerAnimFileIndex)
 			{
 				RpClumpForAllAtomics(reinterpret_cast<RpClump*>(modelInfo->pRwObject), [](RpAtomic* atomic) -> RpAtomic*
 					{
 						if (strncmp(GetFrameNodeName(RpAtomicGetFrame(atomic)), "door_lf", 7) == 0)
 						{
-							ClearAtomicFlag(atomic, 4); // ATOMIC_IS_LEFT
+							ClearAtomicFlag.Call(atomic, 4); // ATOMIC_IS_LEFT
 						}
 						return atomic;
 					});
@@ -501,13 +491,18 @@ namespace HunterDoorRenderFlagFix
 	}
 }
 
+static bool HasGameBindings_WeaponRenderingFixes()
+{
+	return EnsureBindings(ms_weaponPedsForPC) && CPed::HasGameBindings_RenderWeapon();
+}
+
 void RenderWeapon(CPed* pPed)
 {
 	if ( !IgnoresWeaponPedsForPCFix() )
 	{
 		pPed->RenderWeapon(true, false, false);
 	}
-	ms_weaponPedsForPC.Insert(pPed);
+	ms_weaponPedsForPC.Get().Insert(pPed);
 }
 
 void RenderWeaponPedsForPC()
@@ -522,23 +517,14 @@ void RenderWeaponPedsForPC()
 
 	const bool renderWeapon = IgnoresWeaponPedsForPCFix();
 
-	for ( auto it = ms_weaponPedsForPC.Next( nullptr ); it != nullptr; it = ms_weaponPedsForPC.Next( it ) )
+	auto& weaponPedsForPC = ms_weaponPedsForPC.Get();
+	for ( auto it = weaponPedsForPC.Next( nullptr ); it != nullptr; it = weaponPedsForPC.Next( it ) )
 	{
 		CPed* ped = **it;
 		const bool bLightingSetup = ped->SetupLighting();
 		ped->RenderWeapon(renderWeapon, true, false);
 		ped->RemoveLighting(bLightingSetup);
 	}
-}
-
-static CAEFLACDecoder* __stdcall DecoderCtor(CAEDataStream* pData)
-{
-	return new CAEFLACDecoder(pData);
-}
-
-static CAEWaveDecoder* __stdcall CAEWaveDecoderInit(CAEDataStream* pStream)
-{
-	return new CAEWaveDecoder(pStream);
 }
 
 namespace UIScales
@@ -1385,7 +1371,7 @@ void UpdateEscalators()
 	{
 		for ( auto it : CEscalator::ms_entitiesToRemove )
 		{
-			WorldRemove( it );
+			WorldRemove.Call( it );
 			delete it;
 		}
 		CEscalator::ms_entitiesToRemove.clear();
@@ -2667,22 +2653,28 @@ namespace RestrictImpoundVehicleTypes
 // 2. Crash when playing back a replay with a different motion group animation (fat/muscular/normal) than the current one
 namespace ReplayPlayerPedCrashFixes
 {
+	// FLA compatibility
+	static const ExternalValue<int32_t> s_animGroupIDOffset(AddressByVersion<int32_t*>(0x5A814C + 2, { "81 C7 ? ? ? ? 57 E8 ? ? ? ? 83 C4 0C", 2 }));
+
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(s_animGroupIDOffset, CClothes::RebuildPlayer, GetAnimationBlockIndex, RequestModel, LoadAllRequestedModels) && HasGameBindings_FindPlayer();
+	}
+
 	static void (*orgRestoreStuffFromMem)();
 	static void RestoreStuffFromMem_RebuildPlayer()
 	{
 		orgRestoreStuffFromMem();
-		CClothes::RebuildPlayer(FindPlayerPed(), false);
+		CClothes::RebuildPlayer.Call(FindPlayerPed(), false);
 	}
 
 	static void LoadAllMotionGroupAnims()
 	{
-		// FLA compatibility
-		static const int32_t animGroupIDOffset = *AddressByVersion<int32_t*>(0x5A814C + 2, { "81 C7 ? ? ? ? 57 E8 ? ? ? ? 83 C4 0C", 2 });
+		const uint32_t animGroupIDOffset = s_animGroupIDOffset.Get();
+		RequestModel.Call(GetAnimationBlockIndex.Call("fat") + animGroupIDOffset, 18);
+		RequestModel.Call(GetAnimationBlockIndex.Call("muscular") + animGroupIDOffset, 18);
 
-		RequestModel(GetAnimationBlockIndex("fat") + animGroupIDOffset, 18);
-		RequestModel(GetAnimationBlockIndex("muscular") + animGroupIDOffset, 18);
-
-		LoadAllRequestedModels(true);
+		LoadAllRequestedModels.Call(true);
 	}
 
 	static void (*orgRebuildPlayer)(CPlayerPed*, bool);
@@ -3747,6 +3739,11 @@ namespace TimecycDatMissingDataFix
 // ============= Speech system fixes =============
 namespace SpeechSystemFixes
 {
+	static bool HasGameBindings_AllFixes()
+	{
+		return EnsureBindings(CPed::SayFunc);
+	}
+
 	static uint32_t* ConversationTopic;
 
 	static void* (__thiscall* orgPedSay_Weather)(void* ped, uint16_t Phrase, void* StartTimeDelay, void* Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd);
@@ -3862,6 +3859,11 @@ namespace SpeechSystemFixes
 		return result;
 	}
 
+	static bool HasGameBindings_DoGangAbuseSpeech()
+	{
+		return HasGameBindings_AllFixes();
+	}
+
 	static bool DoGangAbuseSpeech_LSV(CPed* ped1, CPed* ped2)
 	{
 		if (ped1->GetPedType() >= PEDTYPE_GANG1 && ped1->GetPedType() <= PEDTYPE_GANG10 && ped2->GetPedType() == PEDTYPE_GANG3)
@@ -3884,6 +3886,11 @@ namespace SpeechSystemFixes
 	}
 
 	HOOK_EACH_INIT(DoGangAbuseSpeech, orgDoGangAbuseSpeech, DoGangAbuseSpeech_AddLSV);
+
+	static bool HasGameBindings_DoGangAttackSpeech()
+	{
+		return HasGameBindings_AllFixes();
+	}
 
 	static void (*orgDoGangAttackSpeech)(CPed* ped1, CPed* ped2);
 	static void DoGangAttackSpeech_AddPlayer(CPed* ped1, CPed* ped2)
@@ -3919,6 +3926,11 @@ namespace SpeechSystemFixes
 	}
 
 	HOOK_EACH_INIT(VehicleDamageFallback, orgPedSay_VehicleDamage, PedSay_VehicleDamageFallback);
+
+	static bool HasGameBindings_PainSprayed()
+	{
+		return HasGameBindings_AllFixes();
+	}
 
 	static void PlayPainSprayed(CPed* ped)
 	{
@@ -4227,6 +4239,11 @@ namespace SpeechSystemFixes
 // ============= Good Citizen Bonus =============
 namespace GoodCitizenBonus
 {
+	static bool HasGameBindings()
+	{
+		return CPed::SayFunc.Ensure();
+	}
+
 	static CPed* pChasingCopPed;
 	bool __stdcall IsPedFleeingFromCops_PlayAudio(const CPed* ped)
 	{
@@ -4607,32 +4624,6 @@ __declspec(naked) void LightMaterialsFix()
 	}
 }
 
-__declspec(naked) void UserTracksFix()
-{
-	_asm
-	{
-		push	[esp+4]
-		call	SetVolume
-		mov		ecx, [pUserTracksStuff]
-		mov		byte ptr [ecx+0xD], 1
-		call	InitializeUtrax
-		ret		4
-	}
-}
-
-__declspec(naked) void UserTracksFix_Steam()
-{
-	_asm
-	{
-		push	[esp+4]
-		call	SetVolume
-		mov		ecx, [pUserTracksStuff]
-		mov		byte ptr [ecx+5], 1
-		call	InitializeUtrax
-		ret		4
-	}
-}
-
 static void* const TrailerDoubleRWheelsFix_ReturnFalse = AddressByVersion<void*>(0x4C9333, 0x4C9533, 0x4D3C59);
 static void* const TrailerDoubleRWheelsFix_ReturnTrue = AddressByVersion<void*>(0x4C9235, 0x4C9435, 0x4D3B59);
 __declspec(naked) void TrailerDoubleRWheelsFix()
@@ -4695,141 +4686,203 @@ __declspec(naked) void TrailerDoubleRWheelsFix2_Steam()
 	}
 }
 
-static void*	LoadFLAC_JumpBack = AddressByVersion<void*>(0x4F3743, Memory::GetVersion().version == 1 ? (*(BYTE*)0x4F3A50 == 0x6A ? 0x4F3BA3 : 0x5B6B81) : 0, 0x4FFC3F);
-__declspec(naked) void LoadFLAC()
+// ============= All the legacy User Tracks hooks (ew) =============
+namespace UserTracksChanges
 {
-	_asm
+	// Not using ExternalBindings because of inline assembly
+	static auto AEUserRadioTrackManager_Initialise = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0x4F3A10, 0x4FFA80);
+	void*** pUserTracksStuff = AddressByVersion<void***>(0x4D9B7B, 0x4DA06C, 0x4E4A43);
+
+	static bool HasGameBindings()
 	{
-		jz		LoadFLAC_WindowsMedia
-		sub		ebp, 2
-		jnz		LoadFLAC_Return
-		push	esi
-		call	DecoderCtor
-		jmp		LoadFLAC_Success
-
-	LoadFLAC_WindowsMedia:
-		jmp		LoadFLAC_JumpBack
-
-	LoadFLAC_Success:
-		test	eax, eax
-		mov		[esp+0x20+4], eax
-		jnz		LoadFLAC_Return_NoDelete
-
-	LoadFLAC_Return:
-		mov		ecx, esi
-		call	CAEDataStreamOld::~CAEDataStreamOld
-		push	esi
-		call	GTAdelete
-		add     esp, 4
-
-	LoadFLAC_Return_NoDelete:
-		mov     eax, [esp+0x20+4]
-		mov		ecx, [esp+0x20-0xC]
-		pop		esi
-		pop		ebp
-		pop		edi
-		pop		ebx
-		mov		fs:0, ecx
-		add		esp, 0x10
-		ret		4
+		return GTAdelete != nullptr && AEUserRadioTrackManager_Initialise != nullptr && pUserTracksStuff != nullptr;
 	}
-}
 
-// 1.01 securom butchered this func, might not be reliable
-__declspec(naked) void LoadFLAC_11()
-{
-	_asm
+	static struct
 	{
-		jz		LoadFLAC_WindowsMedia
-		sub		ebp, 2
-		jnz		LoadFLAC_Return
-		push	esi
-		call	DecoderCtor
-		jmp		LoadFLAC_Success
+		char			Extension[8];
+		unsigned int	Codec;
+	} UserTrackExtensions[] = { { ".ogg", DECODER_VORBIS }, { ".mp3", DECODER_QUICKTIME },
+		{ ".wav", DECODER_WAVE }, { ".wma", DECODER_WINDOWSMEDIA },
+		{ ".wmv", DECODER_WINDOWSMEDIA }, { ".aac", DECODER_QUICKTIME },
+		{ ".m4a", DECODER_QUICKTIME }, { ".mov", DECODER_QUICKTIME },
+		{ ".fla", DECODER_FLAC }, { ".flac", DECODER_FLAC } };
 
-	LoadFLAC_WindowsMedia:
-		jmp		LoadFLAC_JumpBack
+	static void (__thiscall* SetVolume)(void*,float);
 
-	LoadFLAC_Success:
-		test	eax, eax
-		mov		[esp+0x20+4], eax
-		jnz		LoadFLAC_Return_NoDelete
-
-	LoadFLAC_Return:
-		mov		ecx, esi
-		call	CAEDataStreamNew::~CAEDataStreamNew
-		push	esi
-		call	GTAdelete
-		add     esp, 4
-
-	LoadFLAC_Return_NoDelete:
-		mov     eax, [esp+0x20+4]
-		mov		ecx, [esp+0x20-0xC]
-		pop		esi
-		pop		ebp
-		pop		edi
-		pop		ebx
-		mov		fs:0, ecx
-		add		esp, 0x10
-		ret		4
+	static CAEFLACDecoder* __stdcall DecoderCtor(CAEDataStream* pData)
+	{
+		return new CAEFLACDecoder(pData);
 	}
-}
 
-
-__declspec(naked) void LoadFLAC_Steam()
-{
-	_asm
+	static CAEWaveDecoder* __stdcall CAEWaveDecoderInit(CAEDataStream* pStream)
 	{
-		jz		LoadFLAC_WindowsMedia
-		sub		ebp, 2
-		jnz		LoadFLAC_Return
-		push	esi
-		call	DecoderCtor
-		jmp		LoadFLAC_Success
-
-	LoadFLAC_WindowsMedia:
-		jmp		LoadFLAC_JumpBack
-
-	LoadFLAC_Success:
-		test	eax, eax
-		mov		[esp+0x20+4], eax
-		jnz		LoadFLAC_Return_NoDelete
-
-	LoadFLAC_Return:
-		mov		ecx, esi
-		call	CAEDataStreamOld::~CAEDataStreamOld
-		push	esi
-		call	GTAdelete
-		add     esp, 4
-
-	LoadFLAC_Return_NoDelete:
-		mov     eax, [esp+0x20+4]
-		mov		ecx, [esp+0x20-0xC]
-		pop		ebx
-		pop		esi
-		pop		ebp
-		pop		edi
-		mov		fs:0, ecx
-		add		esp, 0x10
-		ret		4
+		return new CAEWaveDecoder(pStream);
 	}
-}
 
-__declspec(naked) void FLACInit()
-{
-	_asm
+	__declspec(naked) void UserTracksFix()
 	{
-		mov		byte ptr [ecx+0xD], 1
-		jmp		InitializeUtrax
+		_asm
+		{
+			push	[esp+4]
+			call	SetVolume
+			mov		ecx, [pUserTracksStuff]
+			mov		ecx, [ecx]
+			mov		byte ptr [ecx+0xD], 1
+			call	AEUserRadioTrackManager_Initialise
+			ret		4
+		}
 	}
-}
 
-__declspec(naked) void FLACInit_Steam()
-{
-	_asm
+	__declspec(naked) void UserTracksFix_Steam()
 	{
-		mov		byte ptr [ecx+5], 1
-		jmp		InitializeUtrax
+		_asm
+		{
+			push	[esp+4]
+			call	SetVolume
+			mov		ecx, [pUserTracksStuff]
+			mov		ecx, [ecx]
+			mov		byte ptr [ecx+5], 1
+			call	AEUserRadioTrackManager_Initialise
+			ret		4
+		}
+	}
+	static void*	LoadFLAC_JumpBack = AddressByVersion<void*>(0x4F3743, Memory::GetVersion().version == 1 ? (*(BYTE*)0x4F3A50 == 0x6A ? 0x4F3BA3 : 0x5B6B81) : 0, 0x4FFC3F);
+	__declspec(naked) void LoadFLAC()
+	{
+		_asm
+		{
+			jz		LoadFLAC_WindowsMedia
+			sub		ebp, 2
+			jnz		LoadFLAC_Return
+			push	esi
+			call	DecoderCtor
+			jmp		LoadFLAC_Success
+
+		LoadFLAC_WindowsMedia:
+			jmp		LoadFLAC_JumpBack
+
+		LoadFLAC_Success:
+			test	eax, eax
+			mov		[esp+0x20+4], eax
+			jnz		LoadFLAC_Return_NoDelete
+
+		LoadFLAC_Return:
+			mov		ecx, esi
+			call	CAEDataStreamOld::~CAEDataStreamOld
+			push	esi
+			call	GTAdelete
+			add     esp, 4
+
+		LoadFLAC_Return_NoDelete:
+			mov     eax, [esp+0x20+4]
+			mov		ecx, [esp+0x20-0xC]
+			pop		esi
+			pop		ebp
+			pop		edi
+			pop		ebx
+			mov		fs:0, ecx
+			add		esp, 0x10
+			ret		4
+		}
+	}
+
+	// 1.01 securom butchered this func, might not be reliable
+	__declspec(naked) void LoadFLAC_11()
+	{
+		_asm
+		{
+			jz		LoadFLAC_WindowsMedia
+			sub		ebp, 2
+			jnz		LoadFLAC_Return
+			push	esi
+			call	DecoderCtor
+			jmp		LoadFLAC_Success
+
+		LoadFLAC_WindowsMedia:
+			jmp		LoadFLAC_JumpBack
+
+		LoadFLAC_Success:
+			test	eax, eax
+			mov		[esp+0x20+4], eax
+			jnz		LoadFLAC_Return_NoDelete
+
+		LoadFLAC_Return:
+			mov		ecx, esi
+			call	CAEDataStreamNew::~CAEDataStreamNew
+			push	esi
+			call	GTAdelete
+			add     esp, 4
+
+		LoadFLAC_Return_NoDelete:
+			mov     eax, [esp+0x20+4]
+			mov		ecx, [esp+0x20-0xC]
+			pop		esi
+			pop		ebp
+			pop		edi
+			pop		ebx
+			mov		fs:0, ecx
+			add		esp, 0x10
+			ret		4
+		}
+	}
+
+
+	__declspec(naked) void LoadFLAC_Steam()
+	{
+		_asm
+		{
+			jz		LoadFLAC_WindowsMedia
+			sub		ebp, 2
+			jnz		LoadFLAC_Return
+			push	esi
+			call	DecoderCtor
+			jmp		LoadFLAC_Success
+
+		LoadFLAC_WindowsMedia:
+			jmp		LoadFLAC_JumpBack
+
+		LoadFLAC_Success:
+			test	eax, eax
+			mov		[esp+0x20+4], eax
+			jnz		LoadFLAC_Return_NoDelete
+
+		LoadFLAC_Return:
+			mov		ecx, esi
+			call	CAEDataStreamOld::~CAEDataStreamOld
+			push	esi
+			call	GTAdelete
+			add     esp, 4
+
+		LoadFLAC_Return_NoDelete:
+			mov     eax, [esp+0x20+4]
+			mov		ecx, [esp+0x20-0xC]
+			pop		ebx
+			pop		esi
+			pop		ebp
+			pop		edi
+			mov		fs:0, ecx
+			add		esp, 0x10
+			ret		4
+		}
+	}
+
+	__declspec(naked) void FLACInit()
+	{
+		_asm
+		{
+			mov		byte ptr [ecx+0xD], 1
+			jmp		AEUserRadioTrackManager_Initialise
+		}
+	}
+
+	__declspec(naked) void FLACInit_Steam()
+	{
+		_asm
+		{
+			mov		byte ptr [ecx+5], 1
+			jmp		AEUserRadioTrackManager_Initialise
+		}
 	}
 }
 
@@ -5233,11 +5286,11 @@ BOOL InjectDelayedPatches_10()
 			HookEach_PlaneProp(plane_prop_render, PatchRenderCB);
 
 			// Weapons rendering
-			if ( !bOutfit )
+			if ( HasGameBindings_WeaponRenderingFixes() && !bOutfit )
 			{
 				if ( bSAMP )
 				{
-					CPed::orgGetWeaponSkillForRenderWeaponPedsForPC = &CPed::GetWeaponSkillForRenderWeaponPedsForPC_SAMP;
+					CPed::orgGetWeaponSkillForRenderWeaponPedsForPC.Bind(&CPed::GetWeaponSkillForRenderWeaponPedsForPC_SAMP);
 				}
 
 				InjectHook(0x5E7859, RenderWeapon);
@@ -5250,11 +5303,14 @@ BOOL InjectDelayedPatches_10()
 			using namespace ScriptFixes;
 
 			// Gym glitch fix
-			Patch<WORD>(0x470B03, 0xCD8B);
-			Patch<DWORD>(0x470B0A, 0x8B04508B);
-			Patch<WORD>(0x470B0E, 0x9000);
-			Nop(0x470B10, 1);
-			InjectHook(0x470B05, &CRunningScript::GetDay_GymGlitch, HookType::Call);
+			if (HasGameBindings_GymGlitch())
+			{
+				Patch<WORD>(0x470B03, 0xCD8B);
+				Patch<DWORD>(0x470B0A, 0x8B04508B);
+				Patch<WORD>(0x470B0E, 0x9000);
+				Nop(0x470B10, 1);
+				InjectHook(0x470B05, &CRunningScript::GetDay_GymGlitch, HookType::Call);
+			}
 
 			// Basketball fix
 			InterceptCall( 0x5D18F0, TheScriptsLoad, TheScriptsLoad_BasketballFix );
@@ -5927,7 +5983,7 @@ BOOL InjectDelayedPatches_11()
 			HookEach_PlaneProp(plane_prop_render, PatchRenderCB);
 
 			// Weapons rendering
-			if ( !bOutfit )
+			if ( HasGameBindings_WeaponRenderingFixes() && !bOutfit )
 			{
 				InjectHook(0x5E8079, RenderWeapon);
 				InjectHook(0x733760, RenderWeaponPedsForPC, HookType::Jump);
@@ -5939,11 +5995,14 @@ BOOL InjectDelayedPatches_11()
 			using namespace ScriptFixes;
 
 			// Gym glitch fix
-			Patch<WORD>(0x470B83, 0xCD8B);
-			Patch<DWORD>(0x470B8A, 0x8B04508B);
-			Patch<WORD>(0x470B8E, 0x9000);
-			Nop(0x470B90, 1);
-			InjectHook(0x470B85, &CRunningScript::GetDay_GymGlitch, HookType::Call);
+			if (HasGameBindings_GymGlitch())
+			{
+				Patch<WORD>(0x470B83, 0xCD8B);
+				Patch<DWORD>(0x470B8A, 0x8B04508B);
+				Patch<WORD>(0x470B8E, 0x9000);
+				Nop(0x470B90, 1);
+				InjectHook(0x470B85, &CRunningScript::GetDay_GymGlitch, HookType::Call);
+			}
 
 			// Basketball fix
 			InterceptCall( 0x5D20D0, TheScriptsLoad, TheScriptsLoad_BasketballFix );
@@ -6117,7 +6176,7 @@ BOOL InjectDelayedPatches_Steam()
 
 
 			// Weapons rendering
-			if ( !bOutfit )
+			if ( HasGameBindings_WeaponRenderingFixes() && !bOutfit )
 			{
 				InjectHook(0x604DD9, RenderWeapon);
 				InjectHook(0x76D170, RenderWeaponPedsForPC, HookType::Jump);
@@ -6129,11 +6188,14 @@ BOOL InjectDelayedPatches_Steam()
 			using namespace ScriptFixes;
 
 			// Gym glitch fix
-			Patch<WORD>(0x476C2A, 0xCD8B);
-			Patch<DWORD>(0x476C31, 0x408B088B);
-			Patch<WORD>(0x476C35, 0x9004);
-			Nop(0x476C37, 1);
-			InjectHook(0x476C2C, &CRunningScript::GetDay_GymGlitch, HookType::Call);
+			if (HasGameBindings_GymGlitch())
+			{
+				Patch<WORD>(0x476C2A, 0xCD8B);
+				Patch<DWORD>(0x476C31, 0x408B088B);
+				Patch<WORD>(0x476C35, 0x9004);
+				Nop(0x476C37, 1);
+				InjectHook(0x476C2C, &CRunningScript::GetDay_GymGlitch, HookType::Call);
+			}
 
 			// Basketball fix
 			InterceptCall( 0x5EE017, TheScriptsLoad, TheScriptsLoad_BasketballFix );
@@ -6621,6 +6683,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 	// Hunter door render flag fix (interior no longer vanishing when looking at it from the right side)
+	if (HunterDoorRenderFlagFix::HasGameBindings())
 	{
 		using namespace HunterDoorRenderFlagFix;
 
@@ -6714,23 +6777,28 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Nop(0x5C25D3, 5);
 
 	// User Tracks fix
-	ReadCall( 0x4D9B66, SetVolume );
-	InjectHook(0x4D9B66, UserTracksFix);
-	InjectHook(0x4D9BB5, 0x4F2FD0);
-
-	// FLAC support
-	if (CAEDataStream::HasGameBindings())
+	if (UserTracksChanges::HasGameBindings())
 	{
-		InjectHook(0x4F373D, LoadFLAC, HookType::Jump);
-		InjectHook(0x57BEFE, FLACInit);
-		InjectHook(0x4F3787, CAEWaveDecoderInit);
+		using namespace UserTracksChanges;
 
-		Patch<WORD>(0x4F376A, 0x18EB);
-		//Patch<BYTE>(0x4F378F, sizeof(CAEWaveDecoder));
-		Patch<const void*>(0x4F3210, UserTrackExtensions);
-		Patch<const void*>(0x4F3241, &UserTrackExtensions->Codec);
-		Patch<const void*>(0x4F35E7, &UserTrackExtensions[1].Codec);
-		Patch<BYTE>(0x4F322D, sizeof(UserTrackExtensions));
+		ReadCall( 0x4D9B66, SetVolume );
+		InjectHook(0x4D9B66, UserTracksFix);
+		InjectHook(0x4D9BB5, 0x4F2FD0);
+
+		// FLAC support
+		if (CAEDataStream::HasGameBindings())
+		{
+			InjectHook(0x4F373D, LoadFLAC, HookType::Jump);
+			InjectHook(0x57BEFE, FLACInit);
+			InjectHook(0x4F3787, CAEWaveDecoderInit);
+
+			Patch<WORD>(0x4F376A, 0x18EB);
+			//Patch<BYTE>(0x4F378F, sizeof(CAEWaveDecoder));
+			Patch<const void*>(0x4F3210, UserTrackExtensions);
+			Patch<const void*>(0x4F3241, &UserTrackExtensions->Codec);
+			Patch<const void*>(0x4F35E7, &UserTrackExtensions[1].Codec);
+			Patch<BYTE>(0x4F322D, sizeof(UserTrackExtensions));
+		}
 	}
 
 	// Impound garages working correctly
@@ -6950,9 +7018,12 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Fixed escalators crash
-	ReadCall( 0x7185B5, orgEscalatorsUpdate );
-	InjectHook(0x7185B5, UpdateEscalators);
-	InjectHook(0x71791F, &CEscalator::SwitchOffNoRemove);
+	if (WorldRemove.Ensure())
+	{
+		ReadCall( 0x7185B5, orgEscalatorsUpdate );
+		InjectHook(0x7185B5, UpdateEscalators);
+		InjectHook(0x71791F, &CEscalator::SwitchOffNoRemove);
+	}
 
 
 	// Don't allocate constant memory for stencil shadows every frame
@@ -7053,7 +7124,10 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Make freeing temp objects more aggressive to fix vending crash
-	InjectHook( 0x5A1840, CObject::TryToFreeUpTempObjects_SilentPatch, HookType::Jump );
+	if (HasGameBindings_TryToFreeUpTempObjects())
+	{
+		InjectHook( 0x5A1840, CObject::TryToFreeUpTempObjects_SilentPatch, HookType::Jump );
+	}
 
 
 	// Remove FILE_FLAG_NO_BUFFERING from CdStreams
@@ -7098,6 +7172,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Fixed bomb ownership/bombs saving for bikes
+	if (CStoredCar::HasGameBindings_RestoreCar())
 	{
 		std::array<uintptr_t, 2> restoreCar = {
 			ModCompat::Utils::GetFunctionAddrIfRerouted(0x448550) + 0x1A,
@@ -7113,8 +7188,11 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Correct streaming when using RC vehicles
-	InjectHook( 0x55574B, FindPlayerEntityWithRC );
-	InjectHook( 0x5557C3, FindPlayerVehicle_RCWrap );
+	if (HasGameBindings_FindPlayer())
+	{
+		InjectHook( 0x55574B, FindPlayerEntityWithRC );
+		InjectHook( 0x5557C3, FindPlayerVehicle_RCWrap );
+	}
 
 
 	// TODO: Verify this fix, might be causing crashes atm and too risky to include
@@ -7220,7 +7298,10 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Play passenger's voice lines when killing peds with car, not only when hitting them damages player's vehicle
-	InterceptCall(0x5F05CA, CVehicle::orgPlayPedHitSample_GetColModel, &CVehicle::PlayPedHitSample_GetColModel);
+	if (CPed::SayFunc.Ensure() && HasGameBindings_FindPlayer())
+	{
+		InterceptCall(0x5F05CA, CVehicle::orgPlayPedHitSample_GetColModel, &CVehicle::PlayPedHitSample_GetColModel);
+	}
 
 	// Prevent samples from playing where they used to, so passengers don't comment on gently pushing peds
 	InterceptCall(0x6A8298, CPed::orgSay, &CPed::Say_SampleBlackList<CONTEXT_GLOBAL_CAR_HIT_PED>);
@@ -7467,6 +7548,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 	// Fix PlayerPed replay crashes
 	// 1. Crash when starting a mocap cutscene after playing a replay wearing different clothes to the ones CJ has currently
 	// 2. Crash when playing back a replay with a different motion group animation (fat/muscular/normal) than the current one
+	if (ReplayPlayerPedCrashFixes::HasGameBindings())
 	{
 		using namespace ReplayPlayerPedCrashFixes;
 
@@ -7877,14 +7959,20 @@ void Patch_SA_10(HINSTANCE hInstance)
 		InterceptCall(0x666A9C, orgPedSay_Solicit, PedSay_Solicit_ChangeMood);
 
 		// Add missing LSV taunt speech to CTaskComplexGangLeader::DoGangAbuseSpeech
-		std::array<intptr_t, 2> do_gang_abuse_speech = {
-			0x660248, 0x66069E
-		};
-		HookEach_DoGangAbuseSpeech(do_gang_abuse_speech, InterceptCall);
+		if (HasGameBindings_DoGangAbuseSpeech())
+		{
+			std::array<intptr_t, 2> do_gang_abuse_speech = {
+				0x660248, 0x66069E
+			};
+			HookEach_DoGangAbuseSpeech(do_gang_abuse_speech, InterceptCall);
+		}
 
 		// Add a missing ATTACK_PLAYER trigger to CTaskComplexGangLeader::DoGangAttackSpeech
 		// (it's checking for the player, but doesn't play anything)
-		InterceptCall(0x626A5B, orgDoGangAttackSpeech, DoGangAttackSpeech_AddPlayer);
+		if (HasGameBindings_DoGangAttackSpeech())
+		{
+			InterceptCall(0x626A5B, orgDoGangAttackSpeech, DoGangAttackSpeech_AddPlayer);
+		}
 
 		// Add a CRASH_GENERIC fallback, as not everyone has CRASH_CAR or CRASH_BIKE
 		// For example, CJ has no CRASH_BIKE lines, so he's never commenting on crashes when on a bike
@@ -7894,8 +7982,11 @@ void Patch_SA_10(HINSTANCE hInstance)
 		HookEach_VehicleDamageFallback(vehicle_damage_fallback, InterceptCall);
 
 		// Re-enable PAIN_SPRAYED
-		InjectHook(0x4B3349, &CheckForSprayHook_OldBinaries, HookType::Call);
-		Nop(0x4B3349 + 5, 4);
+		if (HasGameBindings_PainSprayed())
+		{
+			InjectHook(0x4B3349, &CheckForSprayHook_OldBinaries, HookType::Call);
+			Nop(0x4B3349 + 5, 4);
+		}
 
 		// Play CJ's CHASED line from CTaskComplexArrestPed too, so 1-star quotes are not ultra rare
 		InterceptCall(0x68D82F, orgPedSay_ArrestPed, PedSay_ArrestPedHook);
@@ -7924,6 +8015,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Good Citizen Bonus
+	if (GoodCitizenBonus::HasGameBindings())
 	{
 		using namespace GoodCitizenBonus;
 
@@ -8043,6 +8135,7 @@ void Patch_SA_11()
 	Patch<DWORD>(AddressByRegion_11<DWORD>(0x747270), 0x9090C030);
 
 	// Hunter door render flag fix (interior no longer vanishing when looking at it from the right side)
+	if (HunterDoorRenderFlagFix::HasGameBindings())
 	{
 		using namespace HunterDoorRenderFlagFix;
 
@@ -8103,41 +8196,45 @@ void Patch_SA_11()
 	Patch<BYTE>(0x4A9D50, 0xC3);
 
 	// User Tracks fix
-	ReadCall( 0x4DA057, SetVolume );
-	InjectHook(0x4DA057, UserTracksFix);
-	InjectHook(0x4DA0A5, 0x4F3430);
-
-	// FLAC support
-	if (CAEDataStream::HasGameBindings())
+	if (UserTracksChanges::HasGameBindings())
 	{
-		InjectHook(0x57C566, FLACInit);
-		if ( *(BYTE*)0x4F3A50 == 0x6A )
+		using namespace UserTracksChanges;
+		ReadCall( 0x4DA057, SetVolume );
+		InjectHook(0x4DA057, UserTracksFix);
+		InjectHook(0x4DA0A5, 0x4F3430);
+
+		// FLAC support
+		if (CAEDataStream::HasGameBindings())
 		{
-			InjectHook(0x4F3A50 + 0x14D, LoadFLAC_11, HookType::Jump);
-			InjectHook(0x4F3A50 + 0x197, CAEWaveDecoderInit);
+			InjectHook(0x57C566, FLACInit);
+			if ( *(BYTE*)0x4F3A50 == 0x6A )
+			{
+				InjectHook(0x4F3A50 + 0x14D, LoadFLAC_11, HookType::Jump);
+				InjectHook(0x4F3A50 + 0x197, CAEWaveDecoderInit);
 
-			Patch<WORD>(0x4F3A50 + 0x17A, 0x18EB);
-			Patch<const void*>(0x4F3650 + 0x20, UserTrackExtensions);
-			Patch<const void*>(0x4F3650 + 0x51, &UserTrackExtensions->Codec);
-			Patch<const void*>(0x4F3A10 + 0x37, &UserTrackExtensions[1].Codec);
-			Patch<BYTE>(0x4F3650 + 0x3D, sizeof(UserTrackExtensions));
-		}
-		else
-		{
-			// securom'd EXE
-			InjectHook(0x5B6B7B, LoadFLAC_11, HookType::Jump);
-			InjectHook(0x5B6BFB, CAEWaveDecoderInit, HookType::Jump);
-			Patch<WORD>(0x5B6BCB, 0x26EB);
+				Patch<WORD>(0x4F3A50 + 0x17A, 0x18EB);
+				Patch<const void*>(0x4F3650 + 0x20, UserTrackExtensions);
+				Patch<const void*>(0x4F3650 + 0x51, &UserTrackExtensions->Codec);
+				Patch<const void*>(0x4F3A10 + 0x37, &UserTrackExtensions[1].Codec);
+				Patch<BYTE>(0x4F3650 + 0x3D, sizeof(UserTrackExtensions));
+			}
+			else
+			{
+				// securom'd EXE
+				InjectHook(0x5B6B7B, LoadFLAC_11, HookType::Jump);
+				InjectHook(0x5B6BFB, CAEWaveDecoderInit, HookType::Jump);
+				Patch<WORD>(0x5B6BCB, 0x26EB);
 
-			if ( *(DWORD*)0x14E4954 == 0x05C70A75 )
-				VP::Patch<const void*>(0x14E4958, &UserTrackExtensions[1].Codec);
+				if ( *(DWORD*)0x14E4954 == 0x05C70A75 )
+					VP::Patch<const void*>(0x14E4958, &UserTrackExtensions[1].Codec);
 
-			// Deobfuscating an opcode
-			Patch<BYTE>(0x4EBD25, 0xBF);
-			Patch<const void*>(0x4EBD26, UserTrackExtensions);
-			Patch<const void*>(0x4EBDD4, &UserTrackExtensions->Codec);
-			Patch<WORD>(0x4EBD2A, 0x72EB);
-			Patch<BYTE>(0x4EBDC0, sizeof(UserTrackExtensions));
+				// Deobfuscating an opcode
+				Patch<BYTE>(0x4EBD25, 0xBF);
+				Patch<const void*>(0x4EBD26, UserTrackExtensions);
+				Patch<const void*>(0x4EBDD4, &UserTrackExtensions->Codec);
+				Patch<WORD>(0x4EBD2A, 0x72EB);
+				Patch<BYTE>(0x4EBDC0, sizeof(UserTrackExtensions));
+			}
 		}
 	}
 
@@ -8408,6 +8505,7 @@ void Patch_SA_Steam()
 	Patch<DWORD>(0x7807D0, 0x9090C030);
 
 	// Hunter door render flag fix (interior no longer vanishing when looking at it from the right side)
+	if (HunterDoorRenderFlagFix::HasGameBindings())
 	{
 		using namespace HunterDoorRenderFlagFix;
 
@@ -8464,23 +8562,28 @@ void Patch_SA_Steam()
 	Nop(0x5D88AE, 5);
 
 	// User Tracks fix
-	SetVolume = reinterpret_cast<decltype(SetVolume)>(0x4E2750);
-	Patch<BYTE>(0x4E4A28, 0xBA);
-	Patch<const void*>(0x4E4A29, UserTracksFix_Steam);
-	InjectHook(0x4E4A8B, 0x4FF2B0);
-
-	// FLAC support
-	if (CAEDataStream::HasGameBindings())
+	if (UserTracksChanges::HasGameBindings())
 	{
-		InjectHook(0x4FFC39, LoadFLAC_Steam, HookType::Jump);
-		InjectHook(0x591814, FLACInit_Steam);
-		InjectHook(0x4FFC83, CAEWaveDecoderInit);
+		using namespace UserTracksChanges;
 
-		Patch<WORD>(0x4FFC66, 0x18EB);
-		Patch<const void*>(0x4FF4F0, UserTrackExtensions);
-		Patch<const void*>(0x4FF523, &UserTrackExtensions->Codec);
-		Patch<const void*>(0x4FFAB6, &UserTrackExtensions[1].Codec);
-		Patch<BYTE>(0x4FF50F, sizeof(UserTrackExtensions));
+		SetVolume = reinterpret_cast<decltype(SetVolume)>(0x4E2750);
+		Patch<BYTE>(0x4E4A28, 0xBA);
+		Patch<const void*>(0x4E4A29, UserTracksFix_Steam);
+		InjectHook(0x4E4A8B, 0x4FF2B0);
+
+		// FLAC support
+		if (CAEDataStream::HasGameBindings())
+		{
+			InjectHook(0x4FFC39, LoadFLAC_Steam, HookType::Jump);
+			InjectHook(0x591814, FLACInit_Steam);
+			InjectHook(0x4FFC83, CAEWaveDecoderInit);
+
+			Patch<WORD>(0x4FFC66, 0x18EB);
+			Patch<const void*>(0x4FF4F0, UserTrackExtensions);
+			Patch<const void*>(0x4FF523, &UserTrackExtensions->Codec);
+			Patch<const void*>(0x4FFAB6, &UserTrackExtensions[1].Codec);
+			Patch<BYTE>(0x4FF50F, sizeof(UserTrackExtensions));
+		}
 	}
 
 	// Impound garages working correctly
@@ -8687,9 +8790,12 @@ void Patch_SA_Steam()
 
 
 	// Fixed escalators crash
-	ReadCall( 0x739975, orgEscalatorsUpdate );
-	InjectHook(0x739975, UpdateEscalators);
-	InjectHook(0x738BBD, &CEscalator::SwitchOffNoRemove);
+	if (WorldRemove.Ensure())
+	{
+		ReadCall( 0x739975, orgEscalatorsUpdate );
+		InjectHook(0x739975, UpdateEscalators);
+		InjectHook(0x738BBD, &CEscalator::SwitchOffNoRemove);
+	}
 
 
 	// Don't allocate constant memory for stencil shadows every frame
@@ -9172,7 +9278,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Fixed escalators crash
-	try
+	if (WorldRemove.Ensure()) try
 	{
 		orgEscalatorsUpdate = static_cast<decltype(orgEscalatorsUpdate)>(get_pattern( "80 3D ? ? ? ? ? 74 23 56" ));
 
@@ -9386,7 +9492,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Make freeing temp objects more aggressive to fix vending crash
-	try
+	if (HasGameBindings_TryToFreeUpTempObjects()) try
 	{
 		auto match = get_pattern("57 8B 78 08 89 45 FC 85 FF 74 5B", -9);
 		InjectHook( match, CObject::TryToFreeUpTempObjects_SilentPatch, HookType::Jump );
@@ -9457,7 +9563,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Fixed bomb ownership/bombs saving for bikes
-	try
+	if (CStoredCar::HasGameBindings_RestoreCar()) try
 	{
 		std::array<void*, 2> restoreCar = {
 			get_pattern( "8D 4E EE E8", 3 ),
@@ -9480,7 +9586,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Correct streaming when using RC vehicles
-	try
+	if (HasGameBindings_FindPlayer()) try
 	{
 		auto findPlayerEntity = get_pattern("88 1D ? ? ? ? E8 ? ? ? ? 8B F0 83 C4 04 3B F3", 6);
 		auto findPlayerVehicle = get_pattern("E8 ? ? ? ? 83 C4 08 85 C0 74 07 C6 05");
@@ -9844,7 +9950,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	// Fix PlayerPed replay crashes
 	// 1. Crash when starting a mocap cutscene after playing a replay wearing different clothes to the ones CJ has currently
 	// 2. Crash when playing back a replay with a different motion group animation (fat/muscular/normal) than the current one
-	try
+	if (ReplayPlayerPedCrashFixes::HasGameBindings()) try
 	{
 		using namespace ReplayPlayerPedCrashFixes;
 
@@ -10206,7 +10312,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Hunter door render flag fix (interior no longer vanishing when looking at it from the right side)
-	try
+	if (HunterDoorRenderFlagFix::HasGameBindings()) try
 	{
 		using namespace HunterDoorRenderFlagFix;
 
@@ -10522,7 +10628,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		TXN_CATCH();
 
 		// Add missing LSV taunt speech to CTaskComplexGangLeader::DoGangAbuseSpeech
-		try
+		if (HasGameBindings_DoGangAbuseSpeech())try
 		{
 			std::array<void*, 2> do_gang_abuse_speech = {
 				get_pattern("E8 ? ? ? ? 83 C4 08 8B 46 08 8B 4D F4 5F 5E 64 89 0D"),
@@ -10534,7 +10640,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		// Add a missing ATTACK_PLAYER trigger to CTaskComplexGangLeader::DoGangAttackSpeech
 		// (it's checking for the player, but doesn't play anything)
-		try
+		if (HasGameBindings_DoGangAttackSpeech()) try
 		{
 			auto do_gang_attack_speech = get_pattern("E8 ? ? ? ? 83 C4 08 8B 46 08 8B 4D F4 5F 5E 5B");
 			InterceptCall(do_gang_attack_speech, orgDoGangAttackSpeech, DoGangAttackSpeech_AddPlayer);
@@ -10554,7 +10660,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		TXN_CATCH();
 
 		// Re-enable PAIN_SPRAYED
-		try
+		if (HasGameBindings_PainSprayed()) try
 		{
 			auto check_type = pattern("D9 05 ? ? ? ? D8 5B 04").get_one();
 
@@ -10633,7 +10739,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Good Citizen Bonus
-	try
+	if (GoodCitizenBonus::HasGameBindings()) try
 	{
 		using namespace GoodCitizenBonus;
 

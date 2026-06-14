@@ -462,6 +462,7 @@ private:
 
 public:
 	HOOK_EACH_INIT(RestoreCar, orgRestoreCar, &RestoreCar_SilentPatch);
+	static bool HasGameBindings_RestoreCar();
 
 private:
 	CVehicle* RestoreCar_LoadBombOwnership(CVehicle* vehicle);

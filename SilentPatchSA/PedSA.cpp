@@ -2,27 +2,27 @@
 #include "PedSA.h"
 #include "VehicleSA.h"
 
-static void* varGetWeaponSkill = AddressByVersion<void*>(0x5E6580, 0x5E6DA0, 0x6039F0);
-WRAPPER uint8_t CPed::GetWeaponSkill() { VARJMP(varGetWeaponSkill); }
-static void* varSetGunFlashAlpha = AddressByVersion<void*>(0x5DF400, 0x5DFC20, 0x5FC120);
-WRAPPER void CPed::SetGunFlashAlpha(bool bSecondWeapon) { WRAPARG(bSecondWeapon); VARJMP(varSetGunFlashAlpha); }
+ExternalMethod<CPed, uint8_t ()> CPed::GetWeaponSkill(AddressByVersion<uint8_t (__thiscall*)(CPed*)>(0x5E6580, 0x5E6DA0, 0x6039F0));
+ExternalMethod<CPed, void (bool bSecondWeapon)> CPed::SetGunFlashAlpha(AddressByVersion<void (__thiscall*)(CPed*, bool)>(0x5DF400, 0x5DFC20, 0x5FC120));
 
-static void* varSay = AddressByVersion<void*>(0x5EFFE0, { "66 85 C0 74 29", -6 });
-WRAPPER int16_t CPed::Say(uint16_t phrase, uint32_t StartTimeDelay, float Probability, bool bOverideSilence, bool bForceAudible, bool bFrontEnd) { VARJMP(varSay); }
+ExternalMethod<CPed, int16_t (uint16_t phrase, uint32_t StartTimeDelay, float Probability, bool bOverideSilence, bool bForceAudible, bool bFrontEnd)> CPed::SayFunc(
+		AddressByVersion<int16_t (__thiscall*)(CPed*, uint16_t, uint32_t, float, bool, bool, bool)>(0x5EFFE0, { "66 85 C0 74 29", -6 }));
 
-static void* varGetTaskJetPack = AddressByVersion<void*>(0x601110, 0x601930, 0x620E70);
-WRAPPER CTaskSimpleJetPack* CPedIntelligence::GetTaskJetPack() const { VARJMP(varGetTaskJetPack); }
+ExternalMethod<CPedIntelligence, class CTaskSimpleJetPack* () const> CPedIntelligence::GetTaskJetPack(
+		AddressByVersion<class CTaskSimpleJetPack* (__thiscall*)(const CPedIntelligence*)>(0x601110, 0x601930, 0x620E70));
 
-static void* varRenderJetPack = AddressByVersion<void*>(0x67F6A0, 0x67FEC0, 0x6AB110);
-WRAPPER void CTaskSimpleJetPack::RenderJetPack(CPed* pPed) { WRAPARG(pPed); VARJMP(varRenderJetPack); }
+ExternalMethod<CTaskSimpleJetPack, void (class CPed* ped)> CTaskSimpleJetPack::RenderJetPack(
+		AddressByVersion<void (__thiscall*)(CTaskSimpleJetPack*, class CPed*)>(0x67F6A0, 0x67FEC0, 0x6AB110));
 
-void (CPed::*CPed::orgGiveWeapon)(uint32_t weapon, uint32_t ammo, bool flag);
+ExternalFunc<void (CPlayerPed* ped, bool bForReplay)> CClothes::RebuildPlayer(AddressByVersion<void(*)(CPlayerPed*, bool)>(0x5A82C0, { "8B 8E ? ? ? ? 83 C4 04 6A 05", -0x11 }));
 
-void (*CClothes::RebuildPlayer)(CPlayerPed* ped, bool bForReplay) = AddressByVersion<void(*)(CPlayerPed*, bool)>(0x5A82C0, { "8B 8E ? ? ? ? 83 C4 04 6A 05", -0x11 });
+extern ExternalFunc<RpHAnimHierarchy* (RpClump*)> GetAnimHierarchyFromSkinClump;
 
 bool HasGameBindings_ShadowRenderingFixes()
 {
-	return EnsureBindings(CWeaponInfo::GetWeaponInfo);
+	extern ExternalFunc<RpAtomic* (RpAtomic* atomic)> fnBind_AtomicDefaultRenderCallBack;
+	return EnsureBindings(fnBind_AtomicDefaultRenderCallBack, CPedIntelligence::GetTaskJetPack, CTaskSimpleJetPack::RenderJetPack)
+		&& CPed::HasGameBindings_RenderWeapon() && CShadowCamera::HasGameBindings();
 }
 
 RwObject* GetFirstObject(RwFrame* pFrame)
@@ -51,7 +51,7 @@ void CPed::RenderWeapon(bool bWeapon, bool bMuzzleFlash, bool bForShadow)
 {
 	if ( m_pWeaponObject )
 	{
-		RpHAnimHierarchy*	pAnimHierarchy = GetAnimHierarchyFromSkinClump(m_pRwObject);
+		RpHAnimHierarchy*	pAnimHierarchy = GetAnimHierarchyFromSkinClump.Call(reinterpret_cast<RpClump*>(m_pRwObject));
 		bool				bHasParachute = weaponSlots[m_bActiveWeapon].m_eWeaponType == WEAPONTYPE_PARACHUTE;
 
 		RwFrame*			pFrame = RpClumpGetFrame(reinterpret_cast<RpClump*>(m_pWeaponObject));
@@ -75,7 +75,7 @@ void CPed::RenderWeapon(bool bWeapon, bool bMuzzleFlash, bool bForShadow)
 					RwScopedRenderState<rwRENDERSTATEZWRITEENABLE> zWrite;
 					RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
-					SetGunFlashAlpha(bRightGun);
+					SetGunFlashAlpha.Call(this, bRightGun);
 					RpAtomic* atomic = reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame));
 					RpAtomicRender( atomic );
 				}
@@ -115,11 +115,12 @@ void CPed::RenderForShadow()
 	RenderWeapon(true, false, true);
 
 	// Render jetpack
-	auto*	pJetPackTask = pPedIntelligence->GetTaskJetPack();
+	auto*	pJetPackTask = pPedIntelligence->GetTaskJetPack.Call(pPedIntelligence);
 	if ( pJetPackTask )
-		pJetPackTask->RenderJetPack(this);
+		pJetPackTask->RenderJetPack.Call(pJetPackTask, this);
 }
 
+void (CPed::*CPed::orgGiveWeapon)(uint32_t weapon, uint32_t ammo, bool flag);
 void CPed::GiveWeapon_SP(uint32_t weapon, uint32_t ammo, bool flag)
 {
  	if ( ammo == 0 ) ammo = 1;
@@ -128,9 +129,14 @@ void CPed::GiveWeapon_SP(uint32_t weapon, uint32_t ammo, bool flag)
 
 uint8_t CPed::GetWeaponSkillForRenderWeaponPedsForPC_SAMP()
 {
-	uint8_t (CPed::*funcCall)();
+	uint8_t (__thiscall* funcCall)(CPed*);
 	Memory::ReadCall( 0x7330A2, funcCall );
 	return std::invoke( funcCall, this );
+}
+
+bool CPed::HasGameBindings_RenderWeapon()
+{
+	return EnsureBindings(GetWeaponSkill, SetGunFlashAlpha, CWeaponInfo::GetWeaponInfo, GetAnimHierarchyFromSkinClump);
 }
 
 bool CTaskComplexSequence::Contains(int taskID) const

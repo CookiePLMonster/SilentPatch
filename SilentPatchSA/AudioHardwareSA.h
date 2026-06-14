@@ -18,6 +18,8 @@ enum eDecoderType
 	DECODER_FLAC
 };
 
+extern void	(*GTAdelete)(void* data);
+
 // 1.0/Steam structure
 class NOVMT CAEDataStreamOld final : IStream
 {
@@ -146,7 +148,7 @@ public:
 	// This is handled by GTA so we can leave it that way
 	static ExternalMethod<CAEDataStream, bool()> Initialise;
 
-	static bool HasGameBindings() { return EnsureBindings(Initialise); }
+	static bool HasGameBindings() { return EnsureBindings(Initialise) && GTAdelete != nullptr; }
 
 	unsigned int		Seek(long nToSeek, int nPoint)
 	{	if ( m_bUseNewStruct ) 

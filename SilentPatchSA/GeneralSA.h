@@ -101,7 +101,7 @@ public:
     virtual void	FlagToDestroyWhenNextProcessed();
 
 //private:
-	RpClump*		m_pRwObject;						// 0x18
+	RwObject*		m_pRwObject;						// 0x18
 
     /********** BEGIN CFLAGS (0x1C) **************/
     unsigned long	bUsesCollision : 1;				// does entity use collision
@@ -161,7 +161,7 @@ public:
     uint8_t	GetStatus() const { return nStatus; }
     int32_t GetType() const { return nType; }
 
-	bool IsVisible();
+	static ExternalMethod<CEntity, bool ()> IsVisible;
 
 	void SetPositionAndAreaCode( CVector position );
 };
@@ -541,9 +541,11 @@ public:
 	RwTexture*		m_pTexture;
 
 public:
-	void			InvertRaster();
+	static ExternalMethod<CShadowCamera, void ()> InvertRaster;
 
 	RwCamera*		Update(CEntity* pEntity);
+
+    static bool     HasGameBindings() { return EnsureBindings(InvertRaster); }
 };
 
 #include <vector>
@@ -586,5 +588,6 @@ static_assert(sizeof(CEscalator) == 0x150, "Wrong size: CEscalator");
 
 // Binding checks
 bool HasGameBindings_DetachedPartRenderingFix();
+bool HasGameBindings_TryToFreeUpTempObjects();
 
 #endif

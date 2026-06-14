@@ -35,4 +35,6 @@ CPlayerPed* FindPlayerPed( int playerID = -1 );
 CEntity* FindPlayerEntityWithRC( int playerID = -1 );
 CVehicle* FindPlayerVehicle( int playerID = -1, bool withRC = false );
 
+bool HasGameBindings_FindPlayer();
+
 static_assert(sizeof(CPlayerInfo) == 0x190, "Wrong size: CPlayerInfo");

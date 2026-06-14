@@ -75,6 +75,7 @@ namespace external_bindings::details
 	struct external_method_traits<C, R(Args...)>
 	{
 		using fnptr_type = R(__thiscall*)(C*, Args...);
+		using memberfnptr_type = R(C::*)(Args...);
 		using classptr_type = C*;
 	};
 
@@ -82,6 +83,7 @@ namespace external_bindings::details
 	struct external_method_traits<C, R(Args...) const>
 	{
 		using fnptr_type = R(__thiscall*)(const C*, Args...);
+		using memberfnptr_type = R(C::*)(Args...) const;
 		using classptr_type = const C*;
 	};
 
@@ -366,6 +368,7 @@ class ExternalMethod : public external_bindings::details::external_method_base<E
 
 public:
 	using fnptr_type = typename traits::fnptr_type;
+	using memberfnptr_type = typename traits::memberfnptr_type;
 	using classptr_type = typename traits::classptr_type;
 
 	ExternalMethod() noexcept = default;
@@ -375,12 +378,18 @@ public:
 	{
 	}
 
+	explicit ExternalMethod(memberfnptr_type func) noexcept
+		: ExternalMethod(to_fnptr(func))
+	{
+	}
+
 	explicit ExternalMethod(std::string_view pattern_string, std::ptrdiff_t offset = 0)
 		: ExternalMethod(reinterpret_cast<fnptr_type>(external_bindings::details::try_get_pattern(pattern_string, offset)))
 	{
 	}
 
 	void Bind(fnptr_type func) noexcept { m_func = func; }
+	void Bind(memberfnptr_type func) noexcept { Bind(to_fnptr(func)); }
 
 	void Bind(std::string_view pattern_string, std::ptrdiff_t offset = 0)
 	{
@@ -406,6 +415,14 @@ public:
 	// Copy construction and assignment almost certainly indicates user error
 	ExternalMethod(const ExternalMethod&) = delete;
 	ExternalMethod& operator=(const ExternalMethod&) = delete;
+
+private:
+	static fnptr_type to_fnptr(memberfnptr_type func)
+	{
+		fnptr_type result;
+		memcpy(&result, &func, sizeof(result));
+		return result;
+	}
 
 private:
 	fnptr_type m_func = nullptr;

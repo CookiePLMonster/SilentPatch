@@ -14,10 +14,9 @@ ExternalRef<int8_t[2]> CVehicleModelInfo::ms_compsToUse(AddressByVersion<int8_t(
 
 static ExternalRef ms_aDirtTextures(AddressByVersion<RwTexture*(**)[16]>( 0x5D5DCC + 3, 0, 0x5F259C + 3 ));
 
-extern ExternalFunc<RpMaterial*(RpMaterial* material, RwTexture* texture)> fnBind_RpMaterialSetTexture;
-
 bool HasGameBindings_DirtRemapFix()
 {
+	extern ExternalFunc<RpMaterial*(RpMaterial* material, RwTexture* texture)> fnBind_RpMaterialSetTexture;
 	return EnsureBindings(ms_aDirtTextures, fnBind_RpMaterialSetTexture);
 }
 

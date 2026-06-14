@@ -1,17 +1,24 @@
 #include "StdAfxSA.h"
 #include "PlayerInfoSA.h"
 
-uint8_t& PlayerInFocus = **AddressByVersion<uint8_t**>( 0x56E218 + 3, Memory::PatternAndOffset("08 85 C0 79 07 0F B6 05 ? ? ? ? 69 C0 90 01 00 00 8B 80", 8) );
-CPlayerInfo* const Players = *AddressByVersion<CPlayerInfo**>( 0x56E225 + 2, Memory::PatternAndOffset("08 85 C0 79 07 0F B6 05 ? ? ? ? 69 C0 90 01 00 00 8B 80", 20) );
+#include "ExternalBindings.hpp"
+
+ExternalRef PlayerInFocus(AddressByVersion<uint8_t**>( 0x56E218 + 3, Memory::PatternAndOffset("08 85 C0 79 07 0F B6 05 ? ? ? ? 69 C0 90 01 00 00 8B 80", 8) ));
+ExternalRef Players(AddressByVersion<CPlayerInfo (**)[]>( 0x56E225 + 2, Memory::PatternAndOffset("08 85 C0 79 07 0F B6 05 ? ? ? ? 69 C0 90 01 00 00 8B 80", 20) ));
+
+bool HasGameBindings_FindPlayer()
+{
+	return EnsureBindings(PlayerInFocus, Players);
+}
 
 CPlayerPed* FindPlayerPed( int playerID )
 {
-	return Players[ playerID < 0 ? PlayerInFocus : playerID ].GetPlayerPed();
+	return Players.Get()[ playerID < 0 ? PlayerInFocus.Get() : playerID ].GetPlayerPed();
 }
 
 CEntity* FindPlayerEntityWithRC( int playerID )
 {
-	CPlayerInfo* player = &Players[ playerID < 0 ? PlayerInFocus : playerID ];
+	CPlayerInfo* player = &Players.Get()[ playerID < 0 ? PlayerInFocus.Get() : playerID ];
 
 	CPlayerPed* ped = player->GetPlayerPed();
 	CVehicle* remoteVehicle = player->GetControlledVehicle();
@@ -23,7 +30,7 @@ CEntity* FindPlayerEntityWithRC( int playerID )
 
 CVehicle* FindPlayerVehicle( int playerID, bool withRC )
 {
-	CPlayerInfo* player = &Players[ playerID < 0 ? PlayerInFocus : playerID ];
+	CPlayerInfo* player = &Players.Get()[ playerID < 0 ? PlayerInFocus.Get() : playerID ];
 
 	CPlayerPed* ped = player->GetPlayerPed();
 	if ( ped == nullptr ) return nullptr;
