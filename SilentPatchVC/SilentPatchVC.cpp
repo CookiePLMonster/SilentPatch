@@ -2876,28 +2876,17 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	}
 	TXN_CATCH();
 
-	// Ped speech fix
-	// Based off Sergeanur's fix
-	try
-	{
-		// Remove the artificial 6s delay between any ped speech samples
-		auto delay_check = get_pattern("80 BE ? ? ? ? ? 0F 85 ? ? ? ? B9", 7);
-		auto comment_delay_id1 = get_pattern("0F B7 C2 DD D8 C1 E0 04");
-		auto comment_delay_id2 = pattern("0F B7 95 DA 05 00 00 D9 6C 24 04").get_one();
-		auto speech_delay_pattern = get_pattern("2B 86 8C 04 00 00 3D ? ? ? ?", 7); // targeting cmp eax, 1770h (6000ms) as wildcard
-		int speech_delay = GetPrivateProfileIntW(L"SilentPatch", L"SpeechDelayTimer", 0, wcModulePath); // in milliseconds
+	// Speech delay fix
+	if (const int speech_delay = GetPrivateProfileIntW(L"SilentPatch", L"SpeechDelayTimer", -1, wcModulePath); speech_delay != -1) {
+		try
+		{
+			auto speech_delay_pattern = get_pattern("2B 86 8C 04 00 00 3D", 7); // targeting cmp eax, 1770h (6000ms)	
 
-		// commented as we modify the delay timer instead - Nop(delay_check, 6);
-		Patch(speech_delay_pattern, speech_delay);
-
-		// movzx eax, dx -> movzx eax, bx
-		Patch(comment_delay_id1, { 0x0F, 0xB7, 0xC3 });
-
-		// movzx edx, word ptr [ebp+5DAh] -> movzx edx, bx \ nop
-		Patch(comment_delay_id2.get<void>(), { 0x0F, 0xB7, 0xD3 });
-		Nop(comment_delay_id2.get<void>(3), 4);
+			// Patch 6s delay between any ped speech samples
+			Patch(speech_delay_pattern, speech_delay);
+		}
+		TXN_CATCH();
 	}
-	TXN_CATCH();
 
 	FLAUtils::Init(moduleList);
 }
@@ -3649,6 +3638,24 @@ void Patch_VC_Common()
 		GameVariablesToReset.emplace_back(*get_pattern<int*>("FF 0D ? ? ? ? EB 15 90", 2)); // CWeather::StreamAfterRainTimer
 	}
 	TXN_CATCH();
+
+
+	// Ped speech fix
+	// Based off Sergeanur's fix
+	try
+	{
+		auto comment_delay_id1 = get_pattern("0F B7 C2 DD D8 C1 E0 04");
+		auto comment_delay_id2 = pattern("0F B7 95 DA 05 00 00 D9 6C 24 04").get_one();
+
+		// movzx eax, dx -> movzx eax, bx
+		Patch(comment_delay_id1, { 0x0F, 0xB7, 0xC3 });
+
+		// movzx edx, word ptr [ebp+5DAh] -> movzx edx, bx \ nop
+		Patch(comment_delay_id2.get<void>(), { 0x0F, 0xB7, 0xD3 });
+		Nop(comment_delay_id2.get<void>(3), 4);
+	}
+	TXN_CATCH();
+
 
 	// Disabled backface culling on detached car parts, peds and specific models
 	if (SelectableBackfaceCulling::HasGameBindings()) try
