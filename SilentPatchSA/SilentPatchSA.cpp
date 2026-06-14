@@ -72,21 +72,6 @@ namespace ModCompat
 			constexpr uint32_t SKYGFX_VERSION_WITH_MOONPHASES = 0x360;
 			return config->version >= SKYGFX_VERSION_WITH_MOONPHASES;
 		}
-
-		bool BreaksDetachedComponentColors(HMODULE module)
-		{
-			if (module == nullptr) return false; // SkyGfx not installed
-
-			const Config* config = GetConfig(module);
-			if (config == nullptr) return true; // Old version/error? Err on the safe side and assume a very old version.
-
-			// All current versions of SkyGfx fail to apply remapped colors on detached components.
-			// Assume that future versions (if they ever happen) will fix it, and that all currently releases are broken.
-			// Technically if the PC vehicle pipeline is used this is not an issue, but checking for that is overkill.
-			// SkyGfx Extended doesn't seem to be bumping this version up at the moment either.
-			constexpr uint32_t SKYGFX_VERSION_NEWEST_AS_OF_NOW = 0x370;
-			return config->version <= SKYGFX_VERSION_NEWEST_AS_OF_NOW;
-		}
 	}
 
 	bool bCdStreamFallBackForOldML = false;
@@ -5325,20 +5310,17 @@ BOOL InjectDelayedPatches_10()
 			}
 		}
 
-		// ImVehFt conflicts
+		// Apply the correct colors on detached car components
 		bool bObjectRenderPatched = false;
+		if (HasGameBindings_DetachedPartRenderingFix())
+		{
+			InterceptCall(0x59F1ED, CObject::orgRender_DetachedPartRenderingFix, &CObject::Render_DetachedPartRenderingFix);
+			bObjectRenderPatched = true;
+		}
+
+		// ImVehFt conflicts
 		if ( !bHasImVehFt )
 		{
-			// Lights
-			InjectHook(0x4C830C, LightMaterialsFix, HookType::Call);
-
-			// Flying components
-			if (HasGameBindings_DetachedPartRenderingFix())
-			{
-				InterceptCall(0x59F1ED, CObject::orgRender_DetachedPartRenderingFix, &CObject::Render_DetachedPartRenderingFix);
-				bObjectRenderPatched = true;
-			}
-
 			// Cars getting dirty
 			// Only 1.0 and Steam
 			if (HasGameBindings_DirtRemapFix())
@@ -5357,10 +5339,10 @@ BOOL InjectDelayedPatches_10()
 		}
 
 		// Enable directional lights on flying car components
-		// This fix is technically separate from ImVehFt, but with SkyGfx, if the above fix fails to apply, detached parts will be green once they're detached,
+		// This fix is technically separate from the component fix, but with SkyGfx, if the above fix fails to apply, detached parts will be green once they're detached,
 		// as SkyGfx lacks a fallback "fixing up" those colors to black, unlike the PC code.
 		// We then need to disable this fix, or else people think it's a regression caused by SP.
-		if (bObjectRenderPatched || !ModCompat::SkyGfx::BreaksDetachedComponentColors(skygfxModule))
+		if (bObjectRenderPatched)
 		{
 			using namespace LitFlyingComponents;
 
@@ -6005,17 +5987,10 @@ BOOL InjectDelayedPatches_11()
 			Patch<BYTE>(0x58B57E, 0xEB);
 		}
 
-		// ImVehFt conflicts
-		if ( !bHasImVehFt )
+		// Apply the correct colors on detached car components
+		if (HasGameBindings_DetachedPartRenderingFix())
 		{
-			// Lights
-			InjectHook(0x4C838C, LightMaterialsFix, HookType::Call);
-
-			// Flying components
-			if (HasGameBindings_DetachedPartRenderingFix())
-			{
-				InterceptCall(0x59F9BD, CObject::orgRender_DetachedPartRenderingFix, &CObject::Render_DetachedPartRenderingFix);
-			}
+			InterceptCall(0x59F9BD, CObject::orgRender_DetachedPartRenderingFix, &CObject::Render_DetachedPartRenderingFix);
 		}
 
 		if ( !bHasImVehFt && !bSAMP && HasGameBindings_CustomCarPlateFix() )
@@ -6196,18 +6171,15 @@ BOOL InjectDelayedPatches_Steam()
 			Patch<BYTE>(0x598F56, 0xEB);
 		}
 
+		// Apply the correct colors on detached car components
+		if (HasGameBindings_DetachedPartRenderingFix())
+		{
+			InterceptCall(0x5B8149, CObject::orgRender_DetachedPartRenderingFix, &CObject::Render_DetachedPartRenderingFix);
+		}
+
 		// ImVehFt conflicts
 		if ( !bHasImVehFt )
 		{
-			// Lights
-			InjectHook(0x4D2C06, LightMaterialsFix, HookType::Call);
-
-			// Flying components
-			if (HasGameBindings_DetachedPartRenderingFix())
-			{
-				InterceptCall(0x5B8149, CObject::orgRender_DetachedPartRenderingFix, &CObject::Render_DetachedPartRenderingFix);
-			}
-
 			// Cars getting dirty
 			// Only 1.0 and Steam
 			InjectHook( 0x5F2580, RemapDirt, HookType::Jump );
@@ -6720,6 +6692,9 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Patch<DWORD>(0x733B05, EXPAND_ALPHA_ENTITY_LISTS * 20);
 	Patch<DWORD>(0x733B55, EXPAND_ALPHA_ENTITY_LISTS * 20);
 #endif
+
+	// Fix lights not resetting the material attributes correctly
+	InjectHook(0x4C830C, LightMaterialsFix, HookType::Call);
 
 	// Unlocked widescreen resolutions
 	{
@@ -8097,6 +8072,9 @@ void Patch_SA_11()
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	Nop(0x6FB9AC, 3);
 
+	// Fix lights not resetting the material attributes correctly
+	InjectHook(0x4C838C, LightMaterialsFix, HookType::Call);
+
 	// Unlocked widescreen resolutions
 	{
 		// Resolution selection dialog
@@ -8464,6 +8442,9 @@ void Patch_SA_Steam()
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	Nop(0x73362F, 2);
+
+	// Fix lights not resetting the material attributes correctly
+	InjectHook(0x4D2C06, LightMaterialsFix, HookType::Call);
 
 	// Unlocked widescreen resolutions
 	{
