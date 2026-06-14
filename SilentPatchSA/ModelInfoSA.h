@@ -2,6 +2,7 @@
 #define __MODELINFO
 
 #include "GeneralSA.h"
+#include "ExternalBindings.hpp"
 
 // TODO: Move to a separate file?
 typedef struct
@@ -302,8 +303,8 @@ public:
 	};
 
 public:
-	static int8_t*			ms_compsUsed;
-	static int8_t*			ms_compsToUse;
+	static ExternalRef<int8_t[2]> ms_compsUsed;
+	static ExternalRef<int8_t[2]> ms_compsToUse;
 
 	static void				ResetCompsForNoExtras();
 
@@ -321,7 +322,7 @@ public:
 
 };
 
-extern CBaseModelInfo** const		ms_modelInfoPtrs;
+extern ExternalRef<CBaseModelInfo*[]> ms_modelInfoPtrs;
 
 void RemapDirt( CVehicleModelInfo* modelInfo, uint32_t dirtID );
 
@@ -331,12 +332,14 @@ class CCustomCarPlateMgr
 public:
 	static const size_t		NUM_MAX_PLATES = 12;
 
-	static RwTexture*		(*CreatePlateTexture)(const char* pText, signed char nDesign);
-	static bool				(*GeneratePlateText)(char* pBuf, int nLen);
-	static signed char		(*GetMapRegionPlateDesign)();
-	static void				(*SetupMaterialPlatebackTexture)(RpMaterial* pMaterial, signed char nDesign);
+	static ExternalFunc<RwTexture* (const char* pText, signed char nDesign)> CreatePlateTexture;
+	static ExternalFunc<bool (char* pBuf, int nLen)> GeneratePlateText;
+	static ExternalFunc<signed char ()> GetMapRegionPlateDesign;
+	static ExternalFunc<void (RpMaterial* pMaterial, signed char nDesign)> SetupMaterialPlatebackTexture;
 
 	static void				SetupClumpAfterVehicleUpgrade(RpClump* pClump, void* /*unused*/, signed char nDesign);
+
+	static bool				HasGameBindings();
 };
 
 static_assert(sizeof(CBaseModelInfo) == 0x20, "Wrong size: CBaseModelInfo");
@@ -344,5 +347,6 @@ static_assert(sizeof(CClumpModelInfo) == 0x24, "Wrong size: CClumpModelInfo");
 static_assert(sizeof(CVehicleModelInfo) == 0x308, "Wrong size: CvehicleModelInfo");
 
 bool HasGameBindings_DirtRemapFix();
+bool HasGameBindings_ResetCompsForNoExtras();
 
 #endif

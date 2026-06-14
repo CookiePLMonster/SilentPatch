@@ -14,6 +14,7 @@
 // 1. The wrappers can be bound:
 //    * On construction time with an address or a pattern.
 //    * Lazily, using a .Bind method.
+//    * By writing to a pointer returned from a .Put method.
 // 2. Re-binding is permitted.
 // 3. The results can later be checked with .Ensure().
 // 4. The APIs are explicit, with no implicit conversions or call operators. This is to ensure that unintentional dependencies are difficult to create.
@@ -222,6 +223,19 @@ public:
 		return m_operand_ptr;
 	}
 
+	[[nodiscard]] const void** Put(
+#ifdef _M_X64
+		std::ptrdiff_t adjust = 0
+#endif
+	) noexcept
+	{
+		m_operand_ptr = nullptr;
+#ifdef _M_X64
+		m_adjust = adjust;
+#endif
+		return &m_operand_ptr;
+	}
+
 	[[nodiscard]] bool Ensure() const noexcept
 	{
 		return m_operand_ptr != nullptr;
@@ -275,6 +289,12 @@ public:
 		return m_ptr;
 	}
 
+	[[nodiscard]] stored_type const** Put() noexcept
+	{
+		m_ptr = nullptr;
+		return &m_ptr;
+	}
+
 	[[nodiscard]] bool Ensure() const noexcept
 	{
 		return m_ptr != nullptr;
@@ -318,6 +338,12 @@ public:
 	[[nodiscard]] fnptr_type Address() const noexcept
 	{
 		return m_func;
+	}
+
+	[[nodiscard]] fnptr_type* Put() noexcept
+	{
+		m_func = nullptr;
+		return &m_func;
 	}
 
 	[[nodiscard]] bool Ensure() const noexcept
@@ -364,6 +390,12 @@ public:
 	[[nodiscard]] fnptr_type Address() const noexcept
 	{
 		return m_func;
+	}
+
+	[[nodiscard]] fnptr_type* Put() noexcept
+	{
+		m_func = nullptr;
+		return &m_func;
 	}
 
 	[[nodiscard]] bool Ensure() const noexcept

@@ -480,6 +480,8 @@ public:
 	}
 };
 
+bool HasGameBindings_ShadowRenderingFixes();
+
 class NOVMT CPlayerPed : public CPed
 {
 private:

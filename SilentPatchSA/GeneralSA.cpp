@@ -19,11 +19,9 @@ WRAPPER bool CEntity::IsVisible() { VARJMP(varEntityIsVisible); }
 static void* varInvertRaster = AddressByVersion<void*>(0x705660, 0x705E90, 0x7497A0);
 WRAPPER void CShadowCamera::InvertRaster() { VARJMP(varInvertRaster); }
 
-CWeaponInfo* (*CWeaponInfo::GetWeaponInfo)(eWeaponType, signed char) = AddressByVersion<CWeaponInfo*(*)(eWeaponType, signed char)>(0x743C60, 0x744490, 0x77D940);
+ExternalFunc<CWeaponInfo* (eWeaponType weaponID, signed char bType)> CWeaponInfo::GetWeaponInfo(AddressByVersion<CWeaponInfo*(*)(eWeaponType, signed char)>(0x743C60, 0x744490, 0x77D940));
 
 static ExternalFunc SetEditableMaterialsCB(AddressByVersion<RpAtomic*(*)(RpAtomic*,void*)>(0x4C83E0, 0x4C8460, 0x4D2CE0));
-
-void*	(CEntity::*CEntity::orgGetColModel)();
 
 bool HasGameBindings_DetachedPartRenderingFix()
 {

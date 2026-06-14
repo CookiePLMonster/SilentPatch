@@ -20,6 +20,11 @@ void (CPed::*CPed::orgGiveWeapon)(uint32_t weapon, uint32_t ammo, bool flag);
 
 void (*CClothes::RebuildPlayer)(CPlayerPed* ped, bool bForReplay) = AddressByVersion<void(*)(CPlayerPed*, bool)>(0x5A82C0, { "8B 8E ? ? ? ? 83 C4 04 6A 05", -0x11 });
 
+bool HasGameBindings_ShadowRenderingFixes()
+{
+	return EnsureBindings(CWeaponInfo::GetWeaponInfo);
+}
+
 RwObject* GetFirstObject(RwFrame* pFrame)
 {
 	RwObject*	pObject = nullptr;
@@ -88,7 +93,7 @@ void CPed::RenderWeapon(bool bWeapon, bool bMuzzleFlash, bool bForShadow)
 		renderOneWeapon(bWeapon, bMuzzleFlash, bForShadow, false);
 
 		// Dual weapons
-		if ( CWeaponInfo::GetWeaponInfo(weaponSlots[m_bActiveWeapon].m_eWeaponType, GetWeaponSkillForRenderWeaponPedsForPC())->hexFlags >> 11 & 1 )
+		if (CWeaponInfo::GetWeaponInfo.Call(weaponSlots[m_bActiveWeapon].m_eWeaponType, GetWeaponSkillForRenderWeaponPedsForPC())->IsWeaponFlagSet(WEAPONTYPE_TWIN_PISTOLS))
 		{
 			*RwFrameGetMatrix(pFrame) = RpHAnimHierarchyGetMatrixArray(pAnimHierarchy)[RpHAnimIDGetIndex(pAnimHierarchy, 34)];				
 

@@ -281,8 +281,9 @@ public:
 
 	bool			HasFirelaLadder() const;
 	void*			PlayPedHitSample_GetColModel();
+	static void*	(CEntity::*orgPlayPedHitSample_GetColModel)();
 
-	bool			IsLawEnforcementVehicle();
+	static ExternalMethod<CVehicle,bool() const> IsLawEnforcementVehicle;
 	CPed*			PickRandomPassenger();
 	bool			CanThisVehicleBeImpounded() const;
 
@@ -375,6 +376,8 @@ private:
 	void		ProcessNewsvan();
 };
 
+bool HasGameBindings_ExtraAutomobileAnimations();
+
 class NOVMT CHeli : public CAutomobile
 {
 public:
@@ -422,6 +425,8 @@ public:
 
 	static inline bool (CTrailer::*orgGetTowBarPos)(CVector& pos, bool anyPos, CVehicle* trailer);
 };
+
+bool HasGameBindings_GetTowBarPos();
 
 class NOVMT CBoat : public CVehicle
 {

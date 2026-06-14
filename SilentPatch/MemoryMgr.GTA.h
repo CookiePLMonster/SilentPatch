@@ -2,6 +2,7 @@
 
 #include "Utils/MemoryMgr.h"
 
+#include <cassert>
 #include <type_traits>
 #include <variant>
 #include "Utils/Patterns.h"
@@ -36,12 +37,6 @@ namespace Memory
 			static bool			bEuropean;
 			return &bEuropean;
 		}
-
-		inline uintptr_t GetDummy()
-		{
-			static uintptr_t		dwDummy;
-			return reinterpret_cast<uintptr_t>(&dwDummy);
-		}
 	}
 }
 
@@ -51,8 +46,12 @@ namespace Memory
 	{
 		inline uintptr_t HandlePattern( const PatternAndOffset& pattern )
 		{
-			void* addr = hook::get_pattern( pattern.pattern, pattern.offset );
-			return reinterpret_cast<uintptr_t>(addr);
+			hook::pattern p(pattern.pattern);
+			if (p.count_hint(1).size() == 1)
+			{
+				return reinterpret_cast<uintptr_t>(p.get_first<const void>(pattern.offset));
+			}
+			return 0u;
 		}
 
 #if defined _GTA_III
@@ -223,9 +222,7 @@ namespace Memory
 			{
 				if ( !TryMatch_11() )
 				{
-		#ifdef assert
 					assert(!"AddressByRegion_11 on non-1.01 EXE!");
-		#endif
 				}
 			}
 		}
@@ -270,9 +267,12 @@ namespace Memory
 				else
 				{
 					const uintptr_t addr = std::make_unsigned_t<intptr_t>(*std::get_if<intptr_t>(&address10));
-		#ifdef assert
-					assert(addr);
-		#endif
+					if (addr == 0)
+					{
+						assert(false);
+						return 0;
+					}
+
 					// Adjust to EU if needed
 					return AdjustAddress_10(addr);
 				}
@@ -282,13 +282,11 @@ namespace Memory
 				else
 				{
 					const uintptr_t addr = std::make_unsigned_t<intptr_t>(*std::get_if<intptr_t>(&address11));
-		#ifdef assert
-					assert(addr);
-		#endif
-
-					// Safety measures - if null or ignored, return dummy var pointer to prevent a crash
-					if ( addr == 0 || addr == UINTPTR_MAX )
-						return GetDummy();
+					if (addr == 0)
+					{
+						assert(false);
+						return 0;
+					}
 
 					// Adjust to US if needed
 					return AdjustAddress_11(addr);
@@ -298,18 +296,17 @@ namespace Memory
 				else
 				{
 					const uintptr_t addr = std::make_unsigned_t<intptr_t>(*std::get_if<intptr_t>(&addressSteam));
-		#ifdef assert
-					assert(addr);
-		#endif
-					// Safety measures - if null or ignored, return dummy var pointer to prevent a crash
-					if ( addr == 0 || addr == UINTPTR_MAX )
-						return GetDummy();
+					if (addr == 0)
+					{
+						assert(false);
+						return 0;
+					}
 
 					return addr;
 				}
 			default:
 				if ( !patternNewExes.Valid() )
-					return GetDummy();
+					return 0;
 
 				return HandlePattern( patternNewExes );
 			}

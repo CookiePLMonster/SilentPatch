@@ -1,18 +1,16 @@
 #include "StdAfxSA.h"
 #include "ModelInfoSA.h"
 
-#include "ExternalBindings.hpp"
+ExternalFunc<RwTexture* (const char* pText, signed char nDesign)> CCustomCarPlateMgr::CreatePlateTexture(AddressByVersion<RwTexture*(*)(const char*,signed char)>(0x6FDEA0, 0x6FE6D0, 0x736AC0));
+ExternalFunc<signed char ()> CCustomCarPlateMgr::GetMapRegionPlateDesign(AddressByVersion<signed char(*)()>(0x6FD7A0, 0x6FDFD0, 0x7363E0));
+ExternalFunc<void (RpMaterial* pMaterial, signed char nDesign)> CCustomCarPlateMgr::SetupMaterialPlatebackTexture(AddressByVersion<void(*)(RpMaterial*,signed char)>(0x6FDE50, 0x6FE680, 0x736A80));
 
-RwTexture* (*CCustomCarPlateMgr::CreatePlateTexture)(const char* pText, signed char nDesign) = AddressByVersion<RwTexture*(*)(const char*,signed char)>(0x6FDEA0, 0x6FE6D0, 0x736AC0);
-signed char (*CCustomCarPlateMgr::GetMapRegionPlateDesign)() = AddressByVersion<signed char(*)()>(0x6FD7A0, 0x6FDFD0, 0x7363E0);
-void (*CCustomCarPlateMgr::SetupMaterialPlatebackTexture)(RpMaterial* pMaterial, signed char nDesign) = AddressByVersion<void(*)(RpMaterial*,signed char)>(0x6FDE50, 0x6FE680, 0x736A80);
+ExternalFunc<bool (char* pBuf, int nLen)> CCustomCarPlateMgr::GeneratePlateText; // Read from InjectDelayedPatches
 
-bool (*CCustomCarPlateMgr::GeneratePlateText)(char* pBuf, int nLen); // Read from InjectDelayedPatches
+ExternalRef<CBaseModelInfo*[]> ms_modelInfoPtrs(AddressByVersion<CBaseModelInfo*(**)[]>(0x509CB1, 0x4C0C96, 0x403DB7));
 
-CBaseModelInfo** const			ms_modelInfoPtrs = *AddressByVersion<CBaseModelInfo***>(0x509CB1, 0x4C0C96, 0x403DB7);
-
-int8_t* CVehicleModelInfo::ms_compsUsed = *AddressByVersion<int8_t**>( 0x4C973B + 2, Memory::PatternAndOffset("8B CE A2 ? ? ? ? E8", 2 + 1) );
-int8_t* CVehicleModelInfo::ms_compsToUse = *AddressByVersion<int8_t**>( 0x4C8057 + 2, Memory::PatternAndOffset("0F BE C0 C6 05 ? ? ? ? FE 5E", 3 + 2) );
+ExternalRef<int8_t[2]> CVehicleModelInfo::ms_compsUsed(AddressByVersion<int8_t(**)[2]>(0x4C973B + 2, Memory::PatternAndOffset("8B CE A2 ? ? ? ? E8", 2 + 1)));
+ExternalRef<int8_t[2]> CVehicleModelInfo::ms_compsToUse(AddressByVersion<int8_t(**)[2]>(0x4C8057 + 2, Memory::PatternAndOffset("0F BE C0 C6 05 ? ? ? ? FE 5E", 3 + 2)));
 
 static ExternalRef ms_aDirtTextures(AddressByVersion<RwTexture*(**)[16]>( 0x5D5DCC + 3, 0, 0x5F259C + 3 ));
 
@@ -21,6 +19,11 @@ extern ExternalFunc<RpMaterial*(RpMaterial* material, RwTexture* texture)> fnBin
 bool HasGameBindings_DirtRemapFix()
 {
 	return EnsureBindings(ms_aDirtTextures, fnBind_RpMaterialSetTexture);
+}
+
+bool HasGameBindings_ResetCompsForNoExtras()
+{
+	return EnsureBindings(CVehicleModelInfo::ms_compsUsed, CVehicleModelInfo::ms_compsToUse);
 }
 
 void RemapDirt( CVehicleModelInfo* modelInfo, uint32_t dirtID )
@@ -107,8 +110,17 @@ void CVehicleModelInfo::SetCarCustomPlate()
 
 void CVehicleModelInfo::ResetCompsForNoExtras()
 {
-	ms_compsUsed[0] = ms_compsUsed[1] = -1;
-	ms_compsToUse[0] = ms_compsToUse[1] = -2;
+	auto& compsUsed = ms_compsUsed.Get();
+	auto& compsToUse = ms_compsToUse.Get();
+
+	compsUsed[0] = compsUsed[1] = -1;
+	compsToUse[0] = compsToUse[1] = -2;
+}
+
+bool CCustomCarPlateMgr::HasGameBindings()
+{
+	// Deliberately not checking CCustomCarPlateMgr::GeneratePlateText, as it's bound later
+	return EnsureBindings(CreatePlateTexture, GetMapRegionPlateDesign, SetupMaterialPlatebackTexture);
 }
 
 void CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade(RpClump* pClump, void* /*unused*/, signed char nDesign)

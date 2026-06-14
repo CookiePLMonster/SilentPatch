@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "TheFLAUtils.h"
 
+#include "ExternalBindings.hpp"
+
 class CSimpleTransform
 {
 public:
@@ -156,14 +158,8 @@ public:
     //********* END CEntityInfo ************//
 
 public:
-	static void*	(CEntity::*orgGetColModel)();
-
-public:
     uint8_t	GetStatus() const { return nStatus; }
     int32_t GetType() const { return nType; }
-
-
-	void* GetColModel() { return std::invoke(orgGetColModel, this); }
 
 	bool IsVisible();
 
@@ -474,6 +470,11 @@ enum eWeaponType
     WEAPONTYPE_FLARE,
 };
 
+enum
+{
+    WEAPONTYPE_TWIN_PISTOLS = 1 << 11,
+};
+
 class CWeapon
 {
 public:
@@ -495,7 +496,7 @@ public:
 	int					dwModelID;
 	int					dwModelID2;
 	int					nSlot;
-	DWORD				hexFlags;
+	DWORD				m_nFlags;
 	DWORD				animStyle;
 	WORD				ammoClip;
 	DWORD				fireOffsetX;
@@ -528,7 +529,9 @@ public:
 	inline DWORD				GetWeaponSlot() 
 							{ return nSlot; };
 
-	static CWeaponInfo*		(*GetWeaponInfo)(eWeaponType weaponID, signed char bType);
+    bool IsWeaponFlagSet(uint32_t flag) const { return (m_nFlags & flag) != 0; }
+
+	static ExternalFunc<CWeaponInfo* (eWeaponType weaponID, signed char bType)> GetWeaponInfo;
 };
 
 class CShadowCamera

@@ -154,8 +154,8 @@ WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); VARJMP(varRwImag
 ExternalFunc fnBind_RpMaterialSetTexture(AddressByVersion<RpMaterial* (*)(RpMaterial* material, RwTexture* texture)>(0x74DBC0, 0x74E4D0, 0x787B80));
 RpMaterial* RpMaterialSetTexture(RpMaterial* material, RwTexture* texture) { return fnBind_RpMaterialSetTexture.Call(material, texture); }
 
-static void* varRwFrameGetLTM = AddressByVersion<void*>(0x7F0990, 0x7F1290, 0x82A950);
-WRAPPER RwMatrix* RwFrameGetLTM(RwFrame* frame) { VARJMP(varRwFrameGetLTM); }
+ExternalFunc fnBind_RwFrameGetLTM(AddressByVersion<RwMatrix* (*)(RwFrame* frame)>(0x7F0990, 0x7F1290, 0x82A950));
+RwMatrix* RwFrameGetLTM(RwFrame* frame) { return fnBind_RwFrameGetLTM.Call(frame); }
 static void* varRwMatrixRotate = AddressByVersion<void*>(0x7F1FD0, 0x7F28D0, 0x82BF90);
 WRAPPER RwMatrix* RwMatrixRotate(RwMatrix* matrix, const RwV3d* axis, RwReal angle, RwOpCombineType combineOp) { WRAPARG(matrix); WRAPARG(axis); WRAPARG(angle); WRAPARG(combineOp); VARJMP(varRwMatrixRotate); }
 static void* varRwD3D9SetRenderState = AddressByVersion<void*>(0x7FC2D0, 0x7FCBD0, 0x836290);
@@ -5382,8 +5382,11 @@ BOOL InjectDelayedPatches_10()
 		// SSE conflicts
 		if ( moduleList.Get(L"shadows") == nullptr )
 		{
-			Patch<DWORD>(0x70665C, 0x52909090);
-			InjectHook(0x706662, &CShadowCamera::Update);
+			if (HasGameBindings_ShadowRenderingFixes())
+			{
+				Patch<DWORD>(0x70665C, 0x52909090);
+				InjectHook(0x706662, &CShadowCamera::Update);
+			}
 
 			// Disable alpha test for stored shadows
 			{
@@ -5404,10 +5407,10 @@ BOOL InjectDelayedPatches_10()
 
 		// Read CCustomCarPlateMgr::GeneratePlateText from here
 		// to work fine with Deji's Custom Plate Format
-		ReadCall( 0x4C9484, CCustomCarPlateMgr::GeneratePlateText );
+		ReadCall( 0x4C9484, *CCustomCarPlateMgr::GeneratePlateText.Put() );
 
 
-		if ( bHookDoubleRwheels )
+		if ( bHookDoubleRwheels && ms_modelInfoPtrs.Ensure() )
 		{
 			// Double rwheels whitelist
 			// push ecx
@@ -6028,8 +6031,11 @@ BOOL InjectDelayedPatches_11()
 		// SSE conflicts
 		if ( moduleList.Get(L"shadows") == nullptr )
 		{
-			Patch<DWORD>(0x706E8C, 0x52909090);
-			InjectHook(0x706E92, &CShadowCamera::Update);
+			if (HasGameBindings_ShadowRenderingFixes())
+			{
+				Patch<DWORD>(0x706E8C, 0x52909090);
+				InjectHook(0x706E92, &CShadowCamera::Update);
+			}
 		}
 
 		// Bigger streamed entity linked lists
@@ -6043,7 +6049,7 @@ BOOL InjectDelayedPatches_11()
 		// Read CCustomCarPlateMgr::GeneratePlateText from here
 		// to work fine with Deji's Custom Plate Format
 		// Albeit 1.01 obfuscates this function
-		CCustomCarPlateMgr::GeneratePlateText = (decltype(CCustomCarPlateMgr::GeneratePlateText))0x6FDDE0;
+		CCustomCarPlateMgr::GeneratePlateText.Bind((decltype(CCustomCarPlateMgr::GeneratePlateText)::fnptr_type)0x6FDDE0);
 
 		FLAUtils::Init( moduleList );
 
@@ -6229,8 +6235,11 @@ BOOL InjectDelayedPatches_Steam()
 		// SSE conflicts
 		if ( moduleList.Get(L"shadows") == nullptr )
 		{
-			Patch<DWORD>(0x74A864, 0x52909090);
-			InjectHook(0x74A86A, &CShadowCamera::Update);
+			if (HasGameBindings_ShadowRenderingFixes())
+			{
+				Patch<DWORD>(0x74A864, 0x52909090);
+				InjectHook(0x74A86A, &CShadowCamera::Update);
+			}
 		}
 
 		// Bigger streamed entity linked lists
@@ -6243,7 +6252,7 @@ BOOL InjectDelayedPatches_Steam()
 
 		// Read CCustomCarPlateMgr::GeneratePlateText from here
 		// to work fine with Deji's Custom Plate Format
-		ReadCall( 0x4D3DA4, CCustomCarPlateMgr::GeneratePlateText );
+		ReadCall( 0x4D3DA4, *CCustomCarPlateMgr::GeneratePlateText.Put() );
 
 		FLAUtils::Init( moduleList );
 
@@ -6764,13 +6773,16 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 	// Patched CAutomobile::Fix
 	// misc_x parts don't get reset (Bandito fix), Towtruck's bouncing panel is not reset
-	Patch<WORD>(0x6A34C9, 0x5EEB);
-	Patch<DWORD>(0x6A3555, 0x5E5FCF8B);
-	Patch<DWORD>(0x6A3559, 0x448B5B5D);
-	Patch<DWORD>(0x6A355D, 0x89644824);
-	Patch<DWORD>(0x6A3561, 5);
-	Patch<DWORD>(0x6A3565, 0x54C48300);
-	InjectHook(0x6A3569, &CAutomobile::Fix_SilentPatch, HookType::Jump);
+	if (ms_modelInfoPtrs.Ensure())
+	{
+		Patch<WORD>(0x6A34C9, 0x5EEB);
+		Patch<DWORD>(0x6A3555, 0x5E5FCF8B);
+		Patch<DWORD>(0x6A3559, 0x448B5B5D);
+		Patch<DWORD>(0x6A355D, 0x89644824);
+		Patch<DWORD>(0x6A3561, 5);
+		Patch<DWORD>(0x6A3565, 0x54C48300);
+		InjectHook(0x6A3569, &CAutomobile::Fix_SilentPatch, HookType::Jump);
+	}
 
 	// Patched CPlane::Fix
 	// Reset bouncing panels, except for Vortex
@@ -7044,6 +7056,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 	InterceptCall(0x4C7633, orgVehicleModelInfoInit, VehicleModelInfoInit);
 
 	// Animated Phoenix hood scoop
+	if (HasGameBindings_ExtraAutomobileAnimations())
 	{
 		auto* automobilePreRender = (*(decltype(CAutomobile::orgAutomobilePreRender<0>)**)(0x6B0AD2 + 2)) + 17;
 		CAutomobile::orgAutomobilePreRender<0> = *automobilePreRender;
@@ -7210,6 +7223,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Double artict3 trailer
+	if (HasGameBindings_GetTowBarPos())
 	{
 		auto* trailerTowBarPos = (*(decltype(CTrailer::orgGetTowBarPos)**)(0x6D03FD + 2)) + 60;
 		CTrailer::orgGetTowBarPos = *trailerTowBarPos;
@@ -7231,7 +7245,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Play passenger's voice lines when killing peds with car, not only when hitting them damages player's vehicle
-	InterceptCall(0x5F05CA, CEntity::orgGetColModel, &CVehicle::PlayPedHitSample_GetColModel);
+	InterceptCall(0x5F05CA, CVehicle::orgPlayPedHitSample_GetColModel, &CVehicle::PlayPedHitSample_GetColModel);
 
 	// Prevent samples from playing where they used to, so passengers don't comment on gently pushing peds
 	InterceptCall(0x6A8298, CPed::orgSay, &CPed::Say_SampleBlackList<CONTEXT_GLOBAL_CAR_HIT_PED>);
@@ -7283,8 +7297,11 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
-	// Fix paintjobs vanishing after opening/closing garage without rendering the car first
-	InjectHook( 0x6D0B70, &CVehicle::GetRemapIndex, HookType::Jump );
+	// Fix paintjobs vanishing after opening/closing garage without rendering the car 
+	if (ms_modelInfoPtrs.Ensure())
+	{
+		InjectHook( 0x6D0B70, &CVehicle::GetRemapIndex, HookType::Jump );
+	}
 
 
 	// Re-introduce corona rotation on PC, like it is in III/VC/SA PS2
@@ -7312,8 +7329,11 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 	// Reset requested extras if created vehicle has no extras
 	// Fixes e.g. lightless taxis
-	InjectHook( 0x4C97B1, CVehicleModelInfo::ResetCompsForNoExtras, HookType::Call );
-	Nop( 0x4C97B1 + 5, 9 );
+	if (HasGameBindings_ResetCompsForNoExtras())
+	{
+		InjectHook( 0x4C97B1, CVehicleModelInfo::ResetCompsForNoExtras, HookType::Call );
+		Nop( 0x4C97B1 + 5, 9 );
+	}
 
 
 	// Allow extra6 to be picked with component rule 4 (any)
@@ -8158,13 +8178,16 @@ void Patch_SA_11()
 
 	// Patched CAutomobile::Fix
 	// misc_x parts don't get reset (Bandito fix), Towtruck's bouncing panel is not reset
-	Patch<WORD>(0x6A3CE9, 0x5EEB);
-	Patch<DWORD>(0x6A3D75, 0x5E5FCF8B);
-	Patch<DWORD>(0x6A3D79, 0x448B5B5D);
-	Patch<DWORD>(0x6A3D7D, 0x89644824);
-	Patch<DWORD>(0x6A3D81, 5);
-	Patch<DWORD>(0x6A3D85, 0x54C48300);
-	InjectHook(0x6A3D89, &CAutomobile::Fix_SilentPatch, HookType::Jump);
+	if (ms_modelInfoPtrs.Ensure())
+	{
+		Patch<WORD>(0x6A3CE9, 0x5EEB);
+		Patch<DWORD>(0x6A3D75, 0x5E5FCF8B);
+		Patch<DWORD>(0x6A3D79, 0x448B5B5D);
+		Patch<DWORD>(0x6A3D7D, 0x89644824);
+		Patch<DWORD>(0x6A3D81, 5);
+		Patch<DWORD>(0x6A3D85, 0x54C48300);
+		InjectHook(0x6A3D89, &CAutomobile::Fix_SilentPatch, HookType::Jump);
+	}
 
 	// Patched CPlane::Fix
 	// Reset bouncing panels, except for Vortex
@@ -8494,13 +8517,16 @@ void Patch_SA_Steam()
 
 	// Patched CAutomobile::Fix
 	// misc_x parts don't get reset (Bandito fix), Towtruck's bouncing panel is not reset
-	Patch<DWORD>(0x6D05B3, 0x6BEBED31);
-	Patch<DWORD>(0x6D0649, 0x5E5FCF8B);
-	Patch<DWORD>(0x6D064D, 0x448B5B5D);
-	Patch<DWORD>(0x6D0651, 0x89644824);
-	Patch<DWORD>(0x6D0655, 5);
-	Patch<DWORD>(0x6D0659, 0x54C48300);
-	InjectHook(0x6D065D, &CAutomobile::Fix_SilentPatch, HookType::Jump);
+	if (ms_modelInfoPtrs.Ensure())
+	{
+		Patch<DWORD>(0x6D05B3, 0x6BEBED31);
+		Patch<DWORD>(0x6D0649, 0x5E5FCF8B);
+		Patch<DWORD>(0x6D064D, 0x448B5B5D);
+		Patch<DWORD>(0x6D0651, 0x89644824);
+		Patch<DWORD>(0x6D0655, 5);
+		Patch<DWORD>(0x6D0659, 0x54C48300);
+		InjectHook(0x6D065D, &CAutomobile::Fix_SilentPatch, HookType::Jump);
+	}
 
 	// Patched CPlane::Fix
 	// Reset bouncing panels, except for Vortex
@@ -9657,7 +9683,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 	// Reset requested extras if created vehicle has no extras
 	// Fixes e.g. lightless taxis
-	try
+	if (HasGameBindings_ResetCompsForNoExtras()) try
 	{
 		auto resetComps = pattern( "6A 00 68 ? ? ? ? 57 E8 ? ? ? ? 83 C4 0C 8B C7" ).get_one();
 

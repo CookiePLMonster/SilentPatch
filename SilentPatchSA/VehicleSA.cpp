@@ -69,7 +69,7 @@ bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
 	lastModelInfo = modelInfo;
 
 	const uint32_t numModelInfoPtrs = *(uint32_t*)0x4C5956+2;
-	int32_t modelID = std::distance( ms_modelInfoPtrs, std::find( ms_modelInfoPtrs, ms_modelInfoPtrs+numModelInfoPtrs, modelInfo ) );
+	int32_t modelID = std::distance( ms_modelInfoPtrs.Get(), std::find( ms_modelInfoPtrs.Get(), ms_modelInfoPtrs.Get()+numModelInfoPtrs, modelInfo ) );
 
 	bool foundFeature = false;
 	bool featureStatus = false;
@@ -117,8 +117,7 @@ bool CVehicle::IsOpenTopCarOrQuadbike() const
 
 static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70C0B0);
 WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
-static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0x6D2BA0, 0x70D8C0);
-WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVehicle); }
+ExternalMethod<CVehicle,bool() const> CVehicle::IsLawEnforcementVehicle(AddressByVersion<bool (__thiscall*)(const CVehicle*)>(0x6D2370, 0x6D2BA0, 0x70D8C0));
 
 auto GetFrameHierarchyId = AddressByVersion<int32_t(*)(RwFrame*)>(0x732A20, 0x733250, 0x76CC30);
 
@@ -239,6 +238,7 @@ bool CVehicle::HasFirelaLadder() const
 	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::FIRELA_LADDER );
 }
 
+void* (CEntity::*CVehicle::orgPlayPedHitSample_GetColModel)();
 void* CVehicle::PlayPedHitSample_GetColModel()
 {
 	if (this == FindPlayerVehicle())
@@ -253,7 +253,7 @@ void* CVehicle::PlayPedHitSample_GetColModel()
 		}
 	}
 
-	return GetColModel();
+	return std::invoke(orgPlayPedHitSample_GetColModel, this);
 }
 
 void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha)
@@ -276,6 +276,12 @@ bool CVehicle::IgnoresLightbeamFix() const
 	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::_INTERNAL_NO_LIGHTBEAM_BFC_FIX );
 }
 
+extern ExternalFunc<RpMaterial*(RpMaterial* material, RwTexture* texture)> fnBind_RpMaterialSetTexture;
+bool HasGameBindings_CustomCarPlateFix()
+{
+	return EnsureBindings(fnBind_RpMaterialSetTexture, CVehicle::IsLawEnforcementVehicle) && CCustomCarPlateMgr::HasGameBindings();
+}
+
 bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 {
 	char		PlateText[CVehicleModelInfo::PLATE_TEXT_LEN+1];
@@ -284,16 +290,16 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 	if ( pOverrideText )
 		strncpy_s(PlateText, pOverrideText, CVehicleModelInfo::PLATE_TEXT_LEN);
 	else
-		CCustomCarPlateMgr::GeneratePlateText(PlateText, CVehicleModelInfo::PLATE_TEXT_LEN);
+		CCustomCarPlateMgr::GeneratePlateText.Call(PlateText, CVehicleModelInfo::PLATE_TEXT_LEN);
 
 	PlateText[CVehicleModelInfo::PLATE_TEXT_LEN] = '\0';
-	PlateTexture = CCustomCarPlateMgr::CreatePlateTexture(PlateText, pModelInfo->m_nPlateType);
+	PlateTexture = CCustomCarPlateMgr::CreatePlateTexture.Call(PlateText, pModelInfo->m_nPlateType);
 	if ( pModelInfo->m_nPlateType != -1 )
 		PlateDesign = pModelInfo->m_nPlateType;
-	else if ( IsLawEnforcementVehicle() )
-		PlateDesign = CCustomCarPlateMgr::GetMapRegionPlateDesign();
+	else if ( IsLawEnforcementVehicle.Call(this) )
+		PlateDesign = CCustomCarPlateMgr::GetMapRegionPlateDesign.Call();
 	else
- 		PlateDesign = random(0, 20) == 0 ? int8_t(random(0, 3)) : CCustomCarPlateMgr::GetMapRegionPlateDesign();
+ 		PlateDesign = random(0, 20) == 0 ? int8_t(random(0, 3)) : CCustomCarPlateMgr::GetMapRegionPlateDesign.Call();
 
 	assert(PlateDesign >= 0 && PlateDesign < 3);
 
@@ -301,12 +307,6 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 	pModelInfo->m_nPlateType = -1;
 
 	return true;
-}
-
-extern ExternalFunc<RpMaterial*(RpMaterial* material, RwTexture* texture)> fnBind_RpMaterialSetTexture;
-bool HasGameBindings_CustomCarPlateFix()
-{
-	return EnsureBindings(fnBind_RpMaterialSetTexture);
 }
 
 static std::vector<std::pair<RpMaterial*, RwTexture*>> originalPlateMaterials;
@@ -326,7 +326,7 @@ void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo
 					else if ( strcmp( texName, "carpback" ) == 0 )
 					{
 						originalPlateMaterials.emplace_back(material, texture);
-						CCustomCarPlateMgr::SetupMaterialPlatebackTexture(material, PlateDesign);
+						CCustomCarPlateMgr::SetupMaterialPlatebackTexture.Call(material, PlateDesign);
 					}
 				}
 			}
@@ -403,7 +403,7 @@ int32_t CVehicle::GetRemapIndex() const
 		return -1;
 	}
 
-	const CVehicleModelInfo* modelInfo = static_cast<CVehicleModelInfo*>(ms_modelInfoPtrs[ m_nModelIndex.Get() ]);
+	const CVehicleModelInfo* modelInfo = static_cast<CVehicleModelInfo*>(ms_modelInfoPtrs.Get()[ m_nModelIndex.Get() ]);
 	int32_t index = 0;
 	for (const auto& remapTxd : modelInfo->m_awRemapTxds)
 	{
@@ -576,6 +576,11 @@ RwFrame* CAutomobile::GetTowBarFrame() const
 	return towBar;
 }
 
+bool HasGameBindings_ExtraAutomobileAnimations()
+{
+	return EnsureBindings(ms_modelInfoPtrs) && CTimer::HasGameBindings();
+}
+
 void CAutomobile::BeforePreRender()
 {
 	// For rotating engine components
@@ -688,7 +693,7 @@ void CAutomobile::Fix_SilentPatch()
 
 void CAutomobile::ResetFrames()
 {
-	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs[ m_nModelIndex.Get() ]->pRwObject);
+	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs.Get()[ m_nModelIndex.Get() ]->pRwObject);
 	if ( pOrigClump != nullptr )
 	{
 		// Instead of setting frame rotation to (0,0,0) like R* did, obtain the original frame matrix from CBaseNodelInfo clump
@@ -722,7 +727,7 @@ void CAutomobile::ProcessPhoenixBlower( int32_t modelID )
 	if ( m_pCarNode[20] == nullptr ) return;
 	if ( !m_nVehicleFlags.bEngineOn ) return;
 
-	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs[ modelID ]->pRwObject);
+	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs.Get()[ modelID ]->pRwObject);
 	if ( pOrigClump != nullptr )
 	{
 		RwFrame* origFrame = GetFrameFromID( RpClumpGetFrame(pOrigClump), 20 );
@@ -779,6 +784,12 @@ void CAutomobile::ProcessNewsvan()
 	}
 }
 
+extern ExternalFunc<RwMatrix* (RwFrame* frame)> fnBind_RwFrameGetLTM;
+bool HasGameBindings_GetTowBarPos()
+{
+	return EnsureBindings(ms_modelInfoPtrs, fnBind_RwFrameGetLTM);
+}
+
 bool CTrailer::GetTowBarPos(CVector& posnOut, bool defaultPos, CVehicle* trailer)
 {
 	const int32_t modelID = m_nModelIndex.Get();
@@ -796,7 +807,7 @@ bool CTrailer::GetTowBarPos(CVector& posnOut, bool defaultPos, CVehicle* trailer
 		// Fallback, same as in original CTrailer::GetTowBarPos
 		if ( defaultPos )
 		{
-			posnOut = *GetMatrix() * CVector(0.0f, ms_modelInfoPtrs[ modelID ]->pColModel->boundingBox.vecMin.y - 0.05f, 0.5f - m_fHeightAboveRoad);
+			posnOut = *GetMatrix() * CVector(0.0f, ms_modelInfoPtrs.Get()[ modelID ]->pColModel->boundingBox.vecMin.y - 0.05f, 0.5f - m_fHeightAboveRoad);
 			return true;
 		}
 	}
