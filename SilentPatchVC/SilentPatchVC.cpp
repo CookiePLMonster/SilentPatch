@@ -3160,6 +3160,11 @@ void Patch_VC_Common()
 
 	const HMODULE hGameModule = GetModuleHandle(nullptr);
 
+	// Obtain a path to the ASI
+	wchar_t			wcModulePath[MAX_PATH];
+	GetModuleFileNameW(reinterpret_cast<HMODULE>(&__ImageBase), wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
+	PathRenameExtensionW(wcModulePath, L".ini");
+
 	// Fix text shadows not scaling to resolution
 	if (ShadowScalingFixes::HasGameBindings()) try
 	{
@@ -3630,24 +3635,25 @@ void Patch_VC_Common()
 
 	// Ped speech fix
 	// Based off Sergeanur's fix
-	try
-	{
-		// Remove the artificial 6s delay between any ped speech samples
-		auto delay_check = get_pattern("80 BE ? ? ? ? ? 0F 85 ? ? ? ? B9", 7);
-		auto comment_delay_id1 = get_pattern("0F B7 C2 DD D8 C1 E0 04");
-		auto comment_delay_id2 = pattern("0F B7 95 DA 05 00 00 D9 6C 24 04").get_one();
+	if (GetPrivateProfileIntW(L"SilentPatch", L"PedSpeech", 0, wcModulePath) != 0) {
+		try
+		{
+			// Remove the artificial 6s delay between any ped speech samples
+			auto delay_check = get_pattern("80 BE ? ? ? ? ? 0F 85 ? ? ? ? B9", 7);
+			auto comment_delay_id1 = get_pattern("0F B7 C2 DD D8 C1 E0 04");
+			auto comment_delay_id2 = pattern("0F B7 95 DA 05 00 00 D9 6C 24 04").get_one();
 
-		Nop(delay_check, 6);
+			Nop(delay_check, 6);
 
-		// movzx eax, dx -> movzx eax, bx
-		Patch(comment_delay_id1, { 0x0F, 0xB7, 0xC3 });
+			// movzx eax, dx -> movzx eax, bx
+			Patch(comment_delay_id1, { 0x0F, 0xB7, 0xC3 });
 
-		// movzx edx, word ptr [ebp+5DAh] -> movzx edx, bx \ nop
-		Patch(comment_delay_id2.get<void>(), { 0x0F, 0xB7, 0xD3 });
-		Nop(comment_delay_id2.get<void>(3), 4);
+			// movzx edx, word ptr [ebp+5DAh] -> movzx edx, bx \ nop
+			Patch(comment_delay_id2.get<void>(), { 0x0F, 0xB7, 0xD3 });
+			Nop(comment_delay_id2.get<void>(3), 4);
+		}
+		TXN_CATCH();
 	}
-	TXN_CATCH();
-
 
 	// Disabled backface culling on detached car parts, peds and specific models
 	if (SelectableBackfaceCulling::HasGameBindings()) try
