@@ -115,13 +115,13 @@ bool CVehicle::IsOpenTopCarOrQuadbike() const
 	return IsOpenTopCar() || m_dwVehicleSubClass == VEHICLE_QUAD;
 }
 
-static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70C0B0);
-WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
 ExternalMethod<CVehicle,bool() const> CVehicle::IsLawEnforcementVehicle(AddressByVersion<bool (__thiscall*)(const CVehicle*)>(0x6D2370, 0x6D2BA0, 0x70D8C0));
 
-auto GetFrameHierarchyId = AddressByVersion<int32_t(*)(RwFrame*)>(0x732A20, 0x733250, 0x76CC30);
+static ExternalFunc GetFrameHierarchyId(AddressByVersion<int32_t(*)(RwFrame*)>(0x732A20, 0x733250, 0x76CC30));
 
+void (CEntity::*CHeli::orgRender_RenderRotors)();
 void (CPlane::*CPlane::orgPlanePreRender)();
+void (CVehicle::*CPlane::orgRender_RenderRotors)();
 
 static int32_t random(int32_t from, int32_t to)
 {
@@ -142,6 +142,7 @@ static RwObject* GetCurrentAtomicObject( RwFrame* frame )
 	return obj;
 }
 
+extern ExternalFunc<const char* (RwFrame*)> GetFrameNodeName;
 RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 {
 	class GetFramePredicate
@@ -156,7 +157,7 @@ RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 
 		RwFrame* operator() ( RwFrame* frame )
 		{
-			if ( _stricmp( m_name, GetFrameNodeName(frame) ) == 0 )
+			if ( _stricmp( m_name, GetFrameNodeName.Call(frame) ) == 0 )
 			{
 				foundFrame = frame;
 				return nullptr;
@@ -186,7 +187,7 @@ RwFrame* GetFrameFromID( RwFrame* topFrame, int32_t ID )
 
 		RwFrame* operator() ( RwFrame* frame )
 		{
-			if ( ID == GetFrameHierarchyId(frame) )
+			if ( ID == GetFrameHierarchyId.Call(frame) )
 			{
 				foundFrame = frame;
 				return nullptr;
@@ -276,10 +277,9 @@ bool CVehicle::IgnoresLightbeamFix() const
 	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::_INTERNAL_NO_LIGHTBEAM_BFC_FIX );
 }
 
-extern ExternalFunc<RpMaterial*(RpMaterial* material, RwTexture* texture)> fnBind_RpMaterialSetTexture;
 bool HasGameBindings_CustomCarPlateFix()
 {
-	return EnsureBindings(fnBind_RpMaterialSetTexture, CVehicle::IsLawEnforcementVehicle) && CCustomCarPlateMgr::HasGameBindings();
+	return RWBindings::RpMaterialSetTexture() && EnsureBindings(CVehicle::IsLawEnforcementVehicle) && CCustomCarPlateMgr::HasGameBindings();
 }
 
 bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
@@ -421,14 +421,12 @@ int32_t CVehicle::GetRemapIndex() const
 	return -1;
 }
 
-void CHeli::Render()
+void CHeli::RenderRotors()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
 	const bool	bDisplayRotors = !IgnoresRotorFix();
 	const bool	bHasMovingRotor = m_pCarNode[13] != nullptr && bDisplayRotors;
 	const bool	bHasMovingRotor2 = m_pCarNode[15] != nullptr && bDisplayRotors;
-
-	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 
 	if ( m_fRotorSpeed > 0.0 )
 		dRotorsSpeed = std::min(1.7 * (1.0/0.22) * m_fRotorSpeed, 1.5);
@@ -470,17 +468,15 @@ void CHeli::Render()
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor2 ? nMovingRotorAlpha : 0);
 	}
 
-	CEntity::Render();
+	std::invoke(orgRender_RenderRotors, this);
 }
 
-void CPlane::Render()
+void CPlane::RenderRotors()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
 	const bool	bDisplayRotors = !IgnoresRotorFix();
 	const bool	bHasMovingProp = m_pCarNode[13] != nullptr && bDisplayRotors;
 	const bool	bHasMovingProp2 = m_pCarNode[15] != nullptr && bDisplayRotors;
-
-	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 
 	if ( m_fPropellerSpeed > 0.0 )
 		dRotorsSpeed = std::min(1.7 * (1.0/0.31) * m_fPropellerSpeed, 1.5);
@@ -522,7 +518,7 @@ void CPlane::Render()
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp2 ? nMovingRotorAlpha : 0);
 	}
 
-	CVehicle::Render();
+	std::invoke(orgRender_RenderRotors, this);
 }
 
 void CPlane::Fix_SilentPatch()
@@ -578,13 +574,18 @@ RwFrame* CAutomobile::GetTowBarFrame() const
 
 bool HasGameBindings_ExtraAutomobileAnimations()
 {
-	return EnsureBindings(ms_modelInfoPtrs) && CTimer::HasGameBindings();
+	return EnsureBindings(ms_modelInfoPtrs, GetFrameHierarchyId) && CTimer::HasGameBindings();
+}
+
+bool HasGameBindings_AutomobileFix()
+{
+	return EnsureBindings(ms_modelInfoPtrs, GetFrameHierarchyId);
 }
 
 void CAutomobile::BeforePreRender()
 {
 	// For rotating engine components
-	ms_engineCompSpeed = m_nVehicleFlags.bEngineOn ? CTimer::m_fTimeStep : 0.0f;
+	ms_engineCompSpeed = m_nVehicleFlags.bEngineOn ? CTimer::m_fTimeStep.Get() : 0.0f;
 }
 
 void CAutomobile::AfterPreRender()
@@ -742,18 +743,18 @@ void CAutomobile::ProcessPhoenixBlower( int32_t modelID )
 	{
 		if ( m_fSpecialComponentAngle < 1.3f )
 		{
-			finalAngle = m_fSpecialComponentAngle = std::min( m_fSpecialComponentAngle + 0.1f * CTimer::m_fTimeStep, 1.3f );
+			finalAngle = m_fSpecialComponentAngle = std::min( m_fSpecialComponentAngle + 0.1f * CTimer::m_fTimeStep.Get(), 1.3f );
 		}
 		else
 		{
-			finalAngle = m_fSpecialComponentAngle + (std::sin( (CTimer::m_snTimeInMilliseconds % 10000) / PHOENIX_FLUTTER_PERIOD ) * PHOENIX_FLUTTER_AMP);
+			finalAngle = m_fSpecialComponentAngle + (std::sin( (CTimer::m_snTimeInMilliseconds.Get() % 10000) / PHOENIX_FLUTTER_PERIOD ) * PHOENIX_FLUTTER_AMP);
 		}
 	}
 	else
 	{
 		if ( m_fSpecialComponentAngle > 0.0f )
 		{
-			finalAngle = m_fSpecialComponentAngle = std::max( m_fSpecialComponentAngle - 0.05f * CTimer::m_fTimeStep, 0.0f );
+			finalAngle = m_fSpecialComponentAngle = std::max( m_fSpecialComponentAngle - 0.05f * CTimer::m_fTimeStep.Get(), 0.0f );
 		}
 	}
 
@@ -766,7 +767,7 @@ void CAutomobile::ProcessSweeper()
 
 	if ( GetStatus() == STATUS_PLAYER || GetStatus() == STATUS_PHYSICS || GetStatus() == STATUS_SIMPLE )
 	{
-		const float angle = CTimer::m_fTimeStep * SWEEPER_BRUSH_SPEED;
+		const float angle = CTimer::m_fTimeStep.Get() * SWEEPER_BRUSH_SPEED;
 
 		SetComponentRotation( m_pCarNode[20], ROT_AXIS_Z, angle, false );
 		SetComponentRotation( m_pCarNode[21], ROT_AXIS_Z, -angle, false );
@@ -778,7 +779,7 @@ void CAutomobile::ProcessNewsvan()
 	if ( GetStatus() == STATUS_PLAYER || GetStatus() == STATUS_PHYSICS || GetStatus() == STATUS_SIMPLE )
 	{
 		// TODO: Point at something? Like nearest collectable or safehouse
-		m_fGunOrientation += CTimer::m_fTimeStep * 0.05f;
+		m_fGunOrientation += CTimer::m_fTimeStep.Get() * 0.05f;
 		if ( m_fGunOrientation > 2.0f * PI ) m_fGunOrientation -= 2.0f * PI;
 		SetComponentRotation( m_pCarNode[20], ROT_AXIS_Z, m_fGunOrientation );
 	}
@@ -786,8 +787,7 @@ void CAutomobile::ProcessNewsvan()
 
 bool HasGameBindings_GetTowBarPos()
 {
-	extern ExternalFunc<RwMatrix* (RwFrame* frame)> fnBind_RwFrameGetLTM;
-	return EnsureBindings(ms_modelInfoPtrs, fnBind_RwFrameGetLTM);
+	return RWBindings::RwFrameGetLTM() && EnsureBindings(ms_modelInfoPtrs);
 }
 
 bool CTrailer::GetTowBarPos(CVector& posnOut, bool defaultPos, CVehicle* trailer)

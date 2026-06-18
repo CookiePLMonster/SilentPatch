@@ -125,28 +125,54 @@ namespace ModCompat
 #pragma warning(disable:4733)
 
 // RW wrappers
-ExternalFunc fnBind_AtomicDefaultRenderCallBack(AddressByVersion<RpAtomic* (*)(RpAtomic* atomic)>(0x7491C0, 0x749AD0, 0x783180));
-RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { return fnBind_AtomicDefaultRenderCallBack.Call(atomic); }
-static void* varRtPNGImageRead = AddressByVersion<void*>(0x7CF9B0, 0x7D02B0, 0x809970);
-WRAPPER RwImage* RtPNGImageRead(const RwChar* imageName) { WRAPARG(imageName); VARJMP(varRtPNGImageRead); }
-static void* varRwTextureCreate = AddressByVersion<void*>(0x7F37C0, 0x7F40C0, 0x82D780);
-WRAPPER RwTexture* RwTextureCreate(RwRaster* raster) { WRAPARG(raster); VARJMP(varRwTextureCreate); }
-static void* varRwRasterCreate = AddressByVersion<void*>(0x7FB230, 0x7FBB30, 0x8351F0, { "8B 0D ? ? ? ? 56 68 07 04 03 00 8B 54 01 60", -5 });
-WRAPPER RwRaster* RwRasterCreate(RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 flags) { WRAPARG(width); WRAPARG(height); WRAPARG(depth); WRAPARG(flags); VARJMP(varRwRasterCreate); }
-static void* varRwImageDestroy = AddressByVersion<void*>(0x802740, 0x803040, 0x83C700);
-WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); VARJMP(varRwImageDestroy); }
+namespace RWBindings
+{
+#define ENSURE_FUNC(func) bool func() { return fn##func.Ensure(); }
 
-ExternalFunc fnBind_RpMaterialSetTexture(AddressByVersion<RpMaterial* (*)(RpMaterial* material, RwTexture* texture)>(0x74DBC0, 0x74E4D0, 0x787B80));
-RpMaterial* RpMaterialSetTexture(RpMaterial* material, RwTexture* texture) { return fnBind_RpMaterialSetTexture.Call(material, texture); }
+	static ExternalFunc fnAtomicDefaultRenderCallBack(AddressByVersion<RpAtomic* (*)(RpAtomic* atomic)>(0x7491C0, 0x749AD0, 0x783180));
+	ENSURE_FUNC(AtomicDefaultRenderCallBack);
 
-ExternalFunc fnBind_RwFrameGetLTM(AddressByVersion<RwMatrix* (*)(RwFrame* frame)>(0x7F0990, 0x7F1290, 0x82A950));
-RwMatrix* RwFrameGetLTM(RwFrame* frame) { return fnBind_RwFrameGetLTM.Call(frame); }
-static void* varRwMatrixRotate = AddressByVersion<void*>(0x7F1FD0, 0x7F28D0, 0x82BF90);
-WRAPPER RwMatrix* RwMatrixRotate(RwMatrix* matrix, const RwV3d* axis, RwReal angle, RwOpCombineType combineOp) { WRAPARG(matrix); WRAPARG(axis); WRAPARG(angle); WRAPARG(combineOp); VARJMP(varRwMatrixRotate); }
-static void* varRwD3D9SetRenderState = AddressByVersion<void*>(0x7FC2D0, 0x7FCBD0, 0x836290);
-WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { WRAPARG(state); WRAPARG(value); VARJMP(varRwD3D9SetRenderState); }
-static void* varRwEngineSetSubSystem = AddressByVersion<void*>(0x7F2C90, { "50 6A 00 6A 00 83 C1 10 6A 10 51", -0xA });
-WRAPPER RwBool RwEngineSetSubSystem(RwInt32 subSystemIndex) { WRAPARG(subSystemIndex); VARJMP(varRwEngineSetSubSystem); }
+	static ExternalFunc fnRpMaterialSetTexture(AddressByVersion<RpMaterial* (*)(RpMaterial* material, RwTexture* texture)>(0x74DBC0, 0x74E4D0, 0x787B80));
+	ENSURE_FUNC(RpMaterialSetTexture);
+
+	static ExternalFunc fnRwFrameGetLTM(AddressByVersion<RwMatrix* (*)(RwFrame* frame)>(0x7F0990, 0x7F1290, 0x82A950));
+	ENSURE_FUNC(RwFrameGetLTM);
+
+	static ExternalFunc fnRwEngineSetSubSystem(AddressByVersion<RwBool (*)(RwInt32)>(0x7F2C90, { "50 6A 00 6A 00 83 C1 10 6A 10 51", -0xA }));
+	ENSURE_FUNC(RwEngineSetSubSystem);
+
+	static ExternalFunc fnRwD3D9SetRenderState(AddressByVersion<void (*)(RwUInt32 state, RwUInt32 value)>(0x7FC2D0, 0x7FCBD0, 0x836290));
+	ENSURE_FUNC(RwD3D9SetRenderState);
+
+	static ExternalFunc fnRtPNGImageRead(AddressByVersion<RwImage* (*)(const RwChar* imageName) >(0x7CF9B0, 0x7D02B0, 0x809970));
+	ENSURE_FUNC(RtPNGImageRead);
+
+	static ExternalFunc fnRwTextureCreate(AddressByVersion<RwTexture* (*)(RwRaster* raster)>(0x7F37C0, 0x7F40C0, 0x82D780));
+	ENSURE_FUNC(RwTextureCreate);
+
+	static ExternalFunc fnRwRasterCreate(AddressByVersion<RwRaster* (*)(RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 flags)>(0x7FB230, 0x7FBB30, 0x8351F0, { "8B 0D ? ? ? ? 56 68 07 04 03 00 8B 54 01 60", -5 }));
+	ENSURE_FUNC(RwRasterCreate);
+
+	static ExternalFunc fnRwImageDestroy(AddressByVersion<RwBool (*)(RwImage* image)>(0x802740, 0x803040, 0x83C700));
+	ENSURE_FUNC(RwImageDestroy);
+
+	static ExternalFunc fnRwMatrixRotate(AddressByVersion<RwMatrix* (*)(RwMatrix* matrix, const RwV3d* axis, RwReal angle, RwOpCombineType combineOp)>(0x7F1FD0, 0x7F28D0, 0x82BF90));
+	ENSURE_FUNC(RwMatrixRotate);
+
+#undef ENSURE_FUNC
+}
+
+RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { return RWBindings::fnAtomicDefaultRenderCallBack.Call(atomic); }
+RwImage* RtPNGImageRead(const RwChar* imageName) { return RWBindings::fnRtPNGImageRead.Call(imageName); }
+RwTexture* RwTextureCreate(RwRaster* raster) { return RWBindings::fnRwTextureCreate.Call(raster); }
+RwRaster* RwRasterCreate(RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 flags) { return RWBindings::fnRwRasterCreate.Call(width, height, depth, flags); }
+RwBool RwImageDestroy(RwImage* image) { return RWBindings::fnRwImageDestroy.Call(image); }
+RwMatrix* RwMatrixRotate(RwMatrix* matrix, const RwV3d* axis, RwReal angle, RwOpCombineType combineOp) { return RWBindings::fnRwMatrixRotate.Call(matrix, axis, angle, combineOp); }
+
+RpMaterial* RpMaterialSetTexture(RpMaterial* material, RwTexture* texture) { return RWBindings::fnRpMaterialSetTexture.Call(material, texture); }
+RwMatrix* RwFrameGetLTM(RwFrame* frame) { return RWBindings::fnRwFrameGetLTM.Call(frame); }
+void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { RWBindings::fnRwD3D9SetRenderState.Call(state, value); }
+RwBool RwEngineSetSubSystem(RwInt32 subSystemIndex) { return RWBindings::fnRwEngineSetSubSystem.Call(subSystemIndex); }
 
 RwCamera* RwCameraBeginUpdate(RwCamera* camera)
 {
@@ -348,37 +374,44 @@ struct RsGlobalType
 };
 
 // Other wrappers
-void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0x824EFF, 0x85E58C);
-const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0x730360, 0x769C20, { "55 8B EC A1 ? ? ? ? 85 C0 7E 05 03 45 08 5D C3", 0 });
+ExternalFunc<void (void*)> GTAdelete(AddressByVersion<void(*)(void*)>(0x82413F, 0x824EFF, 0x85E58C));
+
+ExternalFunc			GetFrameNodeName(AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0x730360, 0x769C20, { "55 8B EC A1 ? ? ? ? 85 C0 7E 05 03 45 08 5D C3", 0 }));
 ExternalFunc			GetAnimHierarchyFromSkinClump(AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0x735270, 0x7671B0));
-auto					RpAnimBlendClumpGetAssociation = AddressByVersion<CAnimBlendAssociation*(*)(RpClump*, uint32_t)>(0x4D68B0, { "8B 0D ? ? ? ? 8B 14 01 8B 02 85 C0 74 11 8B 4D 0C", -6 });
+ExternalFunc			RpAnimBlendClumpGetAssociation(AddressByVersion<CAnimBlendAssociation*(*)(RpClump*, uint32_t)>(0x4D68B0, { "8B 0D ? ? ? ? 8B 14 01 8B 02 85 C0 74 11 8B 4D 0C", -6 }));
 ExternalFunc			GetAnimationBlockIndex(AddressByVersion<int32_t(*)(const char* animBlock)>(0x4D3990, 0x4D3B80, 0x4DE2F0, { "83 C4 04 85 C0 75 05", -0xC }));
 ExternalFunc			RequestModel(AddressByVersion<void(*)(int modelID, int priority)>(0x4087E0, { "57 8D 3C 9B", -0x8 }));
 ExternalFunc			LoadAllRequestedModels(AddressByVersion<void(*)(bool bBlock)>(0x40EA10, { "A1 ? ? ? ? 03 C0", -0x20 }));
 ExternalFunc			ClearAtomicFlag(AddressByVersion<void(*)(RpAtomic*, int)>(0x732310, 0x732B40, 0x76C4B0, { "55 8B EC 8B 55 0C A1", 0 }));
 
-auto					IsPlayerOnAMission = AddressByVersion<bool(*)()>(0x464D50, {"85 C0 74 0C 83 B8 ? ? ? ? ? 75 03 B0 01 C3", -5});
-
-static BOOL				(*IsAlreadyRunning)();
-static void				(*TheScriptsLoad)();
+ExternalFunc			IsPlayerOnAMission(AddressByVersion<bool(*)()>(0x464D50, {"85 C0 74 0C 83 B8 ? ? ? ? ? 75 03 B0 01 C3", -5}));
 
 ExternalFunc			WorldRemove(AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, { "8B 06 8B 50 0C 8B CE FF D2 8A 46 36 24 07 3C 01 76 0D", -7 }));
 
 
 // SA variables
-void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194, { "8B 48 20 53 56 57 6A 01", -5 + 1 });
+void** rwengine = []() -> void** {
 
-RsGlobalType*			RsGlobal = *AddressByVersion<RsGlobalType**>(0x619602 + 2, { "33 C0 C7 05 ? ? ? ? ? ? ? ? C7 05", 2 + 2 });
+		void*** ptr = AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194, { "8B 48 20 53 56 57 6A 01", -5 + 1 });
+		if (ptr != nullptr)
+		{
+			return *ptr;
+		}
+		assert(!"Could not locate RwEngineInstance!");
+		return nullptr;
+	}();
+
+static ExternalRef		RsGlobal(AddressByVersion<RsGlobalType**>(0x619602 + 2, { "33 C0 C7 05 ? ? ? ? ? ? ? ? C7 05", 2 + 2 }));
 
 ExternalRef				nGameClockDays(AddressByVersion<uint8_t**>(0x4E841D, 0x4E886D, 0x4F3871));
 ExternalRef				nGameClockMonths(AddressByVersion<uint8_t**>(0x4E842D, 0x4E887D, 0x4F3861));
 
-CZoneInfo*&				pCurrZoneInfo = **AddressByVersion<CZoneInfo***>(0x58ADB1, 0x58B581, 0x407F93);
-CRGBA*					HudColour = *AddressByVersion<CRGBA**>(0x58ADF6, 0x58B5C6, 0x440648);
+ExternalRef				pCurrZoneInfo(AddressByVersion<CZoneInfo***>(0x58ADB1, 0x58B581, 0x407F93));
+ExternalRef				HudColour(AddressByVersion<CRGBA (**)[]>(0x58ADF6, 0x58B5C6, 0x440648));
 
 ExternalRef				ms_weaponPedsForPC(AddressByVersion<CLinkListSA<CPed*>**>(0x53EACA, 0x53EF6A, 0x551101));
 
-uint32_t&				bDrawCrossHair = **AddressByVersion<uint32_t**>(0x58E7BF + 2, {"83 3D ? ? ? ? ? 74 29", 2});
+ExternalRef				bDrawCrossHair(AddressByVersion<uint32_t**>(0x58E7BF + 2, {"83 3D ? ? ? ? ? 74 29", 2}));
 
 DebugMenuAPI gDebugMenuAPI;
 static bool IgnoresWeaponPedsForPCFix();
@@ -386,6 +419,11 @@ static bool IgnoresWeaponPedsForPCFix();
 // ============= Fixed atomic render functions for blurred rotors/propellers =============
 namespace BlurredRotorsAtomicRender
 {
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(GetFrameNodeName);
+	}
+
 	template<std::size_t Index>
 	static RpAtomic* (*orgAtomicDefaultRenderCallback)(RpAtomic* pAtomic);
 
@@ -406,7 +444,7 @@ namespace BlurredRotorsAtomicRender
 		RwScopedRenderState<rwRENDERSTATEALPHATESTFUNCTIONREF> alphaRef;
 		RwScopedRenderState<rwRENDERSTATEVERTEXALPHAENABLE> vertexAlpha;
 
-		if (strstr(GetFrameNodeName(RpAtomicGetFrame(pAtomic)), "_prop") != nullptr)
+		if (strstr(GetFrameNodeName.Call(RpAtomicGetFrame(pAtomic)), "_prop") != nullptr)
 		{
 			RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, 0);
 			RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
@@ -427,7 +465,7 @@ namespace BlurredRotorsAtomicRender
 		RpAtomic* result = orgSetAtomicRendererCB_BigVehicle(atomic, data);
 
 		// We do our setup after, not before the game, to override the original decision
-		if (strstr(GetFrameNodeName(RpAtomicGetFrame(atomic)), "_prop") != nullptr)
+		if (strstr(GetFrameNodeName.Call(RpAtomicGetFrame(atomic)), "_prop") != nullptr)
 		{
 			RpAtomicSetRenderCallBack(atomic, RenderVehicleHiDetailAlphaCB_BigVehicle);
 		}
@@ -444,7 +482,7 @@ namespace BlurredRotorsAtomicRender
 		RpAtomic* result = orgSetAtomicRendererCB_RealHeli(atomic, data);
 
 		// We do our setup after, not before the game, to override the original decision
-		const char* frameName = GetFrameNodeName(RpAtomicGetFrame(atomic));
+		const char* frameName = GetFrameNodeName.Call(RpAtomicGetFrame(atomic));
 		if (strcmp(frameName, "static_rotor") == 0)
 		{
 			RpAtomicSetRenderCallBack(atomic, RenderHeliRotorAlphaCB);
@@ -463,7 +501,7 @@ namespace HunterDoorRenderFlagFix
 {
 	static bool HasGameBindings()
 	{
-		return EnsureBindings(GetAnimationBlockIndex, ClearAtomicFlag);
+		return EnsureBindings(GetAnimationBlockIndex, ClearAtomicFlag, GetFrameNodeName);
 	}
 
 	static void (__thiscall *orgPreprocessHierarchy)(CVehicleModelInfo* modelInfo);
@@ -480,7 +518,7 @@ namespace HunterDoorRenderFlagFix
 			{
 				RpClumpForAllAtomics(reinterpret_cast<RpClump*>(modelInfo->pRwObject), [](RpAtomic* atomic) -> RpAtomic*
 					{
-						if (strncmp(GetFrameNodeName(RpAtomicGetFrame(atomic)), "door_lf", 7) == 0)
+						if (strncmp(GetFrameNodeName.Call(RpAtomicGetFrame(atomic)), "door_lf", 7) == 0)
 						{
 							ClearAtomicFlag.Call(atomic, 4); // ATOMIC_IS_LEFT
 						}
@@ -553,22 +591,27 @@ namespace UIScales
 
 	static float Width_Internal_Multiply(float** factor)
 	{
-		return RsGlobal->MaximumWidth * **factor;
+		return RsGlobal.Get().MaximumWidth * **factor;
 	}
 
 	static float Height_Internal_Multiply(float** factor)
 	{
-		return RsGlobal->MaximumHeight * **factor;
+		return RsGlobal.Get().MaximumHeight * **factor;
 	}
 
 	static float Width_Internal_Divide(double** factor)
 	{
-		return static_cast<float>(RsGlobal->MaximumWidth / **factor);
+		return static_cast<float>(RsGlobal.Get().MaximumWidth / **factor);
 	}
 
 	static float Height_Internal_Divide(double** factor)
 	{
-		return static_cast<float>(RsGlobal->MaximumHeight / **factor);
+		return static_cast<float>(RsGlobal.Get().MaximumHeight / **factor);
+	}
+
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(RsGlobal);
 	}
 
 	// CHud - widescreen fixed, currently scaled by HUD scale
@@ -1028,9 +1071,10 @@ static void QuadrupleStuntBonus()
 	}
 }
 
+static void	(*orgTheScriptsLoad)();
 void TheScriptsLoad_BasketballFix()
 {
-	TheScriptsLoad();
+	orgTheScriptsLoad();
 	InitializeScriptGlobals();
 
 	BasketballFix(ScriptSpace+8, *(int*)(ScriptSpace+3));
@@ -1138,22 +1182,30 @@ bool GetCurrentZoneLockedOrUnlocked_Steam(float fPosX, float fPosY)
 	return true;
 }
 
-CRGBA* __fastcall BlendGangColour(CRGBA* pThis, void*, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+namespace ColouredZoneNames
 {
-	const double colourIntensity = std::min( static_cast<double>(pCurrZoneInfo->ZoneColour.a) / 120.0, 1.0 );
-	*pThis = CRGBA(BlendSqr( HudColour[3], CRGBA(r, g, b), colourIntensity ), a);
-	return pThis;
-}
-
-static bool bColouredZoneNames;
-CRGBA* __fastcall BlendGangColour_Dynamic(CRGBA* pThis, void*, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-	if ( bColouredZoneNames )
+	static bool HasGameBindings()
 	{
-		return BlendGangColour(pThis, nullptr, r, g, b, a);
+		return EnsureBindings(pCurrZoneInfo, HudColour);
 	}
-	*pThis = CRGBA(HudColour[3], a);
-	return pThis;
+
+	CRGBA* __fastcall BlendGangColour(CRGBA* pThis, void*, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+	{
+		const double colourIntensity = std::min( static_cast<double>(pCurrZoneInfo.Get()->ZoneColour.a) / 120.0, 1.0 );
+		*pThis = CRGBA(BlendSqr( HudColour.Get()[3], CRGBA(r, g, b), colourIntensity ), a);
+		return pThis;
+	}
+
+	static bool bColouredZoneNames;
+	CRGBA* __fastcall BlendGangColour_Dynamic(CRGBA* pThis, void*, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+	{
+		if ( bColouredZoneNames )
+		{
+			return BlendGangColour(pThis, nullptr, r, g, b, a);
+		}
+		*pThis = CRGBA(HudColour.Get()[3], a);
+		return pThis;
+	}
 }
 
 // STEAM ONLY
@@ -1176,6 +1228,7 @@ void DrawRect_HalfPixel_Steam(CRect& rect, const CRGBA& rgba)
 	((void(*)(const CRect&, const CRGBA&))0x75CDA0)(rect, rgba);
 }
 
+static ExternalRef ppUserFilesDir(AddressByVersion<const char (**)[]>(0x74503F, 0x74586F, 0x77EE50, { "6A 00 68 80 00 00 02 6A 03 6A 00 6A 01 B9 07 00 00 00", 0x12 + 1 }));
 char* GetMyDocumentsPathSA()
 {
 	static char* const pDocumentsPath = [&] () -> char* {
@@ -1184,9 +1237,7 @@ char* GetMyDocumentsPathSA()
 
 		if (SUCCEEDED(SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, ppTempBufPtr)))
 		{
-			char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, { "6A 00 68 80 00 00 02 6A 03 6A 00 6A 01 B9 07 00 00 00", 0x12 + 1 });
-
-			PathAppendA(ppTempBufPtr, *ppUserFilesDir);
+			PathAppendA(ppTempBufPtr, ppUserFilesDir.Get());
 			CreateDirectoryA(ppTempBufPtr, nullptr);
 		}
 		else
@@ -1224,35 +1275,56 @@ int NewFrameRender(int nEvent, void* pParam)
 	return RsEventHandler(nEvent, pParam);
 }
 
-auto FlushSpriteBuffer = AddressByVersion<void(*)()>(0x70CF20, 0x70D750, 0x7591E0, { "85 C0 0F 8E ? ? ? ? 83 3D", -5 });
-void FlushLensSwitchZ( RwRenderState rwa, void* rwb )
+namespace LensFlareRenderFix
 {
-	FlushSpriteBuffer();
-	RwRenderStateSet( rwa, rwb );
+	static ExternalFunc FlushSpriteBuffer(AddressByVersion<void(*)()>(0x70CF20, 0x70D750, 0x7591E0, { "85 C0 0F 8E ? ? ? ? 83 3D", -5 }));
+	static ExternalFunc InitSpriteBuffer2D(AddressByVersion<void(*)()>(0x70CFD0, 0x70D800, 0x759290, { "A1 ? ? ? ? D9 80 ? ? ? ? A1" }));
+
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(FlushSpriteBuffer, InitSpriteBuffer2D);
+	}
+
+	void FlushLensSwitchZ( RwRenderState rwa, void* rwb )
+	{
+		FlushSpriteBuffer.Call();
+		RwRenderStateSet( rwa, rwb );
+	}
+
+	void InitBufferSwitchZ( RwRenderState rwa, void* rwb )
+	{
+		RwRenderStateSet( rwa, rwb );
+		InitSpriteBuffer2D.Call();
+	}
 }
 
-auto InitSpriteBuffer2D = AddressByVersion<void(*)()>(0x70CFD0, 0x70D800, 0x759290, { "A1 ? ? ? ? D9 80 ? ? ? ? A1" });
-void InitBufferSwitchZ( RwRenderState rwa, void* rwb )
-{
-	RwRenderStateSet( rwa, rwb );
-	InitSpriteBuffer2D();
-}
-
-static void* const g_fx = *AddressByVersion<void**>(0x4A9649, 0x4AA4EF, 0x4B2BB9, { "56 8D 4F 0C E8", 9 + 1 });
+static ExternalRef g_fx(AddressByVersion<void***>(0x4A9649, 0x4AA4EF, 0x4B2BB9, { "56 8D 4F 0C E8", 9 + 1 }));
 static int32_t GetFxQuality()
 {
-	return *(int32_t*)( (uint8_t*)g_fx + 0x54 );
+	void* fx = g_fx.Address();
+	return *(int32_t*)( (uint8_t*)fx + 0x54 );
 }
 
 
-DWORD*				msaaValues = *AddressByVersion<DWORD**>(0x4CCBC5, 0x4CCDB5, 0x4D7462, { "8B 3D ? ? ? ? 57 8B 7B 18", 2 });
-// These patterns have 3 hits, but that's fine as all 3 refer to exact same variables
-RwRaster*&			pMirrorBuffer = **AddressByVersion<RwRaster***>(0x723001, 0x723831, 0x754971, { "A1 ? ? ? ? 3B C6 74 0F 50 E8 ? ? ? ? 83 C4 04 89 35 ? ? ? ? 89 35 ? ? ? ? 89 35 ? ? ? ? 5E C3", -6 + 2 });
-RwRaster*&			pMirrorZBuffer = **AddressByVersion<RwRaster***>(0x72301C, 0x72384C, 0x75498C, { "A1 ? ? ? ? 3B C6 74 0F 50 E8 ? ? ? ? 83 C4 04 89 35 ? ? ? ? 89 35 ? ? ? ? 89 35 ? ? ? ? 5E C3", 1 });
-void CreateMirrorBuffers()
+namespace MirrorsDepthFix
 {
+
+static ExternalRef s_msaaValues(AddressByVersion<DWORD (**)[2]>(0x4CCBC5, 0x4CCDB5, 0x4D7462, { "8B 3D ? ? ? ? 57 8B 7B 18", 2 }));
+// These patterns have 3 hits, but that's fine as all 3 refer to exact same variables
+static ExternalRef s_pMirrorBuffer(AddressByVersion<RwRaster***>(0x723001, 0x723831, 0x754971, { "A1 ? ? ? ? 3B C6 74 0F 50 E8 ? ? ? ? 83 C4 04 89 35 ? ? ? ? 89 35 ? ? ? ? 89 35 ? ? ? ? 5E C3", -6 + 2 }));
+static ExternalRef s_pMirrorZBuffer(AddressByVersion<RwRaster***>(0x72301C, 0x72384C, 0x75498C, { "A1 ? ? ? ? 3B C6 74 0F 50 E8 ? ? ? ? 83 C4 04 89 35 ? ? ? ? 89 35 ? ? ? ? 89 35 ? ? ? ? 5E C3", 1 }));
+
+static bool HasGameBindings()
+{
+	return RWBindings::RwRasterCreate() && EnsureBindings(s_msaaValues, s_pMirrorBuffer, s_pMirrorZBuffer, g_fx);
+}
+
+static void CreateMirrorBuffers()
+{
+	auto& pMirrorBuffer = s_pMirrorBuffer.Get();
 	if ( pMirrorBuffer == nullptr )
 	{
+		auto& msaaValues = s_msaaValues.Get();
 		DWORD oldMsaa[2] = { msaaValues[0], msaaValues[1] };
 		msaaValues[0] = msaaValues[1] = 0;
 
@@ -1276,11 +1348,13 @@ void CreateMirrorBuffers()
 		}
 
 		pMirrorBuffer = RwRasterCreate( width, height, 0, rwRASTERTYPECAMERATEXTURE );
-		pMirrorZBuffer = RwRasterCreate( width, height, 0, rwRASTERTYPEZBUFFER );
+		s_pMirrorZBuffer.Get() = RwRasterCreate( width, height, 0, rwRASTERTYPEZBUFFER );
 
 		msaaValues[0] = oldMsaa[0];
 		msaaValues[1] = oldMsaa[1];
 	}
+}
+
 }
 
 namespace MSAAFixes
@@ -1380,11 +1454,13 @@ void UpdateEscalators()
 }
 
 
-static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0x75E286, { "8B 15 ? ? ? ? D8 65 A8", 2 });
+static ExternalRef s_pStencilShadowsPad(AddressByVersion<char* (**)[3]>(0x70FC4F, 0, 0x75E286, { "8B 15 ? ? ? ? D8 65 A8", 2 }));
 void StencilShadowAlloc( )
 {
 	static char* pMemory = [] () {;
 		char* mem = static_cast<char*>( ::operator new( 3 * 0x6000 ) );
+
+		auto& pStencilShadowsPad = s_pStencilShadowsPad.Get();
 		pStencilShadowsPad[0] = mem;
 		pStencilShadowsPad[1] = mem+0x6000;
 		pStencilShadowsPad[2] = mem+(2*0x6000);
@@ -1456,47 +1532,62 @@ CVehicleModelInfo* __fastcall VehicleModelInfoInit(CVehicleModelInfo* me)
 	return me;
 }
 
-static void (*RemoveFromInterestingVehicleList)(CVehicle*) = AddressByVersion<void(*)(CVehicle*)>( 0x423ED0, Memory::PatternAndOffset("39 10 75 06 C7 00 00 00 00 00 83 C0 04 49 75 F0 5D C3", -0x10) );
+static ExternalFunc RemoveFromInterestingVehicleList(AddressByVersion<void(*)(CVehicle*)>(0x423ED0, Memory::PatternAndOffset("39 10 75 06 C7 00 00 00 00 00 83 C0 04 49 75 F0 5D C3", -0x10)));
 static void (*orgRecordVehicleDeleted)(CVehicle*);
 static void RecordVehicleDeleted_AndRemoveFromVehicleList( CVehicle* vehicle )
 {
 	orgRecordVehicleDeleted( vehicle );
-	RemoveFromInterestingVehicleList( vehicle );
+	RemoveFromInterestingVehicleList.Call( vehicle );
 }
 
-static int currDisplayedSplash_ForLastSplash = 0;
-static void DoPCScreenChange_Mod()
+namespace LoopDisplayedSplashes
 {
-	static int& currDisplayedSplash = **AddressByVersion<int**>( 0x590B22 + 1, Memory::PatternAndOffset("8B 51 20 6A 01 6A 0C FF D2 83 C4 08 E8", 17 + 1) );
+	static ExternalRef s_currDisplayedSplash(AddressByVersion<int**>( 0x590B22 + 1, Memory::PatternAndOffset("8B 51 20 6A 01 6A 0C FF D2 83 C4 08 E8", 17 + 1) ));
 
-	static const int numSplashes = [] () -> int {
-		RwTexture** begin = *AddressByVersion<RwTexture***>( 0x590CB4 + 1, Memory::PatternAndOffset("8D 49 00 83 3E 00 74 07 8B CE E8", -5 + 1) );
-		RwTexture** end = *AddressByVersion<RwTexture***>( 0x590CCE + 2, Memory::PatternAndOffset("8D 49 00 83 3E 00 74 07 8B CE E8", 18 + 2) );
-		return std::distance( begin, end );
-	} () - 1;
+	static ExternalRef s_splashesBegin(AddressByVersion<RwTexture* (**)[]>( 0x590CB4 + 1, Memory::PatternAndOffset("8D 49 00 83 3E 00 74 07 8B CE E8", -5 + 1) ));
+	static ExternalRef s_splashesEnd(AddressByVersion<RwTexture* (**)[]>( 0x590CCE + 2, Memory::PatternAndOffset("8D 49 00 83 3E 00 74 07 8B CE E8", 18 + 2) ));
 
-	if ( currDisplayedSplash >= numSplashes )
+	static bool HasGameBindings()
 	{
-		currDisplayedSplash = 1;
-		currDisplayedSplash_ForLastSplash = numSplashes + 1;
+		return EnsureBindings(s_currDisplayedSplash, s_splashesBegin, s_splashesEnd);
 	}
-	else
+
+	static int currDisplayedSplash_ForLastSplash = 0;
+	static void DoPCScreenChange_Mod()
 	{
-		currDisplayedSplash_ForLastSplash = ++currDisplayedSplash;
+		static const int numSplashes = std::distance( s_splashesBegin.Get(), s_splashesEnd.Get() ) - 1;
+
+		auto& currDisplayedSplash = s_currDisplayedSplash.Get();
+		if ( currDisplayedSplash >= numSplashes )
+		{
+			currDisplayedSplash = 1;
+			currDisplayedSplash_ForLastSplash = numSplashes + 1;
+		}
+		else
+		{
+			currDisplayedSplash_ForLastSplash = ++currDisplayedSplash;
+		}
 	}
 }
 
-static bool bUseAaronSun;
-static CVector curVecToSun;
-static void (*orgSetLightsWithTimeOfDayColour)( RpWorld* );
-static void SetLightsWithTimeOfDayColour_SilentPatch( RpWorld* world )
+namespace DirectionalFromSun
 {
-	static CVector* const VectorToSun = *AddressByVersion<CVector**>( 0x6FC5B7 + 3, Memory::PatternAndOffset("DC 0D ? ? ? ? 8D 04 40 8B 0C 85", 9 + 3) );
-	static int& CurrentStoredValue = **AddressByVersion<int**>( 0x6FC632 + 1, Memory::PatternAndOffset("84 C0 0F 84 AB 01 00 00 A1", 8 + 1) );
-	static CVector& vecDirnLightToSun = **AddressByVersion<CVector**>( 0x5BC040 + 2, Memory::PatternAndOffset("E8 ? ? ? ? D9 5D F8 D9 45 F8 D8 4D F4 D9 1D", 15 + 2) );
+	static ExternalRef VectorToSun(AddressByVersion<CVector (**)[]>( 0x6FC5B7 + 3, Memory::PatternAndOffset("DC 0D ? ? ? ? 8D 04 40 8B 0C 85", 9 + 3) ));
+	static ExternalRef CurrentStoredValue(AddressByVersion<int**>( 0x6FC632 + 1, Memory::PatternAndOffset("84 C0 0F 84 AB 01 00 00 A1", 8 + 1) ));
+	static ExternalRef vecDirnLightToSun(AddressByVersion<CVector**>( 0x5BC040 + 2, Memory::PatternAndOffset("E8 ? ? ? ? D9 5D F8 D9 45 F8 D8 4D F4 D9 1D", 15 + 2) ));
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(VectorToSun, CurrentStoredValue, vecDirnLightToSun);
+	}
 
-	curVecToSun = bUseAaronSun ? VectorToSun[CurrentStoredValue] : vecDirnLightToSun;
-	orgSetLightsWithTimeOfDayColour( world );
+	static bool bUseAaronSun;
+	static CVector curVecToSun;
+	static void (*orgSetLightsWithTimeOfDayColour)( RpWorld* );
+	static void SetLightsWithTimeOfDayColour_SilentPatch( RpWorld* world )
+	{
+		curVecToSun = bUseAaronSun ? VectorToSun.Get()[CurrentStoredValue.Get()] : vecDirnLightToSun.Get();
+		orgSetLightsWithTimeOfDayColour( world );
+	}
 }
 
 // ============= CdStream data racing issue =============
@@ -2227,6 +2318,11 @@ namespace SkinBuildingPipelineFix
 // ============= Moonphases fix =============
 namespace MoonphasesFix
 {
+	static bool HasGameBindings()
+	{
+		return CPNGFile::HasGameBindings() && RWBindings::RwD3D9SetRenderState();
+	}
+
 	// TODO: Reintroduce moon phases to Steam/RGL version
 	// Call to RenderOneXLUSprite provides all required data except the moon mask and CClock::ms_nGameClockDays
 	static void (*orgRenderOneXLUSprite)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, int16_t, float, uint8_t, uint8_t, uint8_t);
@@ -2277,14 +2373,20 @@ namespace MoonphasesFix
 // ============= Disallow moving cam up/down with mouse when looking back/left/right in vehicle =============
 namespace FollowCarMouseCamFix
 {
-	static uint32_t& camLookDirection = **AddressByVersion<uint32_t**>( 0x525526 + 2, Memory::PatternAndOffset("83 3D ? ? ? ? 03 74 06", 2) );
+	static ExternalRef camLookDirection(AddressByVersion<uint32_t**>( 0x525526 + 2, Memory::PatternAndOffset("83 3D ? ? ? ? 03 74 06", 2) ));
+
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(camLookDirection);
+	}
+
 	static void* (*orgGetPad)(int);
 	static bool* orgUseMouse3rdPerson;
 
 	static bool useMouseAndLooksForwards;
 	static void* getPadAndSetFlag( int padNum )
 	{
-		useMouseAndLooksForwards = *orgUseMouse3rdPerson && camLookDirection == 3;
+		useMouseAndLooksForwards = *orgUseMouse3rdPerson && camLookDirection.Get() == 3;
 		return orgGetPad( padNum );
 	}
 };
@@ -2363,6 +2465,11 @@ namespace QuadbikeHandlebarAnims
 // ======= Modify the radio station change animation to only affect the right hand, and disable it on the Kart =======
 namespace RadioStationChangeAnimBlending
 {
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(RpAnimBlendClumpGetAssociation);
+	}
+
 	// Disable all bones but the right hand and arm, and head/neck, so the animation looks better on different vehicles
 	static CAnimBlendAssociation* DisableBones(CAnimBlendAssociation* animAssociation, bool bDisablePartial)
 	{
@@ -2407,13 +2514,13 @@ namespace RadioStationChangeAnimBlending
 	static CAnimBlendAssociation* (*orgAnimManagerBlendAnimation)(RpClump*, uint32_t, uint32_t, float);
 	CAnimBlendAssociation* AnimManagerBlendAnimation_DisableBones(RpClump* clump, uint32_t assocGroupId, uint32_t animationId, float rate)
 	{
-		if (RpAnimBlendClumpGetAssociation(clump, 95) != nullptr) // ANIM_STD_CAR_SIT_KART
+		if (RpAnimBlendClumpGetAssociation.Call(clump, 95) != nullptr) // ANIM_STD_CAR_SIT_KART
 		{
 			return nullptr;
 		}
 
 		// For the standing animation, disable the partial/additive flag so CJ doesn't reach as far for the knob
-		const bool bIsBoatDrive = RpAnimBlendClumpGetAssociation(clump, 81) != nullptr; // ANIM_STD_BOAT_DRIVE
+		const bool bIsBoatDrive = RpAnimBlendClumpGetAssociation.Call(clump, 81) != nullptr; // ANIM_STD_BOAT_DRIVE
 		return DisableBones(orgAnimManagerBlendAnimation(clump, assocGroupId, animationId, rate), bIsBoatDrive);
 	}
 };
@@ -2476,10 +2583,15 @@ namespace CameraMemoryLeakFix
 // ============= Fix crosshair issues when sniper rifle is equipped and a photo is taken by a gang member =============
 namespace CameraCrosshairFix
 {
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(bDrawCrossHair);
+	}
+
 	CWeaponInfo* (*orgGetWeaponInfo)(eWeaponType, signed char);
 	CWeaponInfo* GetWeaponInfo_OrCamera(eWeaponType weaponType, signed char type)
 	{
-		return orgGetWeaponInfo(bDrawCrossHair != 2 ? weaponType : WEAPONTYPE_CAMERA, type);
+		return orgGetWeaponInfo(bDrawCrossHair.Get() != 2 ? weaponType : WEAPONTYPE_CAMERA, type);
 	}
 }
 
@@ -2793,6 +2905,11 @@ namespace JetpackKeyboardControlsHover
 // Fixes recruited homies panicking during Los Desperados and other riot-time missions
 namespace RiotDontTargetPlayerGroupDuringMissions
 {
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(IsPlayerOnAMission);
+	}
+
 	static void* SkipTargetting;
 	static void* DontSkipTargetting;
 
@@ -2919,6 +3036,11 @@ namespace NewResolutionSelectionDialog
 	static char* (*orgGetDocumentsPath)();
 
 	static constexpr const char* SettingsFileName = "device_remembered.set";
+
+	static bool HasGameBindings()
+	{
+		return RWBindings::RwEngineSetSubSystem();
+	}
 
 	static bool ShouldSkipDeviceSelection()
 	{
@@ -3157,6 +3279,11 @@ namespace NewResolutionSelectionDialog
 // fix it here instead
 namespace CreditsScalingFixes
 {
+	static bool HasGameBindings()
+	{
+		return UIScales::HasGameBindings();
+	}
+
 	static const unsigned int FIXED_RES_HEIGHT_SCALE = 448;
 
 	template<std::size_t Index>
@@ -3189,6 +3316,11 @@ namespace CreditsScalingFixes
 // ============= Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature =============
 namespace SlidingTextsScalingFixes
 {
+	static bool HasGameBindings()
+	{
+		return UIScales::HasGameBindings();
+	}
+
 	static const unsigned int FIXED_RES_WIDTH_SCALE = 640;
 
 	static std::array<float, 6>* pBigMessageX;
@@ -3206,7 +3338,7 @@ namespace SlidingTextsScalingFixes
 		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
 		{
 			// We divide by a constant 640.0, because the X position is meant to slide across the entire screen
-			orgPrintString<Index>(bSlidingEnabled ? (*pBigMessageX)[BigMessageIndex] * RsGlobal->MaximumWidth / 640.0f : fX, fY, pText);
+			orgPrintString<Index>(bSlidingEnabled ? (*pBigMessageX)[BigMessageIndex] * RsGlobal.Get().MaximumWidth / 640.0f : fX, fY, pText);
 		}
 
 		template<std::size_t Index>
@@ -3235,7 +3367,7 @@ namespace SlidingTextsScalingFixes
 			// We divide by a constant 640.0, because the X position is meant to slide across the entire screen
 			if (bSlidingEnabled)
 			{
-				fX -= *pOddJob2XOffset * RsGlobal->MaximumWidth / 640.0f;
+				fX -= *pOddJob2XOffset * RsGlobal.Get().MaximumWidth / 640.0f;
 			}
 			orgPrintString<Index>(fX, fY, pText);
 		}
@@ -3273,12 +3405,17 @@ namespace PostEffectsScalingFixes
 
 	HOOK_EACH_INIT(SetCurrentVideoMode, orgSetCurrentVideoMode, SetCurrentVideoMode_SetupPostFX);
 
+	static bool HasGameBindings_UnderWaterRipple()
+	{
+		return UIScales::HasGameBindings();
+	}
+
 	static void (*orgUnderWaterRipple)(RwRGBA, float, float, int, float, float);
 	static void UnderWaterRipple_ScaleFrequency(RwRGBA a1, float xOffset, float yOffset, int a4, float a5, float frequency)
 	{
 		// Scale frequency counter-proportionally to the resolution height
 		// as the function already scales the sine wave frequency to that internally.
-		const float freqDivFactor = RsGlobal->MaximumHeight / 480.0f;
+		const float freqDivFactor = RsGlobal.Get().MaximumHeight / 480.0f;
 		orgUnderWaterRipple(a1, xOffset, yOffset, a4, a5, frequency / freqDivFactor);
 	}
 }
@@ -3287,6 +3424,11 @@ namespace PostEffectsScalingFixes
 // ============= Fix heat seeking and gamepad crosshairs not scaling to resolution =============
 namespace CrosshairScalingFixes
 {
+	static bool HasGameBindings()
+	{
+		return UIScales::HasGameBindings();
+	}
+
 	template<std::size_t Index>
 	static void (*orgRenderOneXLUSprite_Rotate_Aspect)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, short, float, float, uint8_t);
 
@@ -3343,6 +3485,11 @@ namespace CrosshairScalingFixes
 // Debugged by Wesser
 namespace MapScreenScalingFixes
 {
+	static bool HasGameBindings()
+	{
+		return UIScales::HasGameBindings();
+	}
+
 	__declspec(naked) void ScaleX_NewBinaries()
 	{
 		_asm
@@ -3432,6 +3579,11 @@ namespace MapScreenScalingFixes
 // Debugged by Wesser
 namespace TextRectPaddingScalingFixes
 {
+	static bool HasGameBindings()
+	{
+		return UIScales::HasGameBindings();
+	}
+
 	template<std::size_t Index>
 	static const float* orgPaddingXSize;
 
@@ -3583,6 +3735,11 @@ namespace SkimmerVehiclesIdeFix
 // ============= Fixed most line wraps not scaling to resolution =============
 namespace FixedLineWraps
 {
+	static bool HasGameBindings()
+	{
+		return UIScales::HasGameBindings();
+	}
+
 	// Can be SetWrapx, SetRightJustifyWrap, or SetCentreSize
 	template<typename Scaler>
 	struct WrapInternal
@@ -3599,7 +3756,7 @@ namespace FixedLineWraps
 		template<std::size_t Index>
 		static void WrapFunction_RightAlign(float fLength)
 		{
-			const int origin = RsGlobal->MaximumWidth;
+			const int origin = RsGlobal.Get().MaximumWidth;
 
 			fLength -= origin;
 			fLength *= Scaler::Width();
@@ -3611,7 +3768,7 @@ namespace FixedLineWraps
 		template<std::size_t Index>
 		static void WrapFunction_FullWidth(float /*fLength*/)
 		{
-			orgWrapFunction<Index>(static_cast<float>(RsGlobal->MaximumWidth));
+			orgWrapFunction<Index>(static_cast<float>(RsGlobal.Get().MaximumWidth));
 		}
 	};
 
@@ -3635,6 +3792,11 @@ namespace FixedLineWraps
 // ============= Corona flares not scaling to resolution =============
 namespace CoronaFlaresScaling
 {
+	static bool HasGameBindings()
+	{
+		return UIScales::HasGameBindings();
+	}
+
 	template<std::size_t Index>
 	static void (*orgRenderBufferedOneXLUSprite2D)(void* x, void* y, float width, float height, void* rgb, void* intens, void* a);
 	
@@ -4317,13 +4479,18 @@ namespace CastShadowEntityFix
 // ============= Fix script draws affecting the line wrapping of a radio station name display =============
 namespace RadioStationDisplayWidth
 {
+	static bool HasGameBindings()
+	{
+		return UIScales::HasGameBindings();
+	}
+
 	static void (*SetCentreSize)(float x);
 
 	static void (*orgSetDropColor)(void* color);
 	static void SetDropColor_AndCentreSize(void* color)
 	{
 		orgSetDropColor(color);
-		SetCentreSize(static_cast<float>(RsGlobal->MaximumWidth));
+		SetCentreSize(static_cast<float>(RsGlobal.Get().MaximumWidth));
 	}
 }
 
@@ -4689,13 +4856,13 @@ __declspec(naked) void TrailerDoubleRWheelsFix2_Steam()
 // ============= All the legacy User Tracks hooks (ew) =============
 namespace UserTracksChanges
 {
-	// Not using ExternalBindings because of inline assembly
-	static auto AEUserRadioTrackManager_Initialise = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0x4F3A10, 0x4FFA80);
-	void*** pUserTracksStuff = AddressByVersion<void***>(0x4D9B7B, 0x4DA06C, 0x4E4A43);
+	class CAEUserRadioTrackManager {};
+	static ExternalMethod AEUserRadioTrackManager_Initialise(AddressByVersion<void(__thiscall*)(CAEUserRadioTrackManager*)>(0x4F35B0, 0x4F3A10, 0x4FFA80));
+	static ExternalRef pUserTracksStuff(AddressByVersion<CAEUserRadioTrackManager**>(0x4D9B7B, 0x4DA06C, 0x4E4A43));
 
 	static bool HasGameBindings()
 	{
-		return GTAdelete != nullptr && AEUserRadioTrackManager_Initialise != nullptr && pUserTracksStuff != nullptr;
+		return EnsureBindings(GTAdelete, AEUserRadioTrackManager_Initialise, pUserTracksStuff);
 	}
 
 	static struct
@@ -5188,6 +5355,7 @@ static const double		dRetailRadioNameSizeY = 0.9;
 
 #pragma comment(lib, "shlwapi.lib")
 
+static BOOL (*IsAlreadyRunning)();
 BOOL InjectDelayedPatches_10()
 {
 	if ( !IsAlreadyRunning() )
@@ -5255,35 +5423,38 @@ BOOL InjectDelayedPatches_10()
 		if ( !bSARender )
 		{
 			// Alpha render states on rotors and propellers
-			using namespace BlurredRotorsAtomicRender;
+			if (BlurredRotorsAtomicRender::HasGameBindings())
+			{
+				using namespace BlurredRotorsAtomicRender;
 
-			auto PatchRenderCB = [](uintptr_t address, bool fallback, RpAtomic*(*&org)(RpAtomic*), RpAtomic*(&replaced)(RpAtomic*))
-				{
-					if (!fallback)
+				auto PatchRenderCB = [](uintptr_t address, bool fallback, RpAtomic*(*&org)(RpAtomic*), RpAtomic*(&replaced)(RpAtomic*))
 					{
-						org = *((RpAtomic*(**)(RpAtomic*))address);
-						Patch(address, &replaced);
-					}
-					else
-					{
-						InterceptCall(address, org, replaced);
-					}
-				};
+						if (!fallback)
+						{
+							org = *((RpAtomic*(**)(RpAtomic*))address);
+							Patch(address, &replaced);
+						}
+						else
+						{
+							InterceptCall(address, org, replaced);
+						}
+					};
 
-			std::array<std::pair<uintptr_t, bool>, 4> heli_rotor_render = { {
-				{ 0x7341D9, false },
-				{ 0x73421D, true },
-				{ 0x734127, false },
-				{ 0x73414D, true },
-			} };
+				std::array<std::pair<uintptr_t, bool>, 4> heli_rotor_render = { {
+					{ 0x7341D9, false },
+					{ 0x73421D, true },
+					{ 0x734127, false },
+					{ 0x73414D, true },
+				} };
 
-			std::array<std::pair<uintptr_t, bool>, 2> plane_prop_render = { {
-				{ 0x73445E, false },
-				{ 0x73448C, true },
-			} };
+				std::array<std::pair<uintptr_t, bool>, 2> plane_prop_render = { {
+					{ 0x73445E, false },
+					{ 0x73448C, true },
+				} };
 
-			HookEach_HeliRotor(heli_rotor_render, PatchRenderCB);
-			HookEach_PlaneProp(plane_prop_render, PatchRenderCB);
+				HookEach_HeliRotor(heli_rotor_render, PatchRenderCB);
+				HookEach_PlaneProp(plane_prop_render, PatchRenderCB);
+			}
 
 			// Weapons rendering
 			if ( HasGameBindings_WeaponRenderingFixes() && !bOutfit )
@@ -5313,7 +5484,7 @@ BOOL InjectDelayedPatches_10()
 			}
 
 			// Basketball fix
-			InterceptCall( 0x5D18F0, TheScriptsLoad, TheScriptsLoad_BasketballFix );
+			InterceptCall( 0x5D18F0, orgTheScriptsLoad, TheScriptsLoad_BasketballFix );
 
 			std::array<uintptr_t, 2> wipeLocalVars = { 0x489A70, 0x4899F0 };
 			HookEach_SCMFixes(wipeLocalVars, InterceptCall);
@@ -5350,8 +5521,10 @@ BOOL InjectDelayedPatches_10()
 			}
 		}
 
-		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption != -1 )
+		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption != -1 && ColouredZoneNames::HasGameBindings() )
 		{
+			using namespace ColouredZoneNames;
+
 			// Coloured zone names
 			bColouredZoneNames = INIoption != 0;
 
@@ -5472,8 +5645,10 @@ BOOL InjectDelayedPatches_10()
 
 
 		// Fix directional light position
-		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"DirectionalFromSun", -1, wcModulePath); INIoption != -1 )
+		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"DirectionalFromSun", -1, wcModulePath); INIoption != -1 && DirectionalFromSun::HasGameBindings() )
 		{
+			using namespace DirectionalFromSun;
+
 			bUseAaronSun = INIoption != 0;
 
 			ReadCall( 0x53E997, orgSetLightsWithTimeOfDayColour );
@@ -5580,7 +5755,7 @@ BOOL InjectDelayedPatches_10()
 
 		// Moonphases
 		// Not taking effect with new skygfx since aap has it too now
-		if ( !bSAMP && !ModCompat::SkyGfx::PatchesMoonphases( skygfxModule ) )
+		if ( !bSAMP && MoonphasesFix::HasGameBindings() && !ModCompat::SkyGfx::PatchesMoonphases( skygfxModule ) )
 		{
 			using namespace MoonphasesFix;
 
@@ -5647,8 +5822,10 @@ BOOL InjectDelayedPatches_10()
 		}
 
 		// For imfast compatibility
-		if ( MemEquals( 0x590ADE, { 0xFF, 0x05 } ) )
+		if ( MemEquals( 0x590ADE, { 0xFF, 0x05 } ) && LoopDisplayedSplashes::HasGameBindings() )
 		{
+			using namespace LoopDisplayedSplashes;
+
 			// Modulo over CLoadingScreen::m_currDisplayedSplash
 			Nop( 0x590ADE, 1 );
 			InjectHook( 0x590ADE + 1, DoPCScreenChange_Mod, HookType::Call );
@@ -5706,7 +5883,7 @@ BOOL InjectDelayedPatches_10()
 
 		// Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature
 		// Also since we're touching it, optionally allow to re-enable this feature.
-		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingMissionTitleText", -1, wcModulePath); INIoption != -1)
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingMissionTitleText", -1, wcModulePath); INIoption != -1 && SlidingTextsScalingFixes::HasGameBindings())
 		{
 			using namespace SlidingTextsScalingFixes;
 
@@ -5726,7 +5903,7 @@ BOOL InjectDelayedPatches_10()
 			}
 		}
 
-		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingOddJobText", -1, wcModulePath); INIoption != -1)
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingOddJobText", -1, wcModulePath); INIoption != -1 && SlidingTextsScalingFixes::HasGameBindings())
 		{
 			using namespace SlidingTextsScalingFixes;
 
@@ -5747,6 +5924,7 @@ BOOL InjectDelayedPatches_10()
 		// Fix Map screen boundaries and the cursor not scaling to resolution
 		// Debugged by Wesser
 		// Moved here for compatibility with wshps.asi
+		if (MapScreenScalingFixes::HasGameBindings())
 		{
 			using namespace MapScreenScalingFixes;
 
@@ -5778,7 +5956,7 @@ BOOL InjectDelayedPatches_10()
 		// Fix text background padding not scaling to resolution
 		// Debugged by Wesser
 		// Moved here for compatibility with wshps.asi
-		if (!bSAMP)
+		if (!bSAMP && TextRectPaddingScalingFixes::HasGameBindings())
 		{
 			using namespace TextRectPaddingScalingFixes;
 
@@ -5804,7 +5982,7 @@ BOOL InjectDelayedPatches_10()
 
 		// Fix credits not scaling to resolution
 		// Moved here for compatibility with wshps.asi
-		if (MemEquals(0x5A8679, {0xD8, 0xC1, 0xD8, 0x05}) && MemEquals(0x5A8679+8, {0xD8, 0x64, 0x24, 0x18, 0xD9, 0x54, 0x24, 0x14})) // Verify wshps.asi isn't already patching the credits
+		if (CreditsScalingFixes::HasGameBindings() && MemEquals(0x5A8679, {0xD8, 0xC1, 0xD8, 0x05}) && MemEquals(0x5A8679+8, {0xD8, 0x64, 0x24, 0x18, 0xD9, 0x54, 0x24, 0x14})) // Verify wshps.asi isn't already patching the credits
 		{
 			using namespace CreditsScalingFixes;
 
@@ -5953,34 +6131,37 @@ BOOL InjectDelayedPatches_11()
 		if ( !bSARender )
 		{
 			// Alpha render states on rotors and propellers
-			using namespace BlurredRotorsAtomicRender;
+			if (BlurredRotorsAtomicRender::HasGameBindings())
+			{
+				using namespace BlurredRotorsAtomicRender;
 
-			auto PatchRenderCB = [](uintptr_t address, bool fallback, RpAtomic*(*&org)(RpAtomic*), RpAtomic*(&replaced)(RpAtomic*))
-				{
-					if (!fallback)
+				auto PatchRenderCB = [](uintptr_t address, bool fallback, RpAtomic*(*&org)(RpAtomic*), RpAtomic*(&replaced)(RpAtomic*))
 					{
-						InterceptMemDisplacement(address, org, replaced);
-					}
-					else
-					{
-						InterceptCall(address, org, replaced);
-					}
-				};
+						if (!fallback)
+						{
+							InterceptMemDisplacement(address, org, replaced);
+						}
+						else
+						{
+							InterceptCall(address, org, replaced);
+						}
+					};
 
-			std::array<std::pair<uintptr_t, bool>, 4> heli_rotor_render = { {
-				{ 0x734A09, false },
-				{ 0x734A4D, true },
-				{ 0x734957, false },
-				{ 0x73497D, true },
-			} };
+				std::array<std::pair<uintptr_t, bool>, 4> heli_rotor_render = { {
+					{ 0x734A09, false },
+					{ 0x734A4D, true },
+					{ 0x734957, false },
+					{ 0x73497D, true },
+				} };
 
-			std::array<std::pair<uintptr_t, bool>, 2> plane_prop_render = { {
-				{ 0x734C8E, false },
-				{ 0x734CBC, true },
-			} };
+				std::array<std::pair<uintptr_t, bool>, 2> plane_prop_render = { {
+					{ 0x734C8E, false },
+					{ 0x734CBC, true },
+				} };
 
-			HookEach_HeliRotor(heli_rotor_render, PatchRenderCB);
-			HookEach_PlaneProp(plane_prop_render, PatchRenderCB);
+				HookEach_HeliRotor(heli_rotor_render, PatchRenderCB);
+				HookEach_PlaneProp(plane_prop_render, PatchRenderCB);
+			}
 
 			// Weapons rendering
 			if ( HasGameBindings_WeaponRenderingFixes() && !bOutfit )
@@ -6005,7 +6186,7 @@ BOOL InjectDelayedPatches_11()
 			}
 
 			// Basketball fix
-			InterceptCall( 0x5D20D0, TheScriptsLoad, TheScriptsLoad_BasketballFix );
+			InterceptCall( 0x5D20D0, orgTheScriptsLoad, TheScriptsLoad_BasketballFix );
 
 			std::array<uintptr_t, 2> wipeLocalVars = { 0x489A70, 0x489AF0 };
 			HookEach_SCMFixes(wipeLocalVars, InterceptCall);
@@ -6033,17 +6214,22 @@ BOOL InjectDelayedPatches_11()
 			Patch<const void*>(0x4EA388, &fSteamRadioNameSizeX);
 		}
 
-		if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption == 1 )
+		if (ColouredZoneNames::HasGameBindings())
 		{
-			// Coloured zone names
-			Patch<WORD>(0x58B58E, 0x0E75);
-			Patch<WORD>(0x58B595, 0x0775);
+			using namespace ColouredZoneNames;
 
-			InjectHook(0x58B5B4, &BlendGangColour);
-		}
-		else if ( INIoption == 0 )
-		{
-			Patch<BYTE>(0x58B57E, 0xEB);
+			if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption == 1 )
+			{
+				// Coloured zone names
+				Patch<WORD>(0x58B58E, 0x0E75);
+				Patch<WORD>(0x58B595, 0x0775);
+
+				InjectHook(0x58B5B4, &BlendGangColour);
+			}
+			else if ( INIoption == 0 )
+			{
+				Patch<BYTE>(0x58B57E, 0xEB);
+			}
 		}
 
 		// Apply the correct colors on detached car components
@@ -6145,35 +6331,37 @@ BOOL InjectDelayedPatches_Steam()
 		if ( !bSARender )
 		{
 			// Alpha render states on rotors and propellers
-			using namespace BlurredRotorsAtomicRender;
+			if (BlurredRotorsAtomicRender::HasGameBindings())
+			{
+				using namespace BlurredRotorsAtomicRender;
 
-			auto PatchRenderCB = [](uintptr_t address, bool fallback, RpAtomic*(*&org)(RpAtomic*), RpAtomic*(&replaced)(RpAtomic*))
-				{
-					if (!fallback)
+				auto PatchRenderCB = [](uintptr_t address, bool fallback, RpAtomic*(*&org)(RpAtomic*), RpAtomic*(&replaced)(RpAtomic*))
 					{
-						InterceptMemDisplacement(address, org, replaced);
-					}
-					else
-					{
-						InterceptCall(address, org, replaced);
-					}
-				};
+						if (!fallback)
+						{
+							InterceptMemDisplacement(address, org, replaced);
+						}
+						else
+						{
+							InterceptCall(address, org, replaced);
+						}
+					};
 
-			std::array<std::pair<uintptr_t, bool>, 4> heli_rotor_render = { {
-				{ 0x76E230, false },
-				{ 0x76E2B1, true },
-				{ 0x76E160, false },
-				{ 0x76E1C1, true },
-			} };
+				std::array<std::pair<uintptr_t, bool>, 4> heli_rotor_render = { {
+					{ 0x76E230, false },
+					{ 0x76E2B1, true },
+					{ 0x76E160, false },
+					{ 0x76E1C1, true },
+				} };
 
-			std::array<std::pair<uintptr_t, bool>, 2> plane_prop_render = { {
-				{ 0x76E4F0, false },
-				{ 0x76E51F, true },
-			} };
+				std::array<std::pair<uintptr_t, bool>, 2> plane_prop_render = { {
+					{ 0x76E4F0, false },
+					{ 0x76E51F, true },
+				} };
 
-			HookEach_HeliRotor(heli_rotor_render, PatchRenderCB);
-			HookEach_PlaneProp(plane_prop_render, PatchRenderCB);
-
+				HookEach_HeliRotor(heli_rotor_render, PatchRenderCB);
+				HookEach_PlaneProp(plane_prop_render, PatchRenderCB);
+			}
 
 			// Weapons rendering
 			if ( HasGameBindings_WeaponRenderingFixes() && !bOutfit )
@@ -6198,7 +6386,7 @@ BOOL InjectDelayedPatches_Steam()
 			}
 
 			// Basketball fix
-			InterceptCall( 0x5EE017, TheScriptsLoad, TheScriptsLoad_BasketballFix );
+			InterceptCall( 0x5EE017, orgTheScriptsLoad, TheScriptsLoad_BasketballFix );
 
 			std::array<uintptr_t, 2> wipeLocalVars = { 0x4907AE, 0x49072E };
 			HookEach_SCMFixes(wipeLocalVars, InterceptCall);
@@ -6220,17 +6408,22 @@ BOOL InjectDelayedPatches_Steam()
 			Patch<const void*>(0x4F59BF, &dRetailRadioNameSizeX);
 		}
 
-		if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption == 1 )
+		if (ColouredZoneNames::HasGameBindings())
 		{
-			// Coloured zone names
-			Patch<WORD>(0x598F65, 0x0C75);
-			Patch<WORD>(0x598F6B, 0x0675);
+			using namespace ColouredZoneNames;
 
-			InjectHook(0x598F87, &BlendGangColour);
-		}
-		else if ( INIoption == 0 )
-		{
-			Patch<BYTE>(0x598F56, 0xEB);
+			if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption == 1 )
+			{
+				// Coloured zone names
+				Patch<WORD>(0x598F65, 0x0C75);
+				Patch<WORD>(0x598F6B, 0x0675);
+
+				InjectHook(0x598F87, &BlendGangColour);
+			}
+			else if ( INIoption == 0 )
+			{
+				Patch<BYTE>(0x598F56, 0xEB);
+			}
 		}
 
 		// Apply the correct colors on detached car components
@@ -6382,7 +6575,7 @@ BOOL InjectDelayedPatches_NewBinaries()
 
 		// Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature
 		// Also since we're touching it, optionally allow to re-enable this feature.
-		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingMissionTitleText", -1, wcModulePath); INIoption != -1) try
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingMissionTitleText", -1, wcModulePath); INIoption != -1 && SlidingTextsScalingFixes::HasGameBindings()) try
 		{
 			using namespace SlidingTextsScalingFixes;
 
@@ -6407,7 +6600,7 @@ BOOL InjectDelayedPatches_NewBinaries()
 		}
 		TXN_CATCH();
 
-		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingOddJobText", -1, wcModulePath); INIoption != -1) try
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingOddJobText", -1, wcModulePath); INIoption != -1 && SlidingTextsScalingFixes::HasGameBindings()) try
 		{
 			using namespace SlidingTextsScalingFixes;
 
@@ -6431,6 +6624,7 @@ BOOL InjectDelayedPatches_NewBinaries()
 		// Fix Map screen boundaries and the cursor not scaling to resolution
 		// Debugged by Wesser
 		// Moved here for compatibility with wshps.asi
+		if (MapScreenScalingFixes::HasGameBindings())
 		{
 			using namespace MapScreenScalingFixes;
 
@@ -6462,7 +6656,7 @@ BOOL InjectDelayedPatches_NewBinaries()
 		// Fix text background padding not scaling to resolution
 		// Debugged by Wesser
 		// Moved here for compatibility with wshps.asi
-		try
+		if (TextRectPaddingScalingFixes::HasGameBindings()) try
 		{
 			using namespace TextRectPaddingScalingFixes;
 
@@ -6485,7 +6679,7 @@ BOOL InjectDelayedPatches_NewBinaries()
 
 		// Fix credits not scaling to resolution
 		// Moved here for compatibility with wshps.asi
-		try
+		if (CreditsScalingFixes::HasGameBindings()) try
 		{
 			using namespace CreditsScalingFixes;
 
@@ -6620,8 +6814,8 @@ void Patch_SA_10(HINSTANCE hInstance)
 	//Patch<BYTE>(0x5D7265, 0xEB);
 
 	// Heli rotors
-	InjectHook(0x6CAB70, &CPlane::Render_Stub, HookType::Jump);
-	InjectHook(0x6C4400, &CHeli::Render_Stub, HookType::Jump);
+	InterceptCall(0x6CAB80, CPlane::orgRender_RenderRotors, &CPlane::RenderRotors);
+	InterceptCall(0x6C4523, CHeli::orgRender_RenderRotors, &CHeli::RenderRotors);
 
 	// Boats
 	/*Patch<BYTE>(0x4C79DF, 0x19);
@@ -6641,6 +6835,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Patch<BYTE>(0x6FB9A0, 0);
 
 	// Proper alpha handling for plane propellers
+	if (BlurredRotorsAtomicRender::HasGameBindings())
 	{
 		using namespace BlurredRotorsAtomicRender;
 
@@ -6672,6 +6867,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Patch<DWORD>(AddressByRegion_10<DWORD>(0x7469A0), 0x9090C030);
 
 	// Proper alpha handling for plane propellers
+	if (BlurredRotorsAtomicRender::HasGameBindings())
 	{
 		using namespace BlurredRotorsAtomicRender;
 
@@ -6816,7 +7012,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 	// Patched CAutomobile::Fix
 	// misc_x parts don't get reset (Bandito fix), Towtruck's bouncing panel is not reset
-	if (ms_modelInfoPtrs.Ensure())
+	if (HasGameBindings_AutomobileFix())
 	{
 		Patch<WORD>(0x6A34C9, 0x5EEB);
 		Patch<DWORD>(0x6A3555, 0x5E5FCF8B);
@@ -6872,10 +7068,13 @@ void Patch_SA_10(HINSTANCE hInstance)
 	// add esp, 4
 	// mov ebx, eax
 	// nop
-	Patch<uint8_t>( 0x735881, 0x50 );
-	InjectHook( 0x735881 + 1, GetMaxExtraDirectionals, HookType::Call );
-	Patch( 0x735881 + 6, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
-	Nop( 0x735881 + 11, 3 );
+	if (g_fx.Ensure())
+	{
+		Patch<uint8_t>( 0x735881, 0x50 );
+		InjectHook( 0x735881 + 1, GetMaxExtraDirectionals, HookType::Call );
+		Patch( 0x735881 + 6, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
+		Nop( 0x735881 + 11, 3 );
+	}
 
 	// Default resolution to native resolution
 	const auto [width, height] = GetDesktopResolution();
@@ -6905,7 +7104,10 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Patch<DWORD>(AddressByRegion_10<DWORD>(0x74754B), 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x744FB0, GetMyDocumentsPathSA, HookType::Jump);
+	if (ppUserFilesDir.Ensure())
+	{
+		InjectHook(0x744FB0, GetMyDocumentsPathSA, HookType::Jump);
+	}
 
 	// Fixed muzzleflash not showing from last bullet
 	// nop \ test al, al \ jz
@@ -6926,24 +7128,29 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Nop(0x58BA8F, 6);
 
 	// Fixed lens flare
-	Patch<DWORD>(0x70F45A, 0); // TODO: Is this needed?
-	Patch<BYTE>(0x6FB621, 0xC3); // nop CSprite::FlushSpriteBuffer
-	// Add CSprite::FlushSpriteBuffer, jmp loc_6FB605 at the bottom of the function
-	Patch<BYTE>(0x6FB600, 0x21);
-	InjectHook(0x6FB622, 0x70CF20, HookType::Call);
-	Patch<WORD>(0x6FB627, 0xDCEB);
+	if (LensFlareRenderFix::HasGameBindings())
+	{
+		using namespace LensFlareRenderFix;
 
-	// nop / mov eax, offset FlushLensSwitchZ
-	Patch<WORD>(0x6FB476, 0xB990);
-	Patch(0x6FB478, &FlushLensSwitchZ);
-	Patch<WORD>(0x6FB480, 0xD1FF);
-	Nop(0x6FB482, 1);
+		Patch<DWORD>(0x70F45A, 0); // TODO: Is this needed?
+		Patch<BYTE>(0x6FB621, 0xC3); // nop CSprite::FlushSpriteBuffer
+		// Add CSprite::FlushSpriteBuffer, jmp loc_6FB605 at the bottom of the function
+		Patch<BYTE>(0x6FB600, 0x21);
+		InjectHook(0x6FB622, 0x70CF20, HookType::Call);
+		Patch<WORD>(0x6FB627, 0xDCEB);
 
-	// nop / mov ecx, offset InitBufferSwitchZ
-	Patch<WORD>(0x6FAF28, 0xB990);
-	Patch(0x6FAF2A, &InitBufferSwitchZ);
-	Patch<WORD>(0x6FAF32, 0xD1FF);
-	Nop(0x6FAF34, 1);
+		// nop / mov eax, offset FlushLensSwitchZ
+		Patch<WORD>(0x6FB476, 0xB990);
+		Patch(0x6FB478, &FlushLensSwitchZ);
+		Patch<WORD>(0x6FB480, 0xD1FF);
+		Nop(0x6FB482, 1);
+
+		// nop / mov ecx, offset InitBufferSwitchZ
+		Patch<WORD>(0x6FAF28, 0xB990);
+		Patch(0x6FAF2A, &InitBufferSwitchZ);
+		Patch<WORD>(0x6FAF32, 0xD1FF);
+		Nop(0x6FAF34, 1);
+	}
 
 	// Y axis sensitivity fix
 	// By ThirteenAG
@@ -6965,7 +7172,11 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Patch( 0x7271CB, { 0x85, 0xC0, 0x74, 0x34, 0x83, 0xC4, 0x04 } );
 
 	// Mirrors depth fix & bumped quality
-	InjectHook(0x72701D, CreateMirrorBuffers);
+	if (MirrorsDepthFix::HasGameBindings())
+	{
+		using namespace MirrorsDepthFix;
+		InjectHook(0x72701D, CreateMirrorBuffers);
+	}
 
 	// Fixed MSAA options
 	{
@@ -7027,10 +7238,13 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Don't allocate constant memory for stencil shadows every frame
-	InjectHook(0x711DD5, StencilShadowAlloc, HookType::Call);
-	Nop(0x711E0D, 3);
-	Patch(0x711DDA, { 0xEB, 0x2C });
-	Patch(0x711E5F, { 0x5F, 0x5D, 0xC3 });	// pop edi, pop ebp, ret
+	if (s_pStencilShadowsPad.Ensure())
+	{
+		InjectHook(0x711DD5, StencilShadowAlloc, HookType::Call);
+		Nop(0x711E0D, 3);
+		Patch(0x711DDA, { 0xEB, 0x2C });
+		Patch(0x711E5F, { 0x5F, 0x5D, 0xC3 });	// pop edi, pop ebp, ret
+	}
 
 
 	// "Streaming memory bug" fix
@@ -7141,8 +7355,11 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Fixed impounding of random vehicles (because CVehicle::~CVehicle doesn't remove cars from apCarsToKeep)
-	ReadCall( 0x6E2B6E, orgRecordVehicleDeleted );
-	InjectHook( 0x6E2B6E, RecordVehicleDeleted_AndRemoveFromVehicleList );
+	if (RemoveFromInterestingVehicleList.Ensure())
+	{
+		ReadCall( 0x6E2B6E, orgRecordVehicleDeleted );
+		InjectHook( 0x6E2B6E, RecordVehicleDeleted_AndRemoveFromVehicleList );
+	}
 
 
 	// Don't include an extra D3DLIGHT on vehicles since we fixed directional already
@@ -7397,6 +7614,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Disallow moving cam up/down with mouse when looking back/left/right in vehicle
+	if (FollowCarMouseCamFix::HasGameBindings())
 	{
 		using namespace FollowCarMouseCamFix;
 
@@ -7427,6 +7645,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 	// Modify the radio station change animation to only affect the right hand, and disable it on the Kart
 	// By Wesser, improved by B1ack_Wh1te
+	if (RadioStationChangeAnimBlending::HasGameBindings())
 	{
 		using namespace RadioStationChangeAnimBlending;
 
@@ -7445,6 +7664,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 	// Fix crosshair issues when sniper rifle is equipped and a photo is taken by a gang member
 	// By Wesser
+	if (CameraCrosshairFix::HasGameBindings())
 	{
 		using namespace CameraCrosshairFix;
 
@@ -7604,6 +7824,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 	// During riots, don't target the player group during missions
 	// Fixes recruited homies panicking during Los Desperados and other riot-time missions
+	if (RiotDontTargetPlayerGroupDuringMissions::HasGameBindings())
 	{
 		using namespace RiotDontTargetPlayerGroupDuringMissions;
 
@@ -7682,6 +7903,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Improved resolution selection dialog
+	if (NewResolutionSelectionDialog::HasGameBindings())
 	{
 		using namespace NewResolutionSelectionDialog;
 
@@ -7735,11 +7957,15 @@ void Patch_SA_10(HINSTANCE hInstance)
 		HookEach_SetCurrentVideoMode(setCurrentVideoMode, InterceptCall);
 		InterceptCall(0x745C7D, orgSetupBackBufferVertex, SetupBackBufferVertex_Nop);
 
-		InterceptCall(0x70529C, orgUnderWaterRipple, UnderWaterRipple_ScaleFrequency);
+		if (HasGameBindings_UnderWaterRipple())
+		{
+			InterceptCall(0x70529C, orgUnderWaterRipple, UnderWaterRipple_ScaleFrequency);
+		}
 	}
 
 
 	// Fix heat seeking and gamepad crosshairs not scaling to resolution
+	if (CrosshairScalingFixes::HasGameBindings())
 	{
 		using namespace CrosshairScalingFixes;
 
@@ -7811,6 +8037,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 	// Fixed most line wraps not scaling to resolution
 	// Shared namespace, but separate patch applications per-function
+	if (FixedLineWraps::HasGameBindings())
 	{
 		using namespace FixedLineWraps;
 
@@ -7859,6 +8086,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Corona flares not scaling to resolution
+	if (CoronaFlaresScaling::HasGameBindings())
 	{
 		using namespace CoronaFlaresScaling;
 
@@ -8051,6 +8279,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Fix script draws affecting the line wrapping of a radio station name display
+	if (RadioStationDisplayWidth::HasGameBindings())
 	{
 		using namespace RadioStationDisplayWidth;
 
@@ -8093,8 +8322,8 @@ void Patch_SA_11()
 	CAEDataStream::SetStructType(true);
 
 	// Heli rotors
-	InjectHook(0x6CB390, &CPlane::Render_Stub, HookType::Jump);
-	InjectHook(0x6C4C20, &CHeli::Render_Stub, HookType::Jump);
+	InterceptCall(0x6CB3A0, CPlane::orgRender_RenderRotors, &CPlane::RenderRotors);
+	InterceptCall(0x6C4D43, CHeli::orgRender_RenderRotors, &CHeli::RenderRotors);
 
 	// RefFix
 	static const float						fRefZVal = 1.0f;
@@ -8104,6 +8333,7 @@ void Patch_SA_11()
 	Patch<BYTE>(0x6FC1D0, 0);
 
 	// Proper alpha handling for plane propellers
+	if (BlurredRotorsAtomicRender::HasGameBindings())
 	{
 		using namespace BlurredRotorsAtomicRender;
 
@@ -8253,7 +8483,7 @@ void Patch_SA_11()
 
 	// Patched CAutomobile::Fix
 	// misc_x parts don't get reset (Bandito fix), Towtruck's bouncing panel is not reset
-	if (ms_modelInfoPtrs.Ensure())
+	if (HasGameBindings_AutomobileFix())
 	{
 		Patch<WORD>(0x6A3CE9, 0x5EEB);
 		Patch<DWORD>(0x6A3D75, 0x5E5FCF8B);
@@ -8310,10 +8540,13 @@ void Patch_SA_11()
 	// add esp, 4
 	// mov ebx, eax
 	// nop
-	Patch<uint8_t>( 0x7360B1, 0x50 );
-	InjectHook( 0x7360B1 + 1, GetMaxExtraDirectionals, HookType::Call );
-	Patch( 0x7360B1 + 6, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
-	Nop( 0x7360B1 + 11, 3 );
+	if (g_fx.Ensure())
+	{
+		Patch<uint8_t>( 0x7360B1, 0x50 );
+		InjectHook( 0x7360B1 + 1, GetMaxExtraDirectionals, HookType::Call );
+		Patch( 0x7360B1 + 6, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
+		Nop( 0x7360B1 + 11, 3 );
+	}
 
 	// Default resolution to native resolution
 	const auto [width, height] = GetDesktopResolution();
@@ -8342,7 +8575,10 @@ void Patch_SA_11()
 	Patch<DWORD>(AddressByRegion_11<DWORD>(0x747E1B), 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x7457E0, GetMyDocumentsPathSA, HookType::Jump);
+	if (ppUserFilesDir.Ensure())
+	{
+		InjectHook(0x7457E0, GetMyDocumentsPathSA, HookType::Jump);
+	}
 
 	// Fixed muzzleflash not showing from last bullet
 	// nop \ test al, al \ jz
@@ -8363,21 +8599,25 @@ void Patch_SA_11()
 	Nop(0x58C25F, 6);
 
 	// Fixed lens flare
-	Patch<DWORD>(0x70FC8A, 0);
-	Patch<BYTE>(0x6FBE51, 0xC3);
-	Patch<BYTE>(0x6FBE30, 0x21);
-	InjectHook(0x6FBE52, 0x70D750, HookType::Call);
-	Patch<WORD>(0x6FBE57, 0xDCEB);
+	if (LensFlareRenderFix::HasGameBindings())
+	{
+		using namespace LensFlareRenderFix;
+		Patch<DWORD>(0x70FC8A, 0);
+		Patch<BYTE>(0x6FBE51, 0xC3);
+		Patch<BYTE>(0x6FBE30, 0x21);
+		InjectHook(0x6FBE52, 0x70D750, HookType::Call);
+		Patch<WORD>(0x6FBE57, 0xDCEB);
 
-	Patch<WORD>(0x6FBCA6, 0xB990);
-	Patch(0x6FBCA8, &FlushLensSwitchZ);
-	Patch<WORD>(0x6FBCB0, 0xD1FF);
-	Nop(0x6FBCB2, 1);
+		Patch<WORD>(0x6FBCA6, 0xB990);
+		Patch(0x6FBCA8, &FlushLensSwitchZ);
+		Patch<WORD>(0x6FBCB0, 0xD1FF);
+		Nop(0x6FBCB2, 1);
 
-	Patch<WORD>(0x6FB758, 0xB990);
-	Patch(0x6FB75A, &InitBufferSwitchZ);
-	Patch<WORD>(0x6FB762, 0xD1FF);
-	Nop(0x6FB764, 1);
+		Patch<WORD>(0x6FB758, 0xB990);
+		Patch(0x6FB75A, &InitBufferSwitchZ);
+		Patch<WORD>(0x6FB762, 0xD1FF);
+		Nop(0x6FB764, 1);
+	}
 
 	// Y axis sensitivity fix
 	float* sens = *(float**)0x50F4DC;
@@ -8396,7 +8636,11 @@ void Patch_SA_11()
 	Patch( 0x7279FB, { 0x85, 0xC0, 0x74, 0x34, 0x83, 0xC4, 0x04 } );
 
 	// Mirrors depth fix & bumped quality
-	InjectHook(0x72784D, CreateMirrorBuffers);
+	if (MirrorsDepthFix::HasGameBindings())
+	{
+		using namespace MirrorsDepthFix;
+		InjectHook(0x72784D, CreateMirrorBuffers);
+	}
 
 	// Fixed MSAA options
 	{
@@ -8463,8 +8707,8 @@ void Patch_SA_Steam()
 	CAEDataStream::SetStructType(false);
 
 	// Heli rotors
-	InjectHook(0x700620, &CPlane::Render_Stub, HookType::Jump);
-	InjectHook(0x6F9550, &CHeli::Render_Stub, HookType::Jump);
+	InterceptCall(0x700630, CPlane::orgRender_RenderRotors, &CPlane::RenderRotors);
+	InterceptCall(0x6F9674, CHeli::orgRender_RenderRotors, &CHeli::RenderRotors);
 
 	// RefFix
 	static const float						fRefZVal = 1.0f;
@@ -8474,6 +8718,7 @@ void Patch_SA_Steam()
 	Patch<BYTE>(0x73401A, 0);
 
 	// Proper alpha handling for plane propellers
+	if (BlurredRotorsAtomicRender::HasGameBindings())
 	{
 		using namespace BlurredRotorsAtomicRender;
 
@@ -8601,7 +8846,7 @@ void Patch_SA_Steam()
 
 	// Patched CAutomobile::Fix
 	// misc_x parts don't get reset (Bandito fix), Towtruck's bouncing panel is not reset
-	if (ms_modelInfoPtrs.Ensure())
+	if (HasGameBindings_AutomobileFix())
 	{
 		Patch<DWORD>(0x6D05B3, 0x6BEBED31);
 		Patch<DWORD>(0x6D0649, 0x5E5FCF8B);
@@ -8655,10 +8900,13 @@ void Patch_SA_Steam()
 	// add esp, 4
 	// mov ebx, eax
 	// nop
-	Patch( 0x768046, { 0xFF, 0x35 } );
-	InjectHook( 0x768046 + 6, GetMaxExtraDirectionals, HookType::Call );
-	Patch( 0x768046 + 11, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
-	Nop( 0x768046 + 16, 1 );
+	if (g_fx.Ensure())
+	{
+		Patch( 0x768046, { 0xFF, 0x35 } );
+		InjectHook( 0x768046 + 6, GetMaxExtraDirectionals, HookType::Call );
+		Patch( 0x768046 + 11, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
+		Nop( 0x768046 + 16, 1 );
+	}
 
 	// Default resolution to native resolution
 	const auto [width, height] = GetDesktopResolution();
@@ -8691,7 +8939,10 @@ void Patch_SA_Steam()
 	Patch<DWORD>(0x781457, 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x77EDC0, GetMyDocumentsPathSA, HookType::Jump);
+	if (ppUserFilesDir.Ensure())
+	{
+		InjectHook(0x77EDC0, GetMyDocumentsPathSA, HookType::Jump);
+	}
 
 	// Fixed muzzleflash not showing from last bullet
 	// REMOVED - the fix pointed at some unrelated instruction anyway? I think it never worked
@@ -8710,17 +8961,21 @@ void Patch_SA_Steam()
 	Nop(0x599CD3, 6);
 
 	// Fixed lens flare
-	Nop(0x733C65, 5);
-	Patch<BYTE>(0x733C4E, 0x26);
-	InjectHook(0x733C75, 0x7591E0, HookType::Call);
-	Patch<WORD>(0x733C7A, 0xDBEB);
+	if (LensFlareRenderFix::HasGameBindings())
+	{
+		using namespace LensFlareRenderFix;
+		Nop(0x733C65, 5);
+		Patch<BYTE>(0x733C4E, 0x26);
+		InjectHook(0x733C75, 0x7591E0, HookType::Call);
+		Patch<WORD>(0x733C7A, 0xDBEB);
 
-	Nop(0x733A5A, 4);
-	Patch<BYTE>(0x733A5E, 0xB8);
-	Patch(0x733A5F, &FlushLensSwitchZ);
+		Nop(0x733A5A, 4);
+		Patch<BYTE>(0x733A5E, 0xB8);
+		Patch(0x733A5F, &FlushLensSwitchZ);
 
-	Patch<DWORD>(0x7333B0, 0xB9909090);
-	Patch(0x7333B4, &InitBufferSwitchZ);
+		Patch<DWORD>(0x7333B0, 0xB9909090);
+		Patch(0x7333B4, &InitBufferSwitchZ);
+	}
 
 	// Y axis sensitivity fix
 	float* sens = *(float**)0x51D4FA;
@@ -8739,7 +8994,11 @@ void Patch_SA_Steam()
 	Patch( 0x75903A, { 0x85, 0xC0, 0x74, 0x34, 0x83, 0xC4, 0x04 } );
 
 	// Mirrors depth fix & bumped quality
-	InjectHook(0x758E91, CreateMirrorBuffers);
+	if (MirrorsDepthFix::HasGameBindings())
+	{
+		using namespace MirrorsDepthFix;
+		InjectHook(0x758E91, CreateMirrorBuffers);
+	}
 
 	// Fixed MSAA options
 	{
@@ -8799,10 +9058,13 @@ void Patch_SA_Steam()
 
 
 	// Don't allocate constant memory for stencil shadows every frame
-	InjectHook(0x760795, StencilShadowAlloc, HookType::Call);
-	Nop(0x7607CD, 3);
-	Patch(0x76079A, { 0xEB, 0x2C });
-	Patch(0x76082C, { 0x5F, 0x5D, 0xC3 });	// pop edi, pop ebp, ret
+	if (s_pStencilShadowsPad.Ensure())
+	{
+		InjectHook(0x760795, StencilShadowAlloc, HookType::Call);
+		Nop(0x7607CD, 3);
+		Patch(0x76079A, { 0xEB, 0x2C });
+		Patch(0x76082C, { 0x5F, 0x5D, 0xC3 });	// pop edi, pop ebp, ret
+	}
 
 
 	// "Streaming memory bug" fix
@@ -9044,7 +9306,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// SHGetFolderPath on User Files
-	try
+	if (ppUserFilesDir.Ensure()) try
 	{
 		void* getDocumentsPath = get_pattern( "8D 45 FC 50 68 19 00 02 00", -6 );
 		InjectHook( getDocumentsPath, GetMyDocumentsPathSA, HookType::Jump );
@@ -9090,8 +9352,10 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Fixed lens flare
-	try
+	if (LensFlareRenderFix::HasGameBindings()) try
 	{
+		using namespace LensFlareRenderFix;
+
 		auto coronasRenderEpilogue = pattern( "83 C7 3C FF 4D BC" ).get_one();
 		auto flushLensSwitchZ = pattern( "6A 01 6A 06 FF D0 83 C4 08" ).get_one();
 		auto initBufferSwitchZ = pattern( "6A 01 6A 06 FF D1 8B 75 A8" ).get_one();
@@ -9173,8 +9437,10 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Mirrors depth fix & bumped quality
-	try
+	if (MirrorsDepthFix::HasGameBindings()) try
 	{
+		using namespace MirrorsDepthFix;
+
 		void* createBuffers = get_pattern( "7B 0A C7 05 ? ? ? ? 01 00 00 00", 0xC );
 		InjectHook( createBuffers, CreateMirrorBuffers );
 	}
@@ -9298,7 +9564,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Don't allocate constant memory for stencil shadows every frame
-	try
+	if (s_pStencilShadowsPad.Ensure()) try
 	{
 		auto shadowAlloc = pattern("83 C4 08 6A 00 68 00 60 00 00").get_one();
 		auto shadowFree = get_pattern( "A2 ? ? ? ? A1 ? ? ? ? 50 E8", 5);
@@ -9372,7 +9638,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	// add esp, 4
 	// mov ebx, eax
 	// nop
-	try
+	if (g_fx.Ensure()) try
 	{
 		auto maxdirs_addr = pattern( "83 3D ? ? ? ? 00 8D 5E 05 74 05 BB 06 00 00 00" ).get_one();
 
@@ -9523,7 +9789,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Fixed impounding of random vehicles (because CVehicle::~CVehicle doesn't remove cars from apCarsToKeep)
-	try
+	if (RemoveFromInterestingVehicleList.Ensure()) try
 	{
 		void* recordVehicleDeleted = get_pattern( "E8 ? ? ? ? 33 C0 66 89 86" );
 		ReadCall( recordVehicleDeleted, orgRecordVehicleDeleted );
@@ -9791,7 +10057,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Disallow moving cam up/down with mouse when looking back/left/right in vehicle
-	try
+	if (FollowCarMouseCamFix::HasGameBindings()) try
 	{
 		using namespace FollowCarMouseCamFix;
 
@@ -9838,7 +10104,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 	// Modify the radio station change animation to only affect the right hand, and disable it on the Kart
 	// By Wesser, improved by B1ack_Wh1te
-	try
+	if (RadioStationChangeAnimBlending::HasGameBindings()) try
 	{
 		using namespace RadioStationChangeAnimBlending;
 
@@ -9863,7 +10129,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 	// Fix crosshair issues when sniper rifle is equipped and a photo is taken by a gang member
 	// By Wesser
-	try
+	if (CameraCrosshairFix::HasGameBindings()) try
 	{
 		using namespace CameraCrosshairFix;
 
@@ -9995,7 +10261,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 	// During riots, don't target the player group during missions
 	// Fixes recruited homies panicking during Los Desperados and other riot-time missions
-	try
+	if (RiotDontTargetPlayerGroupDuringMissions::HasGameBindings()) try
 	{
 		using namespace RiotDontTargetPlayerGroupDuringMissions;
 
@@ -10135,7 +10401,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Improved resolution selection dialog
-	try
+	if (NewResolutionSelectionDialog::HasGameBindings()) try
 	{
 		using namespace NewResolutionSelectionDialog;
 
@@ -10212,13 +10478,16 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		HookEach_SetCurrentVideoMode(setCurrentVideoMode, InterceptCall);
 		InterceptCall(setupBackBufferVertex, orgSetupBackBufferVertex, SetupBackBufferVertex_Nop);
 
-		InterceptCall(underWaterRipple, orgUnderWaterRipple, UnderWaterRipple_ScaleFrequency);
+		if (HasGameBindings_UnderWaterRipple())
+		{
+			InterceptCall(underWaterRipple, orgUnderWaterRipple, UnderWaterRipple_ScaleFrequency);
+		}
 	}
 	TXN_CATCH();
 
 
 	// Fix heat seeking and gamepad crosshairs not scaling to resolution
-	try
+	if (CrosshairScalingFixes::HasGameBindings()) try
 	{
 		using namespace CrosshairScalingFixes;
 
@@ -10345,6 +10614,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 	// Fixed most line wraps not scaling to resolution
 	// Shared namespace, but separate patch applications per-function
+	if (FixedLineWraps::HasGameBindings())
 	{
 		using namespace FixedLineWraps;
 
@@ -10436,7 +10706,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Corona flares not scaling to resolution
-	try
+	if (CoronaFlaresScaling::HasGameBindings()) try
 	{
 		using namespace CoronaFlaresScaling;
 
@@ -10783,7 +11053,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Fix script draws affecting the line wrapping of a radio station name display
-	try
+	if (RadioStationDisplayWidth::HasGameBindings()) try
 	{
 		using namespace RadioStationDisplayWidth;
 

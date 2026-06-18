@@ -14,10 +14,11 @@
 #include <ShlObj.h>
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
+#include "ExternalBindings.hpp"
 
 #pragma comment(lib, "shlwapi.lib")
 
-extern char** ppUserFilesDir;
+extern ExternalRef<const char[]> ppUserFilesDir;
 
 // ============= Fake the VRAM poll =============
 namespace FakeVRAMPoll
@@ -36,6 +37,11 @@ namespace FakeVRAMPoll
 
 
 namespace Common {
+	static bool HasGameBindings_GetMyDocumentsPath()
+	{
+		return ppUserFilesDir.Ensure();
+	}
+
 	char* GetMyDocumentsPath()
 	{
 		static char	cUserFilesPath[MAX_PATH];
@@ -44,7 +50,7 @@ namespace Common {
 		{	
 			if (SUCCEEDED(SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath)))
 			{
-				PathAppendA(cUserFilesPath, *ppUserFilesDir);
+				PathAppendA(cUserFilesPath, ppUserFilesDir.Get());
 				CreateDirectoryA(cUserFilesPath, nullptr);
 			}
 			else
@@ -85,7 +91,10 @@ namespace Common {
 		{
 			using namespace Memory::DynBase;
 
-			InjectHook(0x580BB0, GetMyDocumentsPath, HookType::Jump);
+			if (HasGameBindings_GetMyDocumentsPath())
+			{
+				InjectHook(0x580BB0, GetMyDocumentsPath, HookType::Jump);
+			}
 
 			if (width != 0 && height != 0)
 			{
@@ -104,7 +113,10 @@ namespace Common {
 		{
 			using namespace Memory::DynBase;
 
-			InjectHook(0x580F00, GetMyDocumentsPath, HookType::Jump);
+			if (HasGameBindings_GetMyDocumentsPath())
+			{
+				InjectHook(0x580F00, GetMyDocumentsPath, HookType::Jump);
+			}
 
 			if (width != 0 && height != 0)
 			{
@@ -123,7 +135,10 @@ namespace Common {
 		{
 			using namespace Memory::DynBase;
 
-			InjectHook(0x580E00, GetMyDocumentsPath, HookType::Jump);
+			if (HasGameBindings_GetMyDocumentsPath())
+			{
+				InjectHook(0x580E00, GetMyDocumentsPath, HookType::Jump);
+			}
 
 			if (width != 0 && height != 0)
 			{
@@ -143,10 +158,13 @@ namespace Common {
 		{
 			using namespace Memory::DynBase;
 
-			InjectHook(0x602240, GetMyDocumentsPath, HookType::Jump);
+			if (HasGameBindings_GetMyDocumentsPath())
+			{
+				InjectHook(0x602240, GetMyDocumentsPath, HookType::Jump);
 
-			InjectHook(0x601A40, GetMyDocumentsPath, HookType::Call);
-			InjectHook(0x601A45, DynBaseAddress(0x601B2F), HookType::Jump);
+				InjectHook(0x601A40, GetMyDocumentsPath, HookType::Call);
+				InjectHook(0x601A45, DynBaseAddress(0x601B2F), HookType::Jump);
+			}
 
 			if (width != 0 && height != 0)
 			{
@@ -165,10 +183,13 @@ namespace Common {
 		{
 			using namespace Memory::DynBase;
 
-			InjectHook(0x602220, GetMyDocumentsPath, HookType::Jump);
+			if (HasGameBindings_GetMyDocumentsPath())
+			{
+				InjectHook(0x602220, GetMyDocumentsPath, HookType::Jump);
 
-			InjectHook(0x601A70, GetMyDocumentsPath, HookType::Call);
-			InjectHook(0x601A75, DynBaseAddress(0x601B5F), HookType::Jump);
+				InjectHook(0x601A70, GetMyDocumentsPath, HookType::Call);
+				InjectHook(0x601A75, DynBaseAddress(0x601B5F), HookType::Jump);
+			}
 
 			if (width != 0 && height != 0)
 			{
@@ -188,10 +209,13 @@ namespace Common {
 		{
 			using namespace Memory::DynBase;
 
-			InjectHook(0x601E60, GetMyDocumentsPath, HookType::Jump);
+			if (HasGameBindings_GetMyDocumentsPath())
+			{
+				InjectHook(0x601E60, GetMyDocumentsPath, HookType::Jump);
 
-			InjectHook(0x6016B0, GetMyDocumentsPath, HookType::Call);
-			InjectHook(0x6016B5, DynBaseAddress(0x60179F), HookType::Jump);
+				InjectHook(0x6016B0, GetMyDocumentsPath, HookType::Call);
+				InjectHook(0x6016B5, DynBaseAddress(0x60179F), HookType::Jump);
+			}
 
 			if (width != 0 && height != 0)
 			{

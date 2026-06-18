@@ -377,14 +377,13 @@ private:
 };
 
 bool HasGameBindings_ExtraAutomobileAnimations();
+bool HasGameBindings_AutomobileFix();
 
 class NOVMT CHeli : public CAutomobile
 {
 public:
-	inline void			Render_Stub()
-	{ CHeli::Render(); }
-
-	virtual void		Render() override;
+	static void (CEntity::*orgRender_RenderRotors)();
+	void		RenderRotors();
 };
 
 class NOVMT CPlane : public CAutomobile
@@ -394,13 +393,13 @@ public:
 	float				m_fPropellerSpeed;
 
 public:
-	inline void			Render_Stub()
-	{ CPlane::Render(); }
 	inline void			PreRender_Stub()
 	{ CPlane::PreRender(); }
 
-	virtual void		Render() override;
 	virtual void		PreRender() override;
+
+	static void (CVehicle::*orgRender_RenderRotors)();
+	void				RenderRotors();
 
 	void				Fix_SilentPatch();
 

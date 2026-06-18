@@ -9,6 +9,7 @@
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
 #include "Utils/ScopedUnprotect.hpp"
+#include "ExternalBindings.hpp"
 
 #include "Common_ddraw.h"
 #include "Desktop.h"
@@ -30,7 +31,7 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 	return pDirectDrawCreateEx(lpGUID, lplpDD, iid, pUnkOuter);
 }
 
-char** ppUserFilesDir;
+ExternalRef<const char[]> ppUserFilesDir;
 
 void InjectHooks()
 {
@@ -44,38 +45,38 @@ void InjectHooks()
 	if (*(DWORD*)Memory::DynBaseAddress(0x5C1E75) == 0xB85548EC)
 	{
 		// III 1.0
-		ppUserFilesDir = (char**)Memory::DynBaseAddress(0x580C16);
+		ppUserFilesDir.Bind(Memory::DynBaseAddress((const char (**)[])0x580C16));
 		Common::Patches::DDraw_III_10( width, height, aNoDesktopMode );
 	}
 	else if (*(DWORD*)Memory::DynBaseAddress(0x5C2135) == 0xB85548EC)
 	{
 		// III 1.1
-		ppUserFilesDir = (char**)Memory::DynBaseAddress(0x580F66);
+		ppUserFilesDir.Bind(Memory::DynBaseAddress((const char (**)[])0x580F66));
 		Common::Patches::DDraw_III_11( width, height, aNoDesktopMode );
 	}
 	else if (*(DWORD*)Memory::DynBaseAddress(0x5C6FD5) == 0xB85548EC)
 	{
 		// III Steam
-		ppUserFilesDir = (char**)Memory::DynBaseAddress(0x580E66);
+		ppUserFilesDir.Bind(Memory::DynBaseAddress((const char (**)[])0x580E66));
 		Common::Patches::DDraw_III_Steam( width, height, aNoDesktopMode );
 	}
 
 	else if (*(DWORD*)Memory::DynBaseAddress(0x667BF5) == 0xB85548EC)
 	{
 		// VC 1.0
-		ppUserFilesDir = (char**)Memory::DynBaseAddress(0x6022AA);
+		ppUserFilesDir.Bind(Memory::DynBaseAddress((const char (**)[])0x6022AA));
 		Common::Patches::DDraw_VC_10( width, height, aNoDesktopMode );
 	}
 	else if (*(DWORD*)Memory::DynBaseAddress(0x667C45) == 0xB85548EC)
 	{
 		// VC 1.1
-		ppUserFilesDir = (char**)Memory::DynBaseAddress(0x60228A);
+		ppUserFilesDir.Bind(Memory::DynBaseAddress((const char (**)[])0x60228A));
 		Common::Patches::DDraw_VC_11( width, height, aNoDesktopMode );
 	}
 	else if (*(DWORD*)Memory::DynBaseAddress(0x666BA5) == 0xB85548EC)
 	{
 		// VC Steam
-		ppUserFilesDir = (char**)Memory::DynBaseAddress(0x601ECA);
+		ppUserFilesDir.Bind(Memory::DynBaseAddress((const char (**)[])0x601ECA));
 		Common::Patches::DDraw_VC_Steam( width, height, aNoDesktopMode );
 	}
 

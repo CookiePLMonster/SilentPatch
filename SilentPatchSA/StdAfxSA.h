@@ -24,7 +24,6 @@
 
 #include "TheFLAUtils.h"
 
-extern const char* (*GetFrameNodeName)(RwFrame*);
 RwObject* GetFirstObject(RwFrame* pFrame);
 
 #ifdef _DEBUG

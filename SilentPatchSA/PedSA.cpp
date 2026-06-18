@@ -20,8 +20,7 @@ extern ExternalFunc<RpHAnimHierarchy* (RpClump*)> GetAnimHierarchyFromSkinClump;
 
 bool HasGameBindings_ShadowRenderingFixes()
 {
-	extern ExternalFunc<RpAtomic* (RpAtomic* atomic)> fnBind_AtomicDefaultRenderCallBack;
-	return EnsureBindings(fnBind_AtomicDefaultRenderCallBack, CPedIntelligence::GetTaskJetPack, CTaskSimpleJetPack::RenderJetPack)
+	return RWBindings::AtomicDefaultRenderCallBack() && EnsureBindings(CPedIntelligence::GetTaskJetPack, CTaskSimpleJetPack::RenderJetPack)
 		&& CPed::HasGameBindings_RenderWeapon() && CShadowCamera::HasGameBindings();
 }
 
@@ -136,7 +135,7 @@ uint8_t CPed::GetWeaponSkillForRenderWeaponPedsForPC_SAMP()
 
 bool CPed::HasGameBindings_RenderWeapon()
 {
-	return EnsureBindings(GetWeaponSkill, SetGunFlashAlpha, CWeaponInfo::GetWeaponInfo, GetAnimHierarchyFromSkinClump);
+	return EnsureBindings(GetWeaponSkill, SetGunFlashAlpha, CWeaponInfo::GetWeaponInfo, GetAnimHierarchyFromSkinClump) && RWBindings::RwMatrixRotate();
 }
 
 bool CTaskComplexSequence::Contains(int taskID) const

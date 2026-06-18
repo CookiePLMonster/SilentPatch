@@ -69,3 +69,17 @@ Pred RpGeometryForAllMaterials(RpGeometry* geometry, Pred callback)
 	}
 	return callback;
 }
+
+// Check functions for RW imports from the game
+namespace RWBindings
+{
+	bool AtomicDefaultRenderCallBack();
+	bool RpMaterialSetTexture();
+	bool RwFrameGetLTM();
+	bool RwEngineSetSubSystem();
+	bool RtPNGImageRead();
+	bool RwTextureCreate();
+	bool RwRasterCreate();
+	bool RwImageDestroy();
+	bool RwMatrixRotate();
+}

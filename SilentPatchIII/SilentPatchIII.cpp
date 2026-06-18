@@ -634,7 +634,7 @@ __declspec(naked) void RadarBoundsCheckEntityBlip()
 	}
 }
 
-extern char** ppUserFilesDir = AddressByVersion<char**>(0x580C16, 0x580F66, 0x580E66);
+ExternalRef<const char[]> ppUserFilesDir(AddressByVersion<const char (**)[]>(0x580C16, 0x580F66, 0x580E66));
 
 static LARGE_INTEGER	FrameTime;
 __declspec(safebuffers) int32_t GetTimeSinceLastFrame()
@@ -1037,11 +1037,11 @@ namespace GenerateNewPickup_ReuseObjectFix
 {
 	static void** pPickupObject;
 	static void (*orgGiveUsAPickUpObject)(int);
-	static auto WorldRemove = ExternalFunc<void (void*)>("8A 43 50 56 24 07", -5).Address();
+	static ExternalFunc<void (void*)> WorldRemove("8A 43 50 56 24 07", -5);
 
 	static bool HasGameBindings()
 	{
-		return WorldRemove != nullptr;
+		return EnsureBindings(WorldRemove);
 	}
 
 	__declspec(naked) static void GiveUsAPickUpObject_CleanUpObject()

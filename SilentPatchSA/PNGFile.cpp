@@ -1,6 +1,14 @@
 #include "StdAfxSA.h"
 #include "PNGFile.h"
 
+#include "RWUtils.hpp"
+
+bool CPNGFile::HasGameBindings()
+{
+	using namespace RWBindings;
+	return RtPNGImageRead() && RwRasterCreate() && RwTextureCreate() && RwImageDestroy();
+}
+
 RwTexture* CPNGFile::ReadFromFile(const char* pFileName)
 {
 	RwTexture*		pTexture = nullptr;

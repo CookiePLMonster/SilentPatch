@@ -6,8 +6,8 @@
 class CTimer
 {
 public:
-	static int&				m_snTimeInMilliseconds;
-	static float&			m_fTimeStep;
+	static ExternalRef<int>	m_snTimeInMilliseconds;
+	static ExternalRef<float> m_fTimeStep;
 
 	static bool				HasGameBindings();
 };

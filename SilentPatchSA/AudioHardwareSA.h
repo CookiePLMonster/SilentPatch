@@ -18,7 +18,7 @@ enum eDecoderType
 	DECODER_FLAC
 };
 
-extern void	(*GTAdelete)(void* data);
+extern ExternalFunc<void (void*)> GTAdelete;
 
 // 1.0/Steam structure
 class NOVMT CAEDataStreamOld final : IStream
@@ -37,7 +37,7 @@ public:
 	void			operator delete(void* data)
 	{
 		// Call SA operator delete
-		GTAdelete(data);
+		GTAdelete.Call(data);
 	}
 
 	CAEDataStreamOld() = delete;
@@ -51,7 +51,7 @@ public:
 		}
 		if ( pFilename != nullptr )
 		{
-			GTAdelete(pFilename);
+			GTAdelete.Call(pFilename);
 			pFilename = nullptr;
 		}
 	}
@@ -93,7 +93,7 @@ public:
 	void			operator delete(void* data)
 	{
 		// Call SA operator delete
-		GTAdelete(data);
+		GTAdelete.Call(data);
 	}
 
 	CAEDataStreamNew() = delete;
@@ -107,7 +107,7 @@ public:
 		}
 		if ( pFilename != nullptr )
 		{
-			GTAdelete(pFilename);
+			GTAdelete.Call(pFilename);
 			pFilename = nullptr;
 		}
 	}
@@ -148,7 +148,7 @@ public:
 	// This is handled by GTA so we can leave it that way
 	static ExternalMethod<CAEDataStream, bool()> Initialise;
 
-	static bool HasGameBindings() { return EnsureBindings(Initialise) && GTAdelete != nullptr; }
+	static bool HasGameBindings() { return EnsureBindings(Initialise, GTAdelete); }
 
 	unsigned int		Seek(long nToSeek, int nPoint)
 	{	if ( m_bUseNewStruct ) 

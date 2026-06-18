@@ -9,10 +9,6 @@
 
 #include <algorithm>
 
-// Wrappers
-static void* EntityRender = AddressByVersion<void*>(0x534310, 0x5347B0, 0x545B30);
-WRAPPER void CEntity::Render() { VARJMP(EntityRender); }
-
 ExternalMethod<CEntity, bool ()> CEntity::IsVisible(AddressByVersion<bool (__thiscall*)(CEntity*)>( 0x536BC0, Memory::PatternAndOffset("0B F6 41 1C 80 74 05 E9", -5) ));
 
 ExternalMethod<CShadowCamera, void ()> CShadowCamera::InvertRaster(AddressByVersion<void (__thiscall*)(CShadowCamera*)>(0x705660, 0x705E90, 0x7497A0));

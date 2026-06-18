@@ -18,6 +18,8 @@
 // 2. Re-binding is permitted.
 // 3. The results can later be checked with .Ensure().
 // 4. The APIs are explicit, with no implicit conversions or call operators. This is to ensure that unintentional dependencies are difficult to create.
+// 5. All wrappers are standard-layout types. This makes them usable inside inline assembly blocks, where they can be treated the same way the code
+//    treated the underlying storage/function pointer types previously.
 
 // ExternalRef<T> takes a pointer to an instruction operand (absolute address in x86, RIP-relative offset in x64) and can be used like a reference wrapper.
 // When compiling for x64, an optional adjust offset is accepted by the constructors and .Bind methods, specifying how many bytes after the operand the instruction has.
@@ -75,7 +77,7 @@ namespace external_bindings::details
 	struct external_method_traits<C, R(Args...)>
 	{
 		using fnptr_type = R(__thiscall*)(C*, Args...);
-		using memberfnptr_type = R(C::*)(Args...);
+		using member_fnptr_type = R(C::*)(Args...);
 		using classptr_type = C*;
 	};
 
@@ -83,7 +85,7 @@ namespace external_bindings::details
 	struct external_method_traits<C, R(Args...) const>
 	{
 		using fnptr_type = R(__thiscall*)(const C*, Args...);
-		using memberfnptr_type = R(C::*)(Args...) const;
+		using member_fnptr_type = R(C::*)(Args...) const;
 		using classptr_type = const C*;
 	};
 
@@ -368,7 +370,7 @@ class ExternalMethod : public external_bindings::details::external_method_base<E
 
 public:
 	using fnptr_type = typename traits::fnptr_type;
-	using memberfnptr_type = typename traits::memberfnptr_type;
+	using member_fnptr_type = typename traits::member_fnptr_type;
 	using classptr_type = typename traits::classptr_type;
 
 	ExternalMethod() noexcept = default;
@@ -378,7 +380,7 @@ public:
 	{
 	}
 
-	explicit ExternalMethod(memberfnptr_type func) noexcept
+	explicit ExternalMethod(member_fnptr_type func) noexcept
 		: ExternalMethod(to_fnptr(func))
 	{
 	}
@@ -389,7 +391,7 @@ public:
 	}
 
 	void Bind(fnptr_type func) noexcept { m_func = func; }
-	void Bind(memberfnptr_type func) noexcept { Bind(to_fnptr(func)); }
+	void Bind(member_fnptr_type func) noexcept { Bind(to_fnptr(func)); }
 
 	void Bind(std::string_view pattern_string, std::ptrdiff_t offset = 0)
 	{
@@ -417,7 +419,7 @@ public:
 	ExternalMethod& operator=(const ExternalMethod&) = delete;
 
 private:
-	static fnptr_type to_fnptr(memberfnptr_type func)
+	static fnptr_type to_fnptr(member_fnptr_type func)
 	{
 		fnptr_type result;
 		memcpy(&result, &func, sizeof(result));

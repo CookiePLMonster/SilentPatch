@@ -16,8 +16,7 @@ static ExternalRef ms_aDirtTextures(AddressByVersion<RwTexture*(**)[16]>( 0x5D5D
 
 bool HasGameBindings_DirtRemapFix()
 {
-	extern ExternalFunc<RpMaterial*(RpMaterial* material, RwTexture* texture)> fnBind_RpMaterialSetTexture;
-	return EnsureBindings(ms_aDirtTextures, fnBind_RpMaterialSetTexture);
+	return RWBindings::RpMaterialSetTexture() && EnsureBindings(ms_aDirtTextures);
 }
 
 bool HasGameBindings_ResetCompsForNoExtras()

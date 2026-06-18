@@ -410,11 +410,6 @@ public:
 	BYTE				__pad64[12];
 
 public:
-	inline bool			Save_Stub()
-		{ return CPed::Save(); }
-	inline bool			Load_Stub()
-		{ return CPed::Load(); }
-
 	virtual bool		Save();
 	virtual bool		Load();
 
