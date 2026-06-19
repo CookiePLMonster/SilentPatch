@@ -7724,7 +7724,8 @@ void Patch_SA_10(HINSTANCE hInstance)
 		{
 			InjectHook(placeToPatch, AssignmentOp_Hoodlum, HookType::Call);
 		}
-		else
+		// Only patch compact if it's not been fixed already. No such executable exists right now, but this might change in the future
+		else if (MemEquals(placeToPatch, { 0x33, 0xD6, 0x81, 0xE2, 0x00, 0x02, 0x00, 0x00 }))
 		{
 			InjectHook(placeToPatch, AssignmentOp_Compact, HookType::Call);
 			Nop(placeToPatch + 5, 3);
