@@ -108,7 +108,9 @@ namespace ModCompat
 		// Resolves a re-route if it comes from a no-CD executable
 		uintptr_t GetFunctionAddrIfRerouted(uintptr_t address)
 		{
-			if (*reinterpret_cast<const uint8_t*>(address) == 0xE9)
+			uint8_t jmp;
+			Memory::Read(address, jmp);
+			if (jmp == 0xE9u)
 			{
 				uintptr_t jumpDestination;
 				Memory::ReadCall(address, jumpDestination);
@@ -387,6 +389,7 @@ ExternalFunc			ClearAtomicFlag(AddressByVersion<void(*)(RpAtomic*, int)>(0x73231
 ExternalFunc			IsPlayerOnAMission(AddressByVersion<bool(*)()>(0x464D50, {"85 C0 74 0C 83 B8 ? ? ? ? ? 75 03 B0 01 C3", -5}));
 
 ExternalFunc			WorldRemove(AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, { "8B 06 8B 50 0C 8B CE FF D2 8A 46 36 24 07 3C 01 76 0D", -7 }));
+ExternalFunc			IsInPlayersGroup(AddressByVersion<bool(*)(const CPed* pPed)>(0x5F7F10, { "83 B9 80 04 00 00 00 75", -6 }));
 
 
 // SA variables
@@ -3894,6 +3897,21 @@ namespace TimecycDatMissingDataFix
 		*Amb_B = CurAmb_B;
 
 		return result;
+	}
+}
+
+
+// ============= Stop gang wars clearing the friendly entity blips when the gang war ends =============
+namespace AttackWaveFriendlyBlipsFix
+{
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(IsInPlayersGroup);
+	}
+
+	static bool __fastcall ClearBlipsOnDeath_AndNotIsInPlayersGroup(const CPed* ped)
+	{
+		return ped->m_nPedFlags.bClearRadarBlipOnDeath && !IsInPlayersGroup.Call(ped);
 	}
 }
 
@@ -8141,10 +8159,24 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Stop gang wars clearing the friendly entity blips when the gang war ends
-	Patch<int8_t>(0x446402 + 1, 0);
-	Patch<int8_t>(0x446A20 + 1, 0);
-	Patch<int8_t>(0x446B93 + 1, 0);
-	Patch<int8_t>(0x446C2C + 1, 0);
+	// DRM-obfuscated, so exceptionally use patterns
+	if (AttackWaveFriendlyBlipsFix::HasGameBindings()) try
+	{
+		using namespace AttackWaveFriendlyBlipsFix;
+		using namespace hook::txn;
+
+		uintptr_t ReleasePedsInAttackWave_start = ModCompat::Utils::GetFunctionAddrIfRerouted(0x445C30);
+
+		auto clear_blip_on_death_check = pattern({{ ReleasePedsInAttackWave_start, ReleasePedsInAttackWave_start + 0x200 }}, "8B 86 74 04 00 00 F6 C4 20").get_one();
+
+		// mov ecx, esi
+		// call ClearBlipsOnDeath_AndNotIsInPlayersGroup
+		// test al, al
+		Patch(clear_blip_on_death_check.get<void>(0), { 0x8B, 0xCE });
+		InjectHook(clear_blip_on_death_check.get<void>(2), ClearBlipsOnDeath_AndNotIsInPlayersGroup, HookType::Call);
+		Patch(clear_blip_on_death_check.get<void>(7), { 0x84, 0xC0 });
+	}
+	TXN_CATCH();
 
 
 	// Speech system fixes
@@ -10792,17 +10824,19 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Stop gang wars clearing the friendly entity blips when the gang war ends
-	try
+	if (AttackWaveFriendlyBlipsFix::HasGameBindings()) try
 	{
-		auto do_stuff_when_player_victorious = get_pattern("6A 01 E8 ? ? ? ? 83 C4 08 E8 ? ? ? ? E8 ? ? ? ? 6A 01 6A 01 68", 1);
-		auto update1 = get_pattern("53 6A 01 D9 1D", 1 + 1);
-		auto update2 = get_pattern("53 6A 01 E8 ? ? ? ? 83 C4 30", 1 + 1);
-		auto update3 = get_pattern("53 6A 01 E8 ? ? ? ? 8B 0D", 1 + 1);
+		using namespace AttackWaveFriendlyBlipsFix;
 
-		Patch<int8_t>(do_stuff_when_player_victorious, 0);
-		Patch<int8_t>(update1, 0);
-		Patch<int8_t>(update2, 0);
-		Patch<int8_t>(update3, 0);
+		auto clear_blip_on_death_check = pattern("F7 86 74 04 00 00 00 20 00 00 74 3D").get_one();
+
+		// mov ecx, esi
+		// call ClearBlipsOnDeath_AndNotIsInPlayersGroup
+		// test al, al
+		// nop
+		Patch(clear_blip_on_death_check.get<void>(0), { 0x8B, 0xCE });
+		InjectHook(clear_blip_on_death_check.get<void>(2), ClearBlipsOnDeath_AndNotIsInPlayersGroup, HookType::Call);
+		Patch(clear_blip_on_death_check.get<void>(7), { 0x84, 0xC0, 0x90 });
 	}
 	TXN_CATCH();
 
