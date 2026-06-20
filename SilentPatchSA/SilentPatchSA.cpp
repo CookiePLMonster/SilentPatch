@@ -7691,34 +7691,19 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Cancel the Drive By task of biker cops when losing the wanted level
+	// DRM-obfuscated, so exceptionally use patterns
+	try
 	{
 		using namespace BikerCopsDriveByFix;
+		using namespace hook::txn;
 
-		// ModCompat::Utils::GetFunctionAddrIfRerouted won't work here, as the decrypted function is still
-		// slightly obfuscated compared to the compact EXE deobfuscation
-		bool HoodlumPatched = false;
-		if (*reinterpret_cast<const uint8_t*>(0x41BFA0) == 0xE9)
-		{
-			// Since this function differs between EU and US Hoodlum, exceptionally use patterns
-			using namespace hook::txn;
+		uintptr_t backToCruisingIfNoWantedLevel = ModCompat::Utils::GetFunctionAddrIfRerouted(0x41BFA0);
+		auto joinCarWithRoadSystem = get_pattern({{ backToCruisingIfNoWantedLevel, backToCruisingIfNoWantedLevel + 0x100 }},
+						"56 E8 ? ? ? ? 8A 96 2D 04 00 00", 1);
 
-			uintptr_t backToCruisingIfNoWantedLevel_Obfuscated;
-			ReadCall(0x41BFA0, backToCruisingIfNoWantedLevel_Obfuscated);
-			if (ModCompat::Utils::GetModuleHandleFromAddress(backToCruisingIfNoWantedLevel_Obfuscated) == hInstance) try
-			{
-				auto joinCarWithRoadSystem = get_pattern({{ backToCruisingIfNoWantedLevel_Obfuscated, backToCruisingIfNoWantedLevel_Obfuscated + 0x100 }},
-					"56 E8 ? ? ? ? 8A 96 2D 04 00 00", 1);
-
-				VP::InterceptCall(joinCarWithRoadSystem, orgJoinCarWithRoadSystem, JoinCarWithRoadSystem_AbortDriveByTask);
-				HoodlumPatched = true;
-			}
-			TXN_CATCH();
-		}
-		if (!HoodlumPatched)
-		{
-			InterceptCall(0x41C00E, orgJoinCarWithRoadSystem, JoinCarWithRoadSystem_AbortDriveByTask);
-		}
+		InterceptCall(joinCarWithRoadSystem, orgJoinCarWithRoadSystem, JoinCarWithRoadSystem_AbortDriveByTask);
 	}
+	TXN_CATCH();
 
 
 	// Fix miscolored racing checkpoints if no other marker was drawn before them
