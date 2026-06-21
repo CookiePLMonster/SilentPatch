@@ -2998,6 +2998,18 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	}
 	TXN_CATCH();
 
+	// Speech delay fix
+	if (const int speech_delay = GetPrivateProfileIntW(L"SilentPatch", L"SpeechDelayTimer", -1, wcModulePath); speech_delay != -1) {
+		try
+		{
+			auto speech_delay_pattern = get_pattern("2B 86 8C 04 00 00 3D", 7); // targeting cmp eax, 1770h (6000ms)	
+
+			// Patch 6s delay between any ped speech samples
+			Patch(speech_delay_pattern, speech_delay);
+		}
+		TXN_CATCH();
+	}
+
 	FLAUtils::Init(moduleList);
 }
 
@@ -3726,12 +3738,8 @@ void Patch_VC_Common()
 	// Based off Sergeanur's fix
 	try
 	{
-		// Remove the artificial 6s delay between any ped speech samples
-		auto delay_check = get_pattern("80 BE ? ? ? ? ? 0F 85 ? ? ? ? B9", 7);
 		auto comment_delay_id1 = get_pattern("0F B7 C2 DD D8 C1 E0 04");
 		auto comment_delay_id2 = pattern("0F B7 95 DA 05 00 00 D9 6C 24 04").get_one();
-
-		Nop(delay_check, 6);
 
 		// movzx eax, dx -> movzx eax, bx
 		Patch(comment_delay_id1, { 0x0F, 0xB7, 0xC3 });
