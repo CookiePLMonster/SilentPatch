@@ -17,6 +17,8 @@
 #include <Shlwapi.h>
 #include <intrin.h>
 
+#include <CommCtrl.h>
+
 #include "Utils/ModuleList.hpp"
 #include "Utils/Patterns.h"
 #include "Utils/ScopedUnprotect.hpp"
@@ -26,6 +28,7 @@
 #include "debugmenu_public.h"
 
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "comctl32.lib")
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
@@ -95,6 +98,9 @@ DebugMenuAPI gDebugMenuAPI;
 static const void*		HeadlightsFix_JumpBack;
 
 static ExternalRef<RsGlobalType> RsGlobal;
+
+// Technically part of CMenuManager, but we only need this boolean
+static ExternalRef<bool> bIsFrontEndActive("80 3D ? ? ? ? 00 74 ? 80 3D ? ? ? ? 01 0F 85", 2);
 
 namespace UIScales
 {
@@ -397,36 +403,138 @@ namespace PurpleNinesGlitchFix
 	}
 }
 
-static bool bGameInFocus = true;
 
-static LRESULT (CALLBACK **OldWndProc)(HWND, UINT, WPARAM, LPARAM);
-LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+// ============= Clip the cursor to the game window bounds =============
+namespace ClipCursorToGameWindow
 {
-	switch ( uMsg )
+	static bool bWindowActive = false, bWantsCursorClip = false, bCursorIsClipped = false;
+
+	static void ConfineCursor()
 	{
-	case WM_KILLFOCUS:
-		bGameInFocus = false;
-		break;
-	case WM_SETFOCUS:
-		bGameInFocus = true;
-		break;
+		if (!bCursorIsClipped)
+		{
+			HWND window = RsGlobal.Get().ps->window;
+			if (window != nullptr)
+			{
+				RECT clientRect;
+				GetClientRect(window, &clientRect);
+
+				// Make the coordinates inclusive, so grabbing the right/bottom side of the screen is not possible
+				// (happens on high DPI displays otherwise)
+				clientRect.right -= 1;
+				clientRect.bottom -= 1;
+
+				MapWindowPoints(window, nullptr, reinterpret_cast<POINT*>(&clientRect), 2);
+
+				bCursorIsClipped = ClipCursor(&clientRect) != FALSE;
+			}
+		}
 	}
 
-	return (*OldWndProc)(hwnd, uMsg, wParam, lParam);
-}
-static auto* const pCustomWndProc = CustomWndProc;
-
-static void (* const RsMouseSetPos)(RwV2d*) = AddressByVersion<void(*)(RwV2d*)>(0x580D20, 0x581070, 0x580F70);
-static void (*orgConstructRenderList)();
-void ResetMousePos()
-{
-	if ( bGameInFocus )
+	static void UnconfineCursor()
 	{
-		RwV2d	vecPos = { RsGlobal.Get().MaximumWidth * 0.5f, RsGlobal.Get().MaximumHeight * 0.5f };
-		RsMouseSetPos(&vecPos);
+		if (bCursorIsClipped)
+		{
+			ClipCursor(nullptr);
+			bCursorIsClipped = false;
+		}
 	}
-	orgConstructRenderList();
+
+	static LRESULT CALLBACK ClipSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR /*uIdSubclass*/, DWORD_PTR /*dwRefData*/)
+	{
+		switch (uMsg)
+		{
+		case WM_ACTIVATEAPP:
+			bWindowActive = bWantsCursorClip = wParam != FALSE;
+			if (wParam == FALSE)
+			{
+				UnconfineCursor();
+			}
+			break;
+
+		// If the window moves/resizes, we want it to unconfine and automatically re-confine at the next opportunity
+		case WM_ENTERSIZEMOVE:
+			bWantsCursorClip = false;
+			UnconfineCursor();
+			break;
+		case WM_EXITSIZEMOVE:
+			if (bWindowActive) bWantsCursorClip = true;
+			UnconfineCursor();
+			break;
+
+		case WM_WINDOWPOSCHANGED:
+		case WM_DISPLAYCHANGE:
+			UnconfineCursor();
+			break;
+		}
+
+		return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+	}
+
+	static bool bWindowSubclassed = false;
+	static bool EnsureSubclassed()
+	{
+		if (bWindowSubclassed)
+		{
+			return true;
+		}
+
+		HWND window = RsGlobal.Get().ps->window;
+		if (window != nullptr)
+		{
+			if (SetWindowSubclass(window, ClipSubclassProc, reinterpret_cast<UINT_PTR>(&bWindowSubclassed), 0) != FALSE)
+			{
+				bWindowSubclassed = true;
+
+				// Establish the initial state
+				bWindowActive = bWantsCursorClip = GetActiveWindow() == window;
+
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static void DoClipCursor_InGame()
+	{
+		if (!EnsureSubclassed())
+		{
+			// For safety, do nothing until we manage to subclass
+			return;
+		}
+
+		if (bWantsCursorClip)
+		{
+			ConfineCursor();
+		}
+	}
+
+	static void DoClipCursor_InMenu()
+	{
+		UnconfineCursor();
+	}
+
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(RsGlobal, bIsFrontEndActive);
+	}
+
+	static void (*orgDoRWStuffEndOfFrame)();
+	static void DoRWStuffEndOfFrame_ProcessCursorClip()
+	{
+		if (bIsFrontEndActive.Get())
+		{
+			DoClipCursor_InMenu();
+		}
+		else
+		{
+			DoClipCursor_InGame();
+		}
+
+		orgDoRWStuffEndOfFrame();
+	}
 }
+
 
 // ============= Fix M16 first person aiming not adding to the instant hits fired stat =============
 namespace M16StatsFix
@@ -2684,16 +2792,6 @@ void Patch_III_10(uint32_t width, uint32_t height)
 		XY<0x57E9EE, 0x57E9CD, MusicManager>::Hook(0x57E9F5); // Radio station name
 	}
 
-	// RsMouseSetPos call (SA style fix)
-	if (EnsureBindings(RsGlobal))
-	{
-		ReadCall( 0x48E539, orgConstructRenderList );
-		InjectHook(0x48E539, ResetMousePos);
-
-		OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))DynBaseAddress(0x581C74);
-		Patch(0x581C74, &pCustomWndProc);
-	}
-
 	// Armour cheat as TORTOISE - like in 1.1 and Steam
 	Patch<const char*>(0x4925FB, "ESIOTROT");
 
@@ -2784,16 +2882,6 @@ void Patch_III_11(uint32_t width, uint32_t height)
 		XY<0x57ED3E, 0x57ED1D, MusicManager>::Hook(0x57ED45); // Radio station name
 	}
 
-	// RsMouseSetPos call (SA style fix)
-	if (EnsureBindings(RsGlobal))
-	{
-		ReadCall( 0x48E5F9, orgConstructRenderList );
-		InjectHook(0x48E5F9, ResetMousePos);
-
-		OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))DynBaseAddress(0x581FB4);
-		Patch(0x581FB4, &pCustomWndProc);
-	}
-
 	// (Hopefully) more precise frame limiter
 	ReadCall( 0x58323D, RsEventHandler );
 	InjectHook(0x58323D, NewFrameRender);
@@ -2872,17 +2960,6 @@ void Patch_III_Steam(uint32_t width, uint32_t height)
 		XYMinus<0x509ACE, 0x509AAD, HudMessages>::Hook(0x509AD5); // Big message 5
 		X<0x50A1A9, HudMessages>::Hook(0x50A1B2); // Big message 2
 		XY<0x57EC3E, 0x57EC1D, MusicManager>::Hook(0x57EC45); // Radio station name
-	}
-
-	// RsMouseSetPos call (SA style fix)
-	if (EnsureBindings(RsGlobal))
-	{
-		ReadCall( 0x48E589, orgConstructRenderList );
-		InjectHook(0x48E589, ResetMousePos);
-
-		// New wndproc
-		OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))DynBaseAddress(0x581EA4);
-		Patch(0x581EA4, &pCustomWndProc);
 	}
 
 	// (Hopefully) more precise frame limiter
@@ -3723,6 +3800,18 @@ void Patch_III_Common()
 		};
 
 		HookEach_Bilinear_Sprite2d(sprite2d_draw, InterceptCall);
+	}
+	TXN_CATCH();
+
+
+	// Clip the cursor to the game window bounds
+	if (ClipCursorToGameWindow::HasGameBindings()) try
+	{
+		using namespace ClipCursorToGameWindow;
+
+		auto do_rw_stuff_end_of_frame = get_pattern("E8 ? ? ? ? 80 3D ? ? ? ? 00 74 ? E8 ? ? ? ? 83 C4 08");
+
+		InterceptCall(do_rw_stuff_end_of_frame, orgDoRWStuffEndOfFrame, DoRWStuffEndOfFrame_ProcessCursorClip);
 	}
 	TXN_CATCH();
 }

@@ -360,7 +360,19 @@ struct AlphaObjectInfo
 	{ return a.fCompareValue < b.fCompareValue; }
 };
 
-struct PsGlobalType;
+struct PsGlobalType
+{
+	HWND	window;
+	DWORD	instance;
+	DWORD	fullscreen;
+	DWORD	lastMousePos_X;
+	DWORD	lastMousePos_Y;
+	DWORD	unk;
+	DWORD	diInterface;
+	DWORD	diMouse;
+	void*	diDevice1;
+	void*	diDevice2;
+};
 
 struct RsGlobalType
 {
@@ -415,6 +427,9 @@ ExternalRef				HudColour(AddressByVersion<CRGBA (**)[]>(0x58ADF6, 0x58B5C6, 0x44
 ExternalRef				ms_weaponPedsForPC(AddressByVersion<CLinkListSA<CPed*>**>(0x53EACA, 0x53EF6A, 0x551101));
 
 ExternalRef				bDrawCrossHair(AddressByVersion<uint32_t**>(0x58E7BF + 2, {"83 3D ? ? ? ? ? 74 29", 2}));
+
+// Technically part of CMenuManager, but we only need this boolean
+static ExternalRef		bIsFrontEndActive(AddressByVersion<bool**>(0x53E9AC + 1, {"80 3D ? ? ? ? 00 0F 85 ? ? ? ? B9", 2}));
 
 DebugMenuAPI gDebugMenuAPI;
 static bool IgnoresWeaponPedsForPCFix();
@@ -4534,6 +4549,138 @@ namespace FortCarsonBeagle
 }
 
 
+// ============= Clip the cursor to the game window bounds =============
+namespace ClipCursorToGameWindow
+{
+	static bool bWindowActive = false, bWantsCursorClip = false, bCursorIsClipped = false;
+
+	static void ConfineCursor()
+	{
+		if (!bCursorIsClipped)
+		{
+			HWND window = RsGlobal.Get().ps->window;
+			if (window != nullptr)
+			{
+				RECT clientRect;
+				GetClientRect(window, &clientRect);
+
+				// Make the coordinates inclusive, so grabbing the right/bottom side of the screen is not possible
+				// (happens on high DPI displays otherwise)
+				clientRect.right -= 1;
+				clientRect.bottom -= 1;
+
+				MapWindowPoints(window, nullptr, reinterpret_cast<POINT*>(&clientRect), 2);
+
+				bCursorIsClipped = ClipCursor(&clientRect) != FALSE;
+			}
+		}
+	}
+
+	static void UnconfineCursor()
+	{
+		if (bCursorIsClipped)
+		{
+			ClipCursor(nullptr);
+			bCursorIsClipped = false;
+		}
+	}
+
+	static LRESULT CALLBACK ClipSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR /*uIdSubclass*/, DWORD_PTR /*dwRefData*/)
+	{
+		switch (uMsg)
+		{
+		case WM_ACTIVATEAPP:
+			bWindowActive = bWantsCursorClip = wParam != FALSE;
+			if (wParam == FALSE)
+			{
+				UnconfineCursor();
+			}
+			break;
+
+			// If the window moves/resizes, we want it to unconfine and automatically re-confine at the next opportunity
+		case WM_ENTERSIZEMOVE:
+			bWantsCursorClip = false;
+			UnconfineCursor();
+			break;
+		case WM_EXITSIZEMOVE:
+			if (bWindowActive) bWantsCursorClip = true;
+			UnconfineCursor();
+			break;
+
+		case WM_WINDOWPOSCHANGED:
+		case WM_DISPLAYCHANGE:
+			UnconfineCursor();
+			break;
+		}
+
+		return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+	}
+
+	static bool bWindowSubclassed = false;
+	static bool EnsureSubclassed()
+	{
+		if (bWindowSubclassed)
+		{
+			return true;
+		}
+
+		HWND window = RsGlobal.Get().ps->window;
+		if (window != nullptr)
+		{
+			if (SetWindowSubclass(window, ClipSubclassProc, reinterpret_cast<UINT_PTR>(&bWindowSubclassed), 0) != FALSE)
+			{
+				bWindowSubclassed = true;
+
+				// Establish the initial state
+				bWindowActive = bWantsCursorClip = GetActiveWindow() == window;
+
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static void DoClipCursor_InGame()
+	{
+		if (!EnsureSubclassed())
+		{
+			// For safety, do nothing until we manage to subclass
+			return;
+		}
+
+		if (bWantsCursorClip)
+		{
+			ConfineCursor();
+		}
+	}
+
+	static void DoClipCursor_InMenu()
+	{
+		UnconfineCursor();
+	}
+
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(RsGlobal, bIsFrontEndActive);
+	}
+
+	static void (*orgRsCameraShowRaster)(void* camera);
+	static void RsCameraShowRaster_ProcessCursorClip(void* camera)
+	{
+		if (bIsFrontEndActive.Get())
+		{
+			DoClipCursor_InMenu();
+		}
+		else
+		{
+			DoClipCursor_InGame();
+		}
+
+		orgRsCameraShowRaster(camera);
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -5372,6 +5519,7 @@ static const double		dRetailRadioNameSizeX = 0.6;
 static const double		dRetailRadioNameSizeY = 0.9;
 
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "comctl32.lib")
 
 static BOOL (*IsAlreadyRunning)();
 BOOL InjectDelayedPatches_10()
@@ -8319,6 +8467,18 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 		InterceptCall(0x406267, orgLoadCarGenerator, LoadCarGenerator_FixupBeagle);
 	}
+
+
+	// Clip the cursor to the game window bounds
+	if (ClipCursorToGameWindow::HasGameBindings())
+	{
+		using namespace ClipCursorToGameWindow;
+
+		// Disable mouse re-centering
+		Nop(0x53E9F1, 5);
+
+		InterceptCall(0x53EC01, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
+	}
 }
 
 void Patch_SA_11()
@@ -11102,6 +11262,29 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		auto load_car_generator = get_pattern("E8 ? ? ? ? 0F BF 57 10");
 		InterceptCall(load_car_generator, orgLoadCarGenerator, LoadCarGenerator_FixupBeagle);
+	}
+	TXN_CATCH();
+
+
+	// Clip the cursor to the game window bounds
+	if (ClipCursorToGameWindow::HasGameBindings()) try
+	{
+		using namespace ClipCursorToGameWindow;
+
+		auto rs_camera_show_raster = get_pattern("8B 0D ? ? ? ? 51 E8 ? ? ? ? 83 C4 08 8B E5 5D C3", 7);
+
+		// In a bad attempt to fix the mouse issues, the RGL executable cut the DirectInput mouse in favour of using WM_MOUSEMOVE for the camera movements.
+		// This means that the camera stops spinning when the cursor hits our clipping area, and so we need to keep re-centering
+		// as-is so it doesn't break terribly. With this pattern, we can check if this code is present (RGL) or not (newsteam r2)
+		// and act accordingly.
+		if (hook::pattern("8B 45 14 0F BF C8 C1 E8 10 98 5F 5E").count_hint(1).size() != 1)
+		{
+			// newsteam r2, not RGL
+			auto rs_mouse_set_pos = get_pattern("D9 5D FC E8 ? ? ? ? 83 C4 04 E8", 3);
+			Nop(rs_mouse_set_pos, 5);
+		}
+
+		InterceptCall(rs_camera_show_raster, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
 	}
 	TXN_CATCH();
 }

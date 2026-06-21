@@ -24,6 +24,7 @@ Compatibility issues, crashes, progression blockers.
 * ➕ Fixed a crash that occurred when starting a cutscene after playing a replay where CJ wore different clothes from what he is currently wearing.
 * ➕ Fixed a crash that occurred when playing back a replay with CJ having a different body type (fat/muscular/normal) than his current one.
 * ➕ Fixed Skimmer not spawning on Windows 11 24H2.
+* ➕ The mouse cursor is now locked to the game window instead of getting re-centered constantly, so rapid mouse movements can no longer cause the cursor to leave the window in multi-monitor setups.
 * Game timers now tick more accurately, making them not freeze if the framerate exceeds 1000 frames per second; in other words, this fixes occasional freezes on fadeouts if playing with the Frame Limiter off.
 * A heap corruption in one place is now fixed (did not affect gameplay but could potentially make the game crash).
 * Traveling far away from the map will no longer trigger the extra gang territories glitch, nor will it corrupt the Taxi Driver submission.
