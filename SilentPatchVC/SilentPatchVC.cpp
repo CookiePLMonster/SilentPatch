@@ -2100,6 +2100,62 @@ namespace BilinearScriptSprites
 }
 
 
+// ============= Animate Skimmer's rear elevator properly =============
+namespace SkimmerRearElevator
+{
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(CTimer::ms_fTimeStep);
+	}
+
+	// Read from CVehicle::FlyingControl for GInput compatibility
+	static int16_t (__thiscall* GetCarGunUpDown)(class CPad* pad);
+
+	static float fRearElevatorValue = 0.0f;
+	static void ProcessRearElevator(int16_t input)
+	{
+		// 0.2f at 30FPS
+		const float delta = std::min(1.0f, CTimer::ms_fTimeStep.Get() * 0.12f);
+		fRearElevatorValue += (input - fRearElevatorValue) * delta;
+		fRearElevatorValue = std::clamp(fRearElevatorValue, -128.0f, 128.0f);
+	}
+
+	static bool bElevatorProcessedThisFrame = false;
+
+	static int16_t (__thiscall* orgGetSteeringUpDown_Left)(class CPad* pad);
+	static int16_t __fastcall GetSteeringUpDown_CarGunUpDown_Left(class CPad* pad)
+	{
+		int16_t input = -GetCarGunUpDown(pad);
+		if (abs(input) <= 1)
+		{
+			input = orgGetSteeringUpDown_Left(pad);
+		}
+
+		ProcessRearElevator(input);
+		bElevatorProcessedThisFrame = true;
+		return static_cast<int16_t>(fRearElevatorValue);
+
+	}
+
+	static int16_t (__thiscall* orgGetSteeringUpDown_Right)(class CPad* pad);
+	static int16_t __fastcall GetSteeringUpDown_CarGunUpDown_Right(class CPad* pad)
+	{
+		if (!bElevatorProcessedThisFrame)
+		{
+			int16_t input = -GetCarGunUpDown(pad);
+			if (abs(input) <= 1)
+			{
+				input = orgGetSteeringUpDown_Right(pad);
+			}
+
+			ProcessRearElevator(input);
+		}
+		bElevatorProcessedThisFrame = false;
+		return static_cast<int16_t>(fRearElevatorValue);
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -4116,6 +4172,25 @@ void Patch_VC_Common()
 		auto rs_camera_show_raster = get_pattern("50 E8 ? ? ? ? 80 3D ? ? ? ? 00 59 74 05 E8", 1);
 
 		InterceptCall(rs_camera_show_raster, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
+	}
+	TXN_CATCH();
+
+
+	// Animate Skimmer's rear elevator properly
+	if (SkimmerRearElevator::HasGameBindings()) try
+	{
+		using namespace SkimmerRearElevator;
+
+		auto get_car_gun_up_down_flying_control = get_pattern("89 C1 E8 ? ? ? ? 0F BF C0 F7 D8 89 84 24 ? ? ? ? DB 84 24 ? ? ? ? D8 0D ? ? ? ? D9 5C 24 14 D9 EE", 2);
+
+		// This is annoying - CPad::GetSteeringUpDown() is called separately for m_aBoatNodes[BOAT_REARFLAP_LEFT] and m_aBoatNodes[BOAT_REARFLAP_RIGHT],
+		// but we want both to have the same smooth steering value, AND support one without the other, in case mods only include one.
+		// We use a bit of extra state to track if BOAT_REARFLAP_LEFT was animated or not.
+		auto get_steering_up_down_flaps = pattern("89 C1 E8 ? ? ? ? 0F BF C0 F7 D8 89 84 24 ? ? ? ? 50").count(2); // Left, then right
+
+		ReadCall(get_car_gun_up_down_flying_control, GetCarGunUpDown);
+		InterceptCall(get_steering_up_down_flaps.get(0).get<void>(2), orgGetSteeringUpDown_Left, GetSteeringUpDown_CarGunUpDown_Left);
+		InterceptCall(get_steering_up_down_flaps.get(1).get<void>(2), orgGetSteeringUpDown_Right, GetSteeringUpDown_CarGunUpDown_Right);
 	}
 	TXN_CATCH();
 }

@@ -78,6 +78,7 @@ All the remaining, non-critical fixes.
 * Radar blips now use bilinear filtering also in the Blips Only mode.
 * Extra parts now work correctly on boats. This makes Rio's canopy an optional part.
 * Tropic's radar is now animated.
+* Skimmer's rear elevator now animates smoothly and responds to keyboard controls.
 * The Stats menu now displays the actual number of Hidden Packages, instead of displaying a percentage collected + "out of 100". This fixes the stat display for mods that remove or add additional Hidden Packages.
 * Script sprites now have bilinear filtering applied.
 * ⚙️ Fixed siren corona placements in Police, Firetruck, Ambulance, Enforcer, Vice Cheetah, and FBI Washington.
