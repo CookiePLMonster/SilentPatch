@@ -2999,16 +2999,24 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	TXN_CATCH();
 
 	// Speech delay fix
-	if (const int speech_delay = GetPrivateProfileIntW(L"SilentPatch", L"SpeechDelayTimer", -1, wcModulePath); speech_delay != -1) {
-		try
-		{
-			auto speech_delay_pattern = get_pattern("2B 86 8C 04 00 00 3D", 7); // targeting cmp eax, 1770h (6000ms)	
+	if (const int speech_delay = GetPrivateProfileIntW(L"SilentPatch", L"SpeechDelayTimer", -1, wcModulePath); speech_delay != -1) try
+	{
+		static auto speech_delay_pattern = get_pattern("2B 86 8C 04 00 00 3D", 7); // targeting cmp eax, 1770h (6000ms)
 
-			// Patch 6s delay between any ped speech samples
-			Patch(speech_delay_pattern, speech_delay);
+		static constexpr int32_t MIN_SPEECH_DELAY = 0, MAX_SPEECH_DELAY = 6000;
+		static int32_t current_speech_delay = std::clamp(speech_delay, MIN_SPEECH_DELAY, MAX_SPEECH_DELAY);
+
+		// Patch 6s delay between any ped speech samples
+		Patch<int32_t>(speech_delay_pattern, current_speech_delay);
+
+		if (bHasDebugMenu)
+		{
+			DebugMenuAddVar("SilentPatch", "Speech delay timer", &current_speech_delay, [] {
+				Memory::VP::Patch<int32_t>(speech_delay_pattern, current_speech_delay);
+			}, 500, MIN_SPEECH_DELAY, MAX_SPEECH_DELAY, nullptr);
 		}
-		TXN_CATCH();
 	}
+	TXN_CATCH();
 
 	FLAUtils::Init(moduleList);
 }
