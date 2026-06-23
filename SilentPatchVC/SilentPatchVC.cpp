@@ -2126,7 +2126,7 @@ namespace SkimmerRearElevator
 	static int16_t __fastcall GetSteeringUpDown_CarGunUpDown_Left(class CPad* pad)
 	{
 		int16_t input = -GetCarGunUpDown(pad);
-		if (abs(input) <= 1)
+		if (std::abs(input) <= 1)
 		{
 			input = orgGetSteeringUpDown_Left(pad);
 		}
@@ -2143,7 +2143,7 @@ namespace SkimmerRearElevator
 		if (!bElevatorProcessedThisFrame)
 		{
 			int16_t input = -GetCarGunUpDown(pad);
-			if (abs(input) <= 1)
+			if (std::abs(input) <= 1)
 			{
 				input = orgGetSteeringUpDown_Right(pad);
 			}

@@ -2098,6 +2098,120 @@ namespace BilinearScriptSprites
 	HOOK_EACH_INIT(Bilinear_Sprite2d, orgSprite2dDraw_Bilinear, Sprite2dDraw_Bilinear);
 }
 
+
+// ============= Restore the gang spawning code to how it was on the PS2, as on PC it's affected by Vice City changes =============
+// ============= + optionally bring back formations that were unused or unfinished on the PS2 =============
+namespace GangFormations
+{
+	struct CPathNode
+	{
+		CVector pos;
+		CPathNode *prev;
+		CPathNode *next;
+		int16_t distance;
+		int16_t objectIndex;
+		int16_t firstLink;
+		uint8_t numLinks;
+
+		uint8_t unkBits : 2;
+		uint8_t bDeadEnd : 1;
+		uint8_t bDisabled : 1;
+		uint8_t bBetweenLevels : 1;
+
+		int8_t group;
+	};
+	static_assert(sizeof(CPathNode) == 0x20);
+
+	class CPathFind
+	{
+	public:
+		CPathNode m_pathNodes[1]; // Usually 4930, but we don't want to assume that, as limit adjusters may expand it
+	};
+
+	static const CVector* s_pNodeVector1;
+	static const CVector* s_pNodeVector2;
+
+	// We need both, as we'll be restoring the original position
+	static CVector* s_pCurrentPedPosition;
+	static CVector s_currentPedPosition;
+
+	static int s_numPeds; // Obtained from inline assembly
+	static int s_loopCounter;
+
+	static bool (__thiscall* orgGeneratePedCreationCoors)(CPathFind* obj, void* x, void* y, void* minDist, void* maxDist, void* minDistOffScreen, void* maxDistOffScreen,
+			CVector* pPosition, int32_t* pNode1, int32_t* pNode2, void* pPositionBetweenNodes, void* camMatrix);
+	// numPeds passed from inline assembly
+	static bool __fastcall GeneratePedCreationCoors_StoreNodePtrs(CPathFind* obj, int numPeds, void* x, void* y, void* minDist, void* maxDist, void* minDistOffScreen, void* maxDistOffScreen,
+			CVector* pPosition, int32_t* pNode1, int32_t* pNode2, void* pPositionBetweenNodes, void* camMatrix)
+	{
+		const bool result = orgGeneratePedCreationCoors(obj, x, y, minDist, maxDist, minDistOffScreen, maxDistOffScreen, pPosition, pNode1, pNode2, pPositionBetweenNodes, camMatrix);
+		if (result)
+		{
+			s_pCurrentPedPosition = pPosition;
+			s_currentPedPosition = *pPosition;
+			s_pNodeVector1 = &obj->m_pathNodes[*pNode1].pos;
+			s_pNodeVector2 = &obj->m_pathNodes[*pNode2].pos;
+
+			s_loopCounter = 0;
+
+			s_numPeds = numPeds;
+		}
+
+		return result;
+	}
+
+	__declspec(naked) static void GeneratePedCreationCoors_StoreNodePtrs_Hook()
+	{
+		_asm
+		{
+			mov		edx, dword ptr [esp+12Ch+4-0F4h] // var_F4 from the outer function
+			jmp		GeneratePedCreationCoors_StoreNodePtrs
+		}
+	}
+
+	static bool (*orgIsPositionClearForPed)(const CVector& pos);
+	static bool IsPositionClearForPed_RestorePosition(CVector* pos)
+	{
+		*pos = CVector(s_currentPedPosition.x, s_currentPedPosition.y, s_currentPedPosition.z + 0.7f);
+
+		const int currentIteration = s_loopCounter++;
+
+		// If this is *not* the last ped in the formation, we will do the clearance check later
+		if (currentIteration + 1 < s_numPeds)
+		{
+			return true;
+		}
+
+		return orgIsPositionClearForPed(*pos);
+	}
+
+	static float (*orgFindGroundZFor3DCoord)(float x, float y, float z, bool* found);
+	static float FindGroundZFor3DCoord_AdjustCoordinates(float /*x*/, float /*y*/, float /*z*/, bool *found)
+	{
+		const float fRandomRatio = (rand() % 256) / 256.0f;
+		const CVector NewPos = *s_pCurrentPedPosition = *s_pNodeVector2 + (*s_pNodeVector1 - *s_pNodeVector2) * fRandomRatio;
+		float result = orgFindGroundZFor3DCoord(NewPos.x, NewPos.y, NewPos.z + 2.0f, found);
+		if (*found)
+		{
+			// Earlier clearance check is skipped for those peds, and we do it now instead
+			*found = orgIsPositionClearForPed(CVector(NewPos.x, NewPos.y, std::max(NewPos.z, result + 0.7f)));
+		}
+		return result;
+	}
+
+	static bool s_bFormationsEnabled = false;
+	static int (*orgGenerationRand)();
+	static int GenerationRand_CheckFormationsOption()
+	{
+		if (!s_bFormationsEnabled)
+		{
+			return 50; // Always generate just 1
+		}
+		return orgGenerationRand();
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -2708,6 +2822,41 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 		if (bHasDebugMenu)
 		{
 			DebugMenuAddVar("SilentPatch", "Scale script sprites", &bScaleScriptSprites, nullptr);
+		}
+	}
+	TXN_CATCH();
+
+
+	// Restore the gang spawning code to how it was on the PS2, as on PC it's affected by Vice City changes
+	// + optionally bring back formations that were unused or unfinished on the PS2
+	if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"GangFormations", -1, wcModulePath); INIoption != -1) try
+	{
+		using namespace GangFormations;
+
+		s_bFormationsEnabled = INIoption != 0;
+
+		auto vc_code_leftover1 = get_pattern("0F 8D ? ? ? ? E8 ? ? ? ? 85 ED"); // Placing gangsters in a circle
+		// Setting the ped states for group. Big pattern validating the entire chunk of code we're jumping over
+		auto vc_code_leftover2 = get_pattern("C7 83 ? ? ? ? 21 00 00 00 C7 85 ? ? ? ? 21 00 00 00 8D 43 ? FF 70 ? FF 30 8D 45 ? FF 70 ? FF 30 E8 ? ? ? ? D9 9B ? ? ? ? D9 83 ? ? ? ? 83 C4 ? D9 9B");
+
+		auto generate_ped_creation_coors = get_pattern("E8 ? ? ? ? 84 C0 75 ? C7 44 24");
+		auto is_position_clear_for_ped = get_pattern("E8 ? ? ? ? 84 C0 59 0F 84 ? ? ? ? 89 F0");
+		auto find_ground_z = get_pattern("E8 ? ? ? ? D8 05 ? ? ? ? 83 C4 ? 80 BC 24");
+
+		auto generation_rand = get_pattern("E8 ? ? ? ? 0F B7 F0 B8 ? ? ? ? 89 F2 89 D1 F7 EA C1 E9");
+
+		Patch(vc_code_leftover1, { 0x90, 0xE9 }); // jge -> jmp
+		Patch(vc_code_leftover2, { 0xEB, 0x3C }); // Jump over the entire code block
+
+		InterceptCall(generate_ped_creation_coors, orgGeneratePedCreationCoors, GeneratePedCreationCoors_StoreNodePtrs_Hook);
+		InterceptCall(is_position_clear_for_ped, orgIsPositionClearForPed, IsPositionClearForPed_RestorePosition);
+		InterceptCall(find_ground_z, orgFindGroundZFor3DCoord, FindGroundZFor3DCoord_AdjustCoordinates);
+
+		InterceptCall(generation_rand, orgGenerationRand, GenerationRand_CheckFormationsOption);
+
+		if (bHasDebugMenu)
+		{
+			DebugMenuAddVar("SilentPatch", "Gang formations", &s_bFormationsEnabled, nullptr);
 		}
 	}
 	TXN_CATCH();
