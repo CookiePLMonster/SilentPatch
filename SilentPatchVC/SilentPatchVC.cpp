@@ -21,8 +21,6 @@
 #include <time.h>
 #include <intrin.h>
 
-#include <CommCtrl.h>
-
 #include "Utils/ModuleList.hpp"
 #include "Utils/Patterns.h"
 #include "Utils/ScopedUnprotect.hpp"
@@ -33,7 +31,6 @@
 #include "debugmenu_public.h"
 
 #pragma comment(lib, "shlwapi.lib")
-#pragma comment(lib, "comctl32.lib")
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
@@ -339,12 +336,13 @@ namespace ClipCursorToGameWindow
 		}
 	}
 
-	static LRESULT CALLBACK ClipSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR /*uIdSubclass*/, DWORD_PTR /*dwRefData*/)
+	static WNDPROC* orgWindowProc;
+	static LRESULT CALLBACK ClipWindowProcA(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		switch (uMsg)
 		{
-		case WM_ACTIVATEAPP:
-			bWindowActive = bWantsCursorClip = wParam != FALSE;
+		case WM_ACTIVATE:
+			bWindowActive = bWantsCursorClip = LOWORD(wParam) != WA_INACTIVE;
 			if (wParam == FALSE)
 			{
 				UnconfineCursor();
@@ -367,41 +365,12 @@ namespace ClipCursorToGameWindow
 			break;
 		}
 
-		return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+		return (*orgWindowProc)(hWnd, uMsg, wParam, lParam);
 	}
-
-	static bool bWindowSubclassed = false;
-	static bool EnsureSubclassed()
-	{
-		if (bWindowSubclassed)
-		{
-			return true;
-		}
-
-		HWND window = RsGlobal.Get().ps->window;
-		if (window != nullptr)
-		{
-			if (SetWindowSubclass(window, ClipSubclassProc, reinterpret_cast<UINT_PTR>(&bWindowSubclassed), 0) != FALSE)
-			{
-				bWindowSubclassed = true;
-
-				// Establish the initial state
-				bWindowActive = bWantsCursorClip = GetActiveWindow() == window;
-
-				return true;
-			}
-		}
-		return false;
-	}
+	static auto* const pClipWindowProcA = &ClipWindowProcA;
 
 	static void DoClipCursor_InGame()
 	{
-		if (!EnsureSubclassed())
-		{
-			// For safety, do nothing until we manage to subclass
-			return;
-		}
-
 		if (bWantsCursorClip)
 		{
 			ConfineCursor();
@@ -4170,8 +4139,17 @@ void Patch_VC_Common()
 		using namespace ClipCursorToGameWindow;
 
 		auto rs_camera_show_raster = get_pattern("50 E8 ? ? ? ? 80 3D ? ? ? ? 00 59 74 05 E8", 1);
+		auto def_window_proc = get_pattern("FF 15 ? ? ? ? 83 C4 70", 2);
 
 		InterceptCall(rs_camera_show_raster, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
+		InterceptMemDisplacement(def_window_proc, orgWindowProc, pClipWindowProcA);
+
+		// Establish the initial state if we loaded late
+		PsGlobalType* ps = RsGlobal.Get().ps;
+		if (ps != nullptr && ps->window != nullptr)
+		{
+			bWindowActive = bWantsCursorClip = GetActiveWindow() == ps->window;
+		}
 	}
 	TXN_CATCH();
 

@@ -4585,12 +4585,13 @@ namespace ClipCursorToGameWindow
 		}
 	}
 
-	static LRESULT CALLBACK ClipSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR /*uIdSubclass*/, DWORD_PTR /*dwRefData*/)
+	static WNDPROC* orgWindowProc;
+	static LRESULT CALLBACK ClipWindowProcA(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		switch (uMsg)
 		{
-		case WM_ACTIVATEAPP:
-			bWindowActive = bWantsCursorClip = wParam != FALSE;
+		case WM_ACTIVATE:
+			bWindowActive = bWantsCursorClip = LOWORD(wParam) != WA_INACTIVE;
 			if (wParam == FALSE)
 			{
 				UnconfineCursor();
@@ -4613,41 +4614,12 @@ namespace ClipCursorToGameWindow
 			break;
 		}
 
-		return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+		return (*orgWindowProc)(hWnd, uMsg, wParam, lParam);
 	}
-
-	static bool bWindowSubclassed = false;
-	static bool EnsureSubclassed()
-	{
-		if (bWindowSubclassed)
-		{
-			return true;
-		}
-
-		HWND window = RsGlobal.Get().ps->window;
-		if (window != nullptr)
-		{
-			if (SetWindowSubclass(window, ClipSubclassProc, reinterpret_cast<UINT_PTR>(&bWindowSubclassed), 0) != FALSE)
-			{
-				bWindowSubclassed = true;
-
-				// Establish the initial state
-				bWindowActive = bWantsCursorClip = GetActiveWindow() == window;
-
-				return true;
-			}
-		}
-		return false;
-	}
+	static auto* const pClipWindowProcA = &ClipWindowProcA;
 
 	static void DoClipCursor_InGame()
 	{
-		if (!EnsureSubclassed())
-		{
-			// For safety, do nothing until we manage to subclass
-			return;
-		}
-
 		if (bWantsCursorClip)
 		{
 			ConfineCursor();
@@ -5519,7 +5491,6 @@ static const double		dRetailRadioNameSizeX = 0.6;
 static const double		dRetailRadioNameSizeY = 0.9;
 
 #pragma comment(lib, "shlwapi.lib")
-#pragma comment(lib, "comctl32.lib")
 
 static BOOL (*IsAlreadyRunning)();
 BOOL InjectDelayedPatches_10()
@@ -8478,6 +8449,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 		Nop(0x53E9F1, 5);
 
 		InterceptCall(0x53EC01, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
+		InterceptMemDisplacement(AddressByRegion_10(0x748452 + 2), orgWindowProc, pClipWindowProcA);
 	}
 }
 
@@ -11272,6 +11244,15 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		using namespace ClipCursorToGameWindow;
 
 		auto rs_camera_show_raster = get_pattern("8B 0D ? ? ? ? 51 E8 ? ? ? ? 83 C4 08 8B E5 5D C3", 7);
+		auto def_window_proc = [] {
+			try {
+				// Steam
+				return get_pattern("50 FF 15 ? ? ? ? 5F 5E 5B", 3);
+			} catch (const hook::txn_exception&) {
+				// RGL
+				return get_pattern("52 FF 15 ? ? ? ? 5F 5E 5B 8B E5", 3);
+			}
+		}();
 
 		// In a bad attempt to fix the mouse issues, the RGL executable cut the DirectInput mouse in favour of using WM_MOUSEMOVE for the camera movements.
 		// This means that the camera stops spinning when the cursor hits our clipping area, and so we need to keep re-centering
@@ -11285,6 +11266,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		}
 
 		InterceptCall(rs_camera_show_raster, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
+		InterceptMemDisplacement(def_window_proc, orgWindowProc, pClipWindowProcA);
 	}
 	TXN_CATCH();
 }
