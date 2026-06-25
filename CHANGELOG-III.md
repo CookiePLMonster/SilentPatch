@@ -88,6 +88,7 @@ All the remaining, non-critical fixes.
 * ⚙️ Fixed taxi light corona placement for Taxi.
 * ⚙️ Fixed police chopper's searchlight placement.
 * ⚙️ Script sprites and rectangles now scale to resolution correctly.
+* ⚙️ Gangsters can now spawn in formations of 1-4 people. This feature existed in early PS2 builds and appeared in pre-release footage, but was disabled during development due to bugs.
 
 ## Enhancements
 Any changes that don't strictly fix game bugs.
@@ -97,3 +98,4 @@ Any changes that don't strictly fix game bugs.
 * ⚙️ Subtitles no longer overlap the radar during gameplay and are properly centered in cutscenes.
 * ⚙️ Made the game select metric/imperial units based on system locale settings.
 * ⚙️ Sliding mission titles and odd job texts from the GTA III beta can now be re-enabled (off by default).
+* ⚙️ Zone names, vehicle names, subtitles, and the Wasted/Busted text can now be moved higher to match their PS2 positions (off by default).

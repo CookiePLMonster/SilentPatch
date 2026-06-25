@@ -1302,6 +1302,41 @@ namespace RadardiscFixes
 	HOOK_EACH_INIT(CalculateRadarYPos, orgRadarYPos, RadarYPos_Recalculated);
 }
 
+
+// ============= Console bottom UI placements=============
+namespace ConsoleUIPlacements
+{
+	template<std::size_t Index>
+	static std::pair<const float*, float> YPosData;
+
+	template<std::size_t Index>
+	static float YPos_Recalculated;
+
+	static bool bUseConsolePlacements = false;
+
+	template<std::size_t... I>
+	static void UpdateUIPlacementsInternal(std::index_sequence<I...>)
+	{
+		if (bUseConsolePlacements)
+		{
+			((YPos_Recalculated<I> = YPosData<I>.second), ...);
+		}
+		else
+		{
+			((YPos_Recalculated<I> = *YPosData<I>.first), ...);
+		}
+	}
+
+	template<std::size_t numPositions>
+	static void UpdateUIPlacements()
+	{
+		UpdateUIPlacementsInternal(std::make_index_sequence<numPositions>{});
+	}
+
+	HOOK_EACH_INIT(YPos, YPosData, YPos_Recalculated);
+}
+
+
 // ============= Fix the onscreen counter bar X placement not scaling to resolution =============
 namespace OnscreenCounterBarFixes
 {
@@ -2476,6 +2511,56 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 			InterceptCall(drawMap, orgDrawMap, DrawMap_RecalculatePositions<radarXPos.size(), radarYPos.size()>);
 		}
 		TXN_CATCH();
+	}
+	TXN_CATCH();
+
+
+	// Console bottom UI placements
+	if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ConsoleBottomTextPlacements", -1, wcModulePath); !bLC01 && INIoption != -1) try
+	{
+		using namespace ConsoleUIPlacements;
+
+		bUseConsolePlacements = INIoption != 0;
+
+		auto zone_vehicle_shadow = pattern("D8 0D ? ? ? ? DA 6C 24 ? D8 05 ? ? ? ? D9 1C 24 A1").count(2);
+
+		static constexpr float PS2_ZONE_Y = 61.0f;
+		static constexpr float PS2_VEHICLE_Y = 81.0f;
+		static constexpr float PS2_SUBS_Y = 83.0f;
+		static constexpr float PS2_WASTEDBUSTED_Y = 122.0f;
+
+		std::array<std::pair<void*, float>, 7> YPositions = {{
+			// Zone name
+			{ zone_vehicle_shadow.get(0).get<void>(2), PS2_ZONE_Y },
+			{ get_pattern("D8 0D ? ? ? ? DA 6C 24 ? D9 1C 24 A1 ? ? ? ? 89 44 24 ? 50 DB 44 24 ? 89 44 24 ? D8 0D ? ? ? ? D8 0D ? ? ? ? DA 6C 24 ? D9 1C 24 E8 ? ? ? ? 83 C4 ? 83 3D", 2), PS2_ZONE_Y },
+
+			// Vehicle name
+			{ zone_vehicle_shadow.get(1).get<void>(2), PS2_VEHICLE_Y },
+			{ get_pattern("D8 0D ? ? ? ? DA 6C 24 ? D9 1C 24 A1 ? ? ? ? 89 44 24 ? 50 DB 44 24 ? 89 44 24 ? D8 0D ? ? ? ? D8 0D ? ? ? ? DA 6C 24 ? D9 1C 24 E8 ? ? ? ? 83 C4 ? E8", 2), PS2_VEHICLE_Y },
+
+			// Subtitles
+			{ get_pattern("D9 05 ? ? ? ? D8 CC DA 6C 24 ? DE C1", 2), PS2_SUBS_Y },
+
+			// Wasted/busted
+			{ get_pattern("D8 0D ? ? ? ? DA 6C 24 ? D9 1C 24 A1 ? ? ? ? 89 44 24 ? 50 DB 44 24 ? 89 44 24 ? D8 0D ? ? ? ? D8 0D ? ? ? ? DA 6C 24 ? D8 05", 2), PS2_WASTEDBUSTED_Y - 4.0f },
+			{ get_pattern("D8 0D ? ? ? ? DA 6C 24 ? D9 1C 24 A1 ? ? ? ? 89 44 24 ? 50 DB 44 24 ? 89 44 24 ? D8 0D ? ? ? ? D8 0D ? ? ? ? DA 6C 24 ? D9 1C 24 E8 ? ? ? ? 83 C4 ? EB ? C7 05 ? ? ? ? ? ? ? ? 81 C4", 2), PS2_WASTEDBUSTED_Y },
+		}};
+
+		HookEach_YPos(YPositions, [](void* address, float newPos, std::pair<const float*, float>& original, float& replacement)
+			{
+				InterceptMemDisplacement(address, original.first, replacement);
+				original.second = newPos;
+			});
+
+		if (bUseConsolePlacements)
+		{
+			UpdateUIPlacements<YPositions.size()>();
+		}
+
+		if (bHasDebugMenu)
+		{
+			DebugMenuAddVar("SilentPatch", "Console bottom text placements", &bUseConsolePlacements, UpdateUIPlacements<YPositions.size()>);
+		}
 	}
 	TXN_CATCH();
 
