@@ -37,6 +37,7 @@ RwTexture* CPNGFile::ReadFromMemory(const void* pMemory, unsigned int nLen)
 
 	uint8_t oldMemory = *pMem;
 	Memory::VP::Patch<uint8_t>(pMem, rwSTREAMMEMORY);
+	Memory::FlushCodeChanges(pMem, sizeof(uint8_t));
 
 	RwMemory	PNGMemory;
 	PNGMemory.start = const_cast<RwUInt8*>(static_cast<const RwUInt8*>(pMemory));
@@ -58,6 +59,7 @@ RwTexture* CPNGFile::ReadFromMemory(const void* pMemory, unsigned int nLen)
 	}
 
 	Memory::VP::Patch<uint8_t>(pMem, oldMemory);
+	Memory::FlushCodeChanges(pMem, sizeof(uint8_t));
 
 	return pTexture;
 }

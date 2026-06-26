@@ -5822,6 +5822,9 @@ BOOL InjectDelayedPatches_10()
 						Memory::VP::Patch<float>(0x5D8903 + 6, 0.75f);
 						Memory::VP::Patch<float>(0x5D890D + 6, 0.75f);
 					}
+
+					auto [start, end] = std::minmax({ 0x5D88D1 + 6, 0x5D88DB + 6, 0x5D88E5 + 6, 0x5D88F9 + 6, 0x5D8903 + 6, 0x5D890D + 6});
+					Memory::FlushCodeChanges(start, end - start + sizeof(float));
 				} );
 	#endif
 			}
@@ -5858,6 +5861,7 @@ BOOL InjectDelayedPatches_10()
 					{
 						Memory::VP::Patch<int32_t>( 0x588905 + 1, 5 );
 					}
+					Memory::FlushCodeChanges(0x588905 + 1, sizeof(int32_t));
 
 					// Call CHud::ReInitialise
 					auto ReInitialise = (void(*)())0x588880;
@@ -6210,6 +6214,7 @@ BOOL InjectDelayedPatches_10()
 		}
 #endif
 
+		Memory::FlushCodeChanges();
 		return FALSE;
 	}
 	return TRUE;
@@ -6410,6 +6415,7 @@ BOOL InjectDelayedPatches_11()
 
 		FLAUtils::Init( moduleList );
 
+		Memory::FlushCodeChanges();
 		return FALSE;
 	}
 	return TRUE;
@@ -6620,6 +6626,7 @@ BOOL InjectDelayedPatches_Steam()
 
 		FLAUtils::Init( moduleList );
 
+		Memory::FlushCodeChanges();
 		return FALSE;
 	}
 	return TRUE;
@@ -6910,6 +6917,7 @@ BOOL InjectDelayedPatches_NewBinaries()
 		}
 		TXN_CATCH();
 
+		Memory::FlushCodeChanges();
 		return FALSE;
 	}
 	return TRUE;
@@ -11293,6 +11301,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			// if ( *(DWORD*)DynBaseAddress(0x49F810) == 0x64EC8B55 ) { normal } else { low violence }
 			Patch_SA_NewBinaries_Common(hInstance);
 		}
+
+		Memory::FlushCodeChanges();
 	}
 	return TRUE;
 }

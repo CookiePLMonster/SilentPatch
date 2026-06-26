@@ -2932,6 +2932,7 @@ void InjectDelayedPatches()
 	InjectDelayedPatches_III_Common( hasDebugMenu, wcModulePath );
 
 	Common::Patches::III_VC_DelayedCommon( hasDebugMenu, wcModulePath );
+	Memory::FlushCodeChanges();
 }
 
 
@@ -4053,6 +4054,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		}
 
 		Common::Patches::FixRwcseg_Patterns();
+		Memory::FlushCodeChanges();
 	}
 	return TRUE;
 }

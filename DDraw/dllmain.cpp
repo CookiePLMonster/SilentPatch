@@ -81,6 +81,7 @@ void InjectHooks()
 	}
 
 	Common::Patches::DDraw_Common();
+	Memory::FlushCodeChanges();
 }
 
 static bool rwcsegUnprotected = false;

@@ -2754,6 +2754,9 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 					}
 				}
 
+				const auto [start, end] = std::minmax_element(hudReinitialiseVariables.begin(), hudReinitialiseVariables.end());
+				Memory::FlushCodeChanges(*start, reinterpret_cast<intptr_t>(*end) - reinterpret_cast<intptr_t>(*start) + sizeof(uint32_t));
+
 				// Call CHud::ReInitialise
 				HUDReInitialise();
 			});
@@ -2949,6 +2952,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 			static bool bIconEnabled = INIoption != 0;
 			DebugMenuAddVar("SilentPatch", "Show property blips", &bIconEnabled, [] {
 				Memory::VP::Patch<int8_t>(property_blip_ptr, bIconEnabled ? -1 : 0x19);
+				Memory::FlushCodeChanges(property_blip_ptr, sizeof(int8_t));
 			});
 		}
 	}
@@ -3038,6 +3042,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		{
 			DebugMenuAddVar("SilentPatch", "Speech delay timer", &current_speech_delay, [] {
 				Memory::VP::Patch<int32_t>(speech_delay_pattern, current_speech_delay);
+				Memory::FlushCodeChanges(speech_delay_pattern, sizeof(int32_t));
 			}, 500, MIN_SPEECH_DELAY, MAX_SPEECH_DELAY, nullptr);
 		}
 	}
@@ -3066,6 +3071,7 @@ void InjectDelayedPatches()
 	InjectDelayedPatches_VC_Common( hasDebugMenu, wcModulePath );
 
 	Common::Patches::III_VC_DelayedCommon( hasDebugMenu, wcModulePath );
+	Memory::FlushCodeChanges();
 }
 
 void Patch_VC_10(uint32_t width, uint32_t height)
@@ -4201,6 +4207,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		}
 
 		Common::Patches::FixRwcseg_Patterns();
+		Memory::FlushCodeChanges();
 	}
 	return TRUE;
 }
