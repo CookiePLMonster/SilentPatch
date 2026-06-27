@@ -1861,52 +1861,6 @@ static CVehicle* FindPlayerVehicle_RCWrap( int playerID, bool )
 	return FindPlayerVehicle( playerID, true );
 }
 
-// ============= Credits! =============
-namespace Credits
-{
-	static void (*PrintCreditText)(float scaleX, float scaleY, const char* text, unsigned int& pos, float timeOffset, bool isHeader);
-	static void (*PrintCreditText_Hooked)(float scaleX, float scaleY, const char* text, unsigned int& pos, float timeOffset, bool isHeader);
-
-	static void PrintCreditSpace( float scale, unsigned int& pos )
-	{
-		pos += static_cast<unsigned int>( scale * 25.0f );
-	}
-
-	constexpr char xvChar(const char ch)
-	{
-		constexpr uint8_t xv = SILENTPATCH_REVISION_ID;
-		return ch ^ xv;
-	}
-
-	constexpr char operator "" _xv(const char ch)
-	{
-		return xvChar(ch);
-	}
-
-	static void PrintSPCredits( float scaleX, float scaleY, const char* text, unsigned int& pos, float timeOffset, bool isHeader )
-	{
-		// Original text we intercepted
-		PrintCreditText_Hooked( scaleX, scaleY, text, pos, timeOffset, isHeader );
-		PrintCreditSpace( 1.5f, pos );
-
-		{
-			char spText[] = { 'A'_xv, 'N'_xv, 'D'_xv, '\0'_xv };
-
-			for ( auto& ch : spText ) ch = xvChar(ch);
-			PrintCreditText( scaleX, scaleY, spText, pos, timeOffset, true );
-		}
-
-		PrintCreditSpace( 1.5f, pos );
-
-		{
-			char spText[] = { 'A'_xv, 'd'_xv, 'r'_xv, 'i'_xv, 'a'_xv, 'n'_xv, ' '_xv, '\"'_xv, 'S'_xv, 'i'_xv, 'l'_xv, 'e'_xv, 'n'_xv, 't'_xv, '\"'_xv, ' '_xv,
-							'Z'_xv, 'd'_xv, 'a'_xv, 'n'_xv, 'o'_xv, 'w'_xv, 'i'_xv, 'c'_xv, 'z'_xv, '\0'_xv };
-
-			for ( auto& ch : spText ) ch = xvChar(ch);
-			PrintCreditText( scaleX, scaleY, spText, pos, timeOffset, false );
-		}
-	}
-}
 
 // ============= Bicycle fire fix =============
 namespace BicycleFire
@@ -7557,21 +7511,8 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
-	// TODO: Verify this fix, might be causing crashes atm and too risky to include
-#if 0
-	// Fixed CPlayerInfo assignment operator
-	InjectHook( 0x45DEF0, &CPlayerInfo::operator=, HookType::Jump );
-#endif
-
-
 	// Fixed triangle above recruitable peds' heads
 	Patch<uint8_t>( 0x60BC52 + 2, 8 ); // GANG2
-
-
-	// Credits =)
-	ReadCall( 0x5AF87A, Credits::PrintCreditText );
-	ReadCall( 0x5AF8A4, Credits::PrintCreditText_Hooked );
-	InjectHook( 0x5AF8A4, Credits::PrintSPCredits );
 
 
 	// Fixed ammo from SCM
@@ -10026,18 +9967,6 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	{
 		auto match = get_pattern( "83 BE 98 05 00 00 ? D9 45 DC", 6 );
 		Patch<uint8_t>( match, 8 ); // GANG2
-	}
-	TXN_CATCH();
-
-
-	// Credits =)
-	try
-	{
-		auto renderCredits = pattern( "83 C4 18 E8 ? ? ? ? 80 3D" ).get_one();
-
-		ReadCall( renderCredits.get<void>( -58 ), Credits::PrintCreditText );
-		ReadCall( renderCredits.get<void>( -5 ), Credits::PrintCreditText_Hooked );
-		InjectHook( renderCredits.get<void>( -5 ), Credits::PrintSPCredits );
 	}
 	TXN_CATCH();
 

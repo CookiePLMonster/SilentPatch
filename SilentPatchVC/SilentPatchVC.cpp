@@ -1278,54 +1278,6 @@ HOOK_EACH_INIT(GiveWeapon, orgGiveWeapon, GiveWeapon_SP);
 }
 
 
-// ============= Credits! =============
-namespace Credits
-{
-	static void (*PrintCreditText)(float scaleX, float scaleY, const wchar_t* text, unsigned int& pos, float timeOffset);
-	static void (*PrintCreditText_Hooked)(float scaleX, float scaleY, const wchar_t* text, unsigned int& pos, float timeOffset);
-
-	static void PrintCreditSpace( float scale, unsigned int& pos )
-	{
-		pos += static_cast<unsigned int>( scale * 25.0f );
-	}
-
-	constexpr wchar_t xvChar(const wchar_t ch)
-	{
-		constexpr uint8_t xv = SILENTPATCH_REVISION_ID;
-		return ch ^ xv;
-	}
-
-	constexpr wchar_t operator "" _xv(const char ch)
-	{
-		return xvChar(ch);
-	}
-
-	static void PrintSPCredits( float scaleX, float scaleY, const wchar_t* text, unsigned int& pos, float timeOffset )
-	{
-		// Original text we intercepted
-		PrintCreditText_Hooked( scaleX, scaleY, text, pos, timeOffset );
-		PrintCreditSpace( 1.5f, pos );
-
-		{
-			wchar_t spText[] = { 'A'_xv, 'N'_xv, 'D'_xv, '\0'_xv, '\0'_xv };
-
-			for ( auto& ch : spText ) ch = xvChar(ch);
-			PrintCreditText( 1.1f, 0.8f, spText, pos, timeOffset );
-		}
-
-		PrintCreditSpace( 1.5f, pos );
-
-		{
-			wchar_t spText[] = { 'A'_xv, 'D'_xv, 'R'_xv, 'I'_xv, 'A'_xv, 'N'_xv, ' '_xv, '\''_xv, 'S'_xv, 'I'_xv, 'L'_xv, 'E'_xv, 'N'_xv, 'T'_xv, '\''_xv, ' '_xv,
-				'Z'_xv, 'D'_xv, 'A'_xv, 'N'_xv, 'O'_xv, 'W'_xv, 'I'_xv, 'C'_xv, 'Z'_xv, '\0'_xv, '\0'_xv };
-
-			for ( auto& ch : spText ) ch = xvChar(ch);
-			PrintCreditText( 1.1f, 1.1f, spText, pos, timeOffset );
-		}
-	}
-}
-
-
 // ============= Keyboard latency input fix =============
 namespace KeyboardInputFix
 {
@@ -3479,18 +3431,6 @@ void Patch_VC_Common()
 	{
 		auto createInstance = get_pattern( "89 C1 8B 41 04" );
 		InjectHook( createInstance, CreateInstance_BikeFix, HookType::Call );
-	}
-	TXN_CATCH();
-
-
-	// Credits =)
-	try
-	{
-		auto renderCredits = pattern( "8D 44 24 28 83 C4 14 50 FF 35 ? ? ? ? E8 ? ? ? ? 8D 44 24 1C 59 59 50 FF 35 ? ? ? ? E8 ? ? ? ? 59 59" ).get_one();
-
-		ReadCall( renderCredits.get<void>( -50 ), Credits::PrintCreditText );
-		ReadCall( renderCredits.get<void>( -5 ), Credits::PrintCreditText_Hooked );
-		InjectHook( renderCredits.get<void>( -5 ), Credits::PrintSPCredits );
 	}
 	TXN_CATCH();
 
