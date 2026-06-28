@@ -2169,6 +2169,20 @@ namespace GangFormations
 }
 
 
+// ============= Reverted Vice City code changes in CPed::DuckAndCover =============
+// ============= Researched by Nick007J =============
+namespace ConsoleDuckAndCover
+{
+	static void __fastcall GetDuckPos(const CVector& rfWheelPos, const CVector& lfWheelPos, CVector& outDuckPos, const CVehicle* pedInObjective) // Actually CPed*, but we only care about position
+	{
+		const CVector wheelMidpoint = (lfWheelPos + rfWheelPos) * 0.5f;
+		CVector duckDir = pedInObjective->GetPosition() - wheelMidpoint;
+		duckDir.Normalize();
+		outDuckPos = wheelMidpoint - duckDir * 1.5f;
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -3966,6 +3980,61 @@ void Patch_III_Common()
 		{
 			bWindowActive = bWantsCursorClip = GetActiveWindow() == ps->window;
 		}
+	}
+	TXN_CATCH();
+
+
+	// Reverted Vice City code changes in CPed::DuckAndCover
+	// Researched by Nick007J
+	try
+	{
+		using namespace ConsoleDuckAndCover;
+
+		auto clear_used_as_cover_flag = get_pattern("8B 8B 0C 03 00 00 85 C9 74 ? 8A 51", 2);
+		auto set_used_as_cover_flag = get_pattern("8B B3 0C 03 00 00 85 F6 74 ? 8A 56 ? 80 E2 ? 0F B6 C2 83 F8 ? 75 ? FE 86", 2);
+		auto assign_seek_target = get_pattern("89 AB 0C 03 00 00 E8");
+		auto not_used_as_cover_check = get_pattern("80 BF ? ? ? ? 03 73", 2 + 4);
+		auto heading_rate_1 = get_pattern("C7 83 ? ? ? ? 00 00 20 41 E8");
+		auto heading_rate_2 = get_pattern("C7 83 ? ? ? ? 00 00 70 41 8A 83");
+		auto leave_car_timer = get_pattern("05 F4 01 00 00 C6 44 24 ? ? 89 83", 1);
+
+		auto calculate_duck_pos_start = pattern("8A 85 ? ? ? ? 3C ? 75 ? C7 84 24").get_one();
+		auto calculate_duck_pos_end = get_pattern("DE D9 DE D9 6A 00 6A 00 6A 00 6A 01 6A 01 6A 01 6A 00 FF 35", 4);
+		auto calculate_duck_pos_matrix_dtor = get_pattern("E8 ? ? ? ? EB ? 8D 44 20 ? 8A 83");
+
+		// Replace m_pSeekTarget with m_carInObjective when manipulating bUsedAsCover
+		Patch<int32_t>(clear_used_as_cover_flag, 0x170); // m_carInObjective offset
+		Patch<int32_t>(set_used_as_cover_flag, 0x170); // m_carInObjective offset
+
+		// Don't assign to m_pSeekTarget
+		Nop(assign_seek_target, 6);
+
+		// Turn m_numPedsUseItAsCover < 3 into < 1 to effectively make it a boolean
+		Patch<int8_t>(not_used_as_cover_check, 1);
+
+		// m_headingRate assignments not present on the PS2
+		Nop(heading_rate_1, 10);
+		Nop(heading_rate_2, 10);
+
+		// 500 on PC, 300 on PS2
+		Patch<int32_t>(leave_car_timer, 300);
+
+		// Reimplement the PS2 duckPos code
+
+		// lea ecx, [esp+120h+rfWheelPos]
+		// lea edx, [esp+120h+lfWheelPos]
+		// lea eax, [esp+120h+duckPos]
+		// push dword ptr [ebx].m_pedInObjective
+		// push eax
+		// call GetDuckPos
+		// jmp 4E42B6
+		const std::initializer_list<uint8_t> assembly_prologue =
+			{ 0x8D, 0x4C, 0x24, 0x74, 0x8D, 0x94, 0x24, 0x80, 0x00, 0x00, 0x00, 0x8D, 0x44, 0x24, 0x44, 0xFF, 0xB3, 0x6C, 0x01, 0x00, 0x00, 0x50 };
+		Patch(calculate_duck_pos_start.get<void>(0), assembly_prologue);
+		InjectHook(calculate_duck_pos_start.get<void>(assembly_prologue.size()), GetDuckPos, HookType::Call);
+		InjectHook(calculate_duck_pos_start.get<void>(assembly_prologue.size() + 5), calculate_duck_pos_end, HookType::Jump);
+
+		Nop(calculate_duck_pos_matrix_dtor, 5);
 	}
 	TXN_CATCH();
 }

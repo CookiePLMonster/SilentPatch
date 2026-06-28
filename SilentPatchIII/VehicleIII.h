@@ -32,6 +32,11 @@ public:
 	const CMatrix& GetMatrix() const
 	{ return m_matrix; }
 
+	inline const CVector& GetPosition() const
+	{
+		return m_matrix.GetPos();
+	}
+
 	uint32_t		GetClass() const
 	{ return m_dwVehicleClass; }
 };
