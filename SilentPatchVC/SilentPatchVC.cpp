@@ -91,6 +91,8 @@ ExternalValue<int32_t> numModelInfos("81 FD ? ? ? ? 7C B7", 2);
 // Technically part of CMenuManager, but we only need this boolean
 static ExternalRef<bool> bIsFrontEndActive("80 3D ? ? ? ? 00 0F 85 ? ? ? ? B9 ? ? ? ? E8", 2);
 
+ExternalFunc<CVehicle()> FindPlayerVehicle("6B C0 2E 8B 0C C5 ? ? ? ? 85 C9 74 10 80 B9", -7);
+
 namespace UIScales
 {
 	static float** Width_Internal(std::string_view pattern_string, ptrdiff_t offset = 0) try
@@ -2073,6 +2075,36 @@ namespace SkimmerRearElevator
 		}
 		bElevatorProcessedThisFrame = false;
 		return static_cast<int16_t>(fRearElevatorValue);
+	}
+}
+
+
+// ============= Backport of a San Andreas fix for police cars chasing NPCs giving up if the player has no wanted level =============
+namespace RamcarCloseMissionGiveUpFix
+{
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(FindPlayerVehicle);
+	}
+
+	static void (*orgFindPlayerPed)();
+	static void* Ramcar_Close_DontGiveUp;
+	static void* Ramcar_Close_Continue;
+
+	__declspec(naked) static void Ramcar_Close_CheckIfPlayerVehicle()
+	{
+		_asm
+		{
+			call	FindPlayerVehicle
+			cmp		eax, [ebx+19Ch] // pVehicle->AutoPilot.m_pTargetCar
+			jne		Ramcar_Close_End_DontGiveUp
+
+			call	orgFindPlayerPed
+			jmp		[Ramcar_Close_Continue]
+
+			Ramcar_Close_End_DontGiveUp:
+			jmp		[Ramcar_Close_DontGiveUp]
+		}
 	}
 }
 
@@ -4115,6 +4147,23 @@ void Patch_VC_Common()
 		ReadCall(get_car_gun_up_down_flying_control, GetCarGunUpDown);
 		InterceptCall(get_steering_up_down_flaps.get(0).get<void>(2), orgGetSteeringUpDown_Left, GetSteeringUpDown_CarGunUpDown_Left);
 		InterceptCall(get_steering_up_down_flaps.get(1).get<void>(2), orgGetSteeringUpDown_Right, GetSteeringUpDown_CarGunUpDown_Right);
+	}
+	TXN_CATCH();
+
+
+	// Backport of a San Andreas fix for police cars chasing NPCs giving up if the player has no wanted level
+	if (RamcarCloseMissionGiveUpFix::HasGameBindings()) try
+	{
+		using namespace RamcarCloseMissionGiveUpFix;
+
+		auto ramcar_close_mission_check = pattern("DE D9 E8 ? ? ? ? 8B 88 ? ? ? ? 8A 41 1E").get_one();
+		auto ramcar_close_mission_check_end = get_pattern("8D 53 34 8B 8B ? ? ? ? D9 EE");
+
+		ReadCall(ramcar_close_mission_check.get<void>(2), orgFindPlayerPed);
+		InjectHook(ramcar_close_mission_check.get<void>(2), Ramcar_Close_CheckIfPlayerVehicle, HookType::Jump);
+
+		Ramcar_Close_Continue = ramcar_close_mission_check.get<void>(2 + 5);
+		Ramcar_Close_DontGiveUp = ramcar_close_mission_check_end;
 	}
 	TXN_CATCH();
 }

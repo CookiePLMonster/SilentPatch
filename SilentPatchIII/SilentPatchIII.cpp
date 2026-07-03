@@ -99,6 +99,8 @@ static ExternalRef<RsGlobalType> RsGlobal;
 // Technically part of CMenuManager, but we only need this boolean
 static ExternalRef<bool> bIsFrontEndActive("80 3D ? ? ? ? 00 74 ? 80 3D ? ? ? ? 01 0F 85", 2);
 
+ExternalFunc<CVehicle()> FindPlayerVehicle("6B C0 ? 8B 0C 85 ? ? ? ? 85 C9 74", -7);
+
 namespace UIScales
 {
 	static float** Width_Internal(std::string_view pattern_string, ptrdiff_t offset = 0) try
@@ -2183,6 +2185,36 @@ namespace ConsoleDuckAndCover
 }
 
 
+// ============= Backport of a San Andreas fix for police cars chasing NPCs giving up if the player has no wanted level =============
+namespace RamcarCloseMissionGiveUpFix
+{
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(FindPlayerVehicle);
+	}
+
+	static void (*orgFindPlayerPed)();
+	static void* Ramcar_Close_DontGiveUp;
+	static void* Ramcar_Close_Continue;
+
+	__declspec(naked) static void Ramcar_Close_CheckIfPlayerVehicle()
+	{
+		_asm
+		{
+			call	FindPlayerVehicle
+			cmp		eax, [ebx+198h] // pVehicle->AutoPilot.m_pTargetCar
+			jne		Ramcar_Close_End_DontGiveUp
+
+			call	orgFindPlayerPed
+			jmp		[Ramcar_Close_Continue]
+
+		Ramcar_Close_End_DontGiveUp:
+			jmp		[Ramcar_Close_DontGiveUp]
+		}
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -4035,6 +4067,23 @@ void Patch_III_Common()
 		InjectHook(calculate_duck_pos_start.get<void>(assembly_prologue.size() + 5), calculate_duck_pos_end, HookType::Jump);
 
 		Nop(calculate_duck_pos_matrix_dtor, 5);
+	}
+	TXN_CATCH();
+
+
+	// Backport of a San Andreas fix for police cars chasing NPCs giving up if the player has no wanted level
+	if (RamcarCloseMissionGiveUpFix::HasGameBindings()) try
+	{
+		using namespace RamcarCloseMissionGiveUpFix;
+
+		auto ramcar_close_mission_check = pattern("DE D9 E8 ? ? ? ? 8B 90").get_one();
+		auto ramcar_close_mission_check_end = get_pattern("8D 73 ? 8B 93 ? ? ? ? D9 EE");
+
+		ReadCall(ramcar_close_mission_check.get<void>(2), orgFindPlayerPed);
+		InjectHook(ramcar_close_mission_check.get<void>(2), Ramcar_Close_CheckIfPlayerVehicle, HookType::Jump);
+
+		Ramcar_Close_Continue = ramcar_close_mission_check.get<void>(2 + 5);
+		Ramcar_Close_DontGiveUp = ramcar_close_mission_check_end;
 	}
 	TXN_CATCH();
 }
