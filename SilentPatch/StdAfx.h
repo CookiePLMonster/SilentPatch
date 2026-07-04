@@ -18,3 +18,6 @@ struct RwObjectNameIdAssocation
 	int32_t		hierId;
 	uint32_t	flags;
 };
+
+// Fix for conformance-
+typedef struct IUnknown IUnknown;

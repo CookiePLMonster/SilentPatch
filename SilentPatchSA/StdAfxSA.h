@@ -31,3 +31,6 @@ RwObject* GetFirstObject(RwFrame* pFrame);
 #else
 #define MEM_VALIDATORS 0
 #endif
+
+// Fix for conformance-
+typedef struct IUnknown IUnknown;

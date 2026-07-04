@@ -4,6 +4,10 @@
 
 #include <windows.h>
 #include <stdio.h>
+
+// Fix for conformance-
+typedef struct IUnknown IUnknown;
+
 #include <Shlwapi.h>
 #include <ShlObj.h>
 #include "Utils/MemoryMgr.h"
