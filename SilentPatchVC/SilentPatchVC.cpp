@@ -4166,6 +4166,31 @@ void Patch_VC_Common()
 		Ramcar_Close_DontGiveUp = ramcar_close_mission_check_end;
 	}
 	TXN_CATCH();
+
+
+	// Reorder the law enforcement checks in CRoadBlocks::GenerateRoadBlocks to match the other call sites
+	// Fixes an issue where road blocks in 'Decoy' (in GTA III) have Barracks and not the Enforcer
+	try
+	{
+		auto generate_road_blocks = pattern("E8 ? ? ? ? 84 C0 74 ? BD ? ? ? ? EB ? 8D 80 ? ? ? ? E8 ? ? ? ? 8B 88 ? ? ? ? E8 ? ? ? ? 84 C0 74 ? BD ? ? ? ? EB ? 89 C0 8D 40 ? E8 ? ? ? ? 8B 88 ? ? ? ? E8 ? ? ? ? 84 C0 74 ? BD")
+										.get_one();
+
+		void* are_army_required;
+		void* are_swat_required;
+		ReadCall(generate_road_blocks.get<void>(), are_army_required);
+		ReadCall(generate_road_blocks.get<void>(0x41), are_swat_required);
+
+		int32_t army_model_id, swat_model_id;
+		Read(generate_road_blocks.get<void>(0xA), army_model_id);
+		Read(generate_road_blocks.get<void>(0x4B), swat_model_id);
+
+		InjectHook(generate_road_blocks.get<void>(), are_swat_required);
+		InjectHook(generate_road_blocks.get<void>(0x41), are_army_required);
+
+		Patch(generate_road_blocks.get<void>(0xA), swat_model_id);
+		Patch(generate_road_blocks.get<void>(0x4B), army_model_id);
+	}
+	TXN_CATCH();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

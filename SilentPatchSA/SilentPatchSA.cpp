@@ -8400,6 +8400,25 @@ void Patch_SA_10(HINSTANCE hInstance)
 		InterceptCall(0x53EC01, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
 		InterceptMemDisplacement(AddressByRegion_10(0x748452 + 2), orgWindowProc, pClipWindowProcA);
 	}
+
+	// Reorder the law enforcement checks in CRoadBlocks::GenerateRoadBlocks to match the other call sites
+	// Fixes an issue where road blocks in 'Decoy' (in GTA III) have Barracks and not the Enforcer
+	{
+		void* are_army_required;
+		void* are_swat_required;
+		ReadCall(0x461BA7, are_army_required);
+		ReadCall(0x461BDD, are_swat_required);
+
+		int32_t army_model_id, swat_model_id;
+		Read(0x461BB0 + 1, army_model_id);
+		Read(0x461BE6 + 1, swat_model_id);
+
+		InjectHook(0x461BA7, are_swat_required);
+		InjectHook(0x461BDD, are_army_required);
+
+		Patch(0x461BB0 + 1, swat_model_id);
+		Patch(0x461BE6 + 1, army_model_id);
+	}
 }
 
 void Patch_SA_11()
@@ -11204,6 +11223,31 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		InterceptCall(rs_camera_show_raster, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
 		InterceptMemDisplacement(def_window_proc, orgWindowProc, pClipWindowProcA);
+	}
+	TXN_CATCH();
+
+
+	// Reorder the law enforcement checks in CRoadBlocks::GenerateRoadBlocks to match the other call sites
+	// Fixes an issue where road blocks in 'Decoy' (in GTA III) have Barracks and not the Enforcer
+	try
+	{
+		auto generate_road_blocks = pattern("E8 ? ? ? ? 84 C0 74 0A BB ? ? ? ? 89 5D DC EB 4C 6A FF E8 ? ? ? ? 83 C4 04 8B C8 E8 ? ? ? ? 84 C0 74 0A BB ? ? ? ? 89 5D DC EB 2D 6A FF E8 ? ? ? ? 83 C4 04 8B C8 E8 ? ? ? ? 84 C0 74 0A BB")
+			.get_one();
+
+		void* are_army_required;
+		void* are_swat_required;
+		ReadCall(generate_road_blocks.get<void>(), are_army_required);
+		ReadCall(generate_road_blocks.get<void>(0x3E), are_swat_required);
+
+		int32_t army_model_id, swat_model_id;
+		Read(generate_road_blocks.get<void>(0xA), army_model_id);
+		Read(generate_road_blocks.get<void>(0x48), swat_model_id);
+
+		InjectHook(generate_road_blocks.get<void>(), are_swat_required);
+		InjectHook(generate_road_blocks.get<void>(0x3E), are_army_required);
+
+		Patch(generate_road_blocks.get<void>(0xA), swat_model_id);
+		Patch(generate_road_blocks.get<void>(0x48), army_model_id);
 	}
 	TXN_CATCH();
 }
