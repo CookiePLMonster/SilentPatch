@@ -4,9 +4,9 @@
 #include "ExternalBindings.hpp"
 
 #if _GTA_III
-static ExternalFunc<class CEntity*()> FindPlayerPed("6B C0 4F 8B 04 85 ? ? ? ? C3", -7);
+ExternalFunc<class CEntity*()> FindPlayerPed("6B C0 4F 8B 04 85 ? ? ? ? C3", -7);
 #elif _GTA_VC
-static ExternalFunc<class CEntity*()> FindPlayerPed("6B C0 2E 8B 04 C5 ? ? ? ? C3", -7);
+ExternalFunc<class CEntity*()> FindPlayerPed("6B C0 2E 8B 04 C5 ? ? ? ? C3", -7);
 #endif
 
 CVehicle* (CStoredCar::*CStoredCar::orgRestoreCar)();

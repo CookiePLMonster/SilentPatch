@@ -32,16 +32,16 @@ public:
 	}
 
 	inline const CVector&					GetCoords() const
-		{ return m_pCoords != nullptr ? m_pCoords->GetPos() : m_transform.m_translate; }
+		{ return m_pCoords != nullptr ? m_pCoords->GetTranslate() : m_transform.m_translate; }
 	inline const CMatrix*					GetMatrix() const
 		{ return m_pCoords; }
 	inline const CSimpleTransform&		GetTransform() const
 		{ return m_transform; }
 	inline float					GetHeading() const
-		{ return m_pCoords ? atan2(-m_pCoords->GetUp().x, m_pCoords->GetUp().y) : m_transform.m_heading; }
+		{ return m_pCoords ? atan2(-m_pCoords->GetForward().x, m_pCoords->GetForward().y) : m_transform.m_heading; }
 
 	inline void						SetCoords(const CVector& pos)
-	{	if ( m_pCoords ) { m_pCoords->GetPos() = pos; }
+	{	if ( m_pCoords ) { m_pCoords->GetTranslate() = pos; }
 		else m_transform.m_translate = pos; }
 	inline void						SetHeading(float fHeading)
 		{ if ( m_pCoords ) m_pCoords->SetRotateZOnly(fHeading); else m_transform.m_heading = fHeading; }

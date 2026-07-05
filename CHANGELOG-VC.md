@@ -81,6 +81,7 @@ All the remaining, non-critical fixes.
 * Skimmer's rear elevator now animates smoothly and responds to keyboard controls.
 * The Stats menu now displays the actual number of Hidden Packages, instead of displaying a percentage collected + "out of 100". This fixes the stat display for mods that remove or add additional Hidden Packages.
 * Script sprites now have bilinear filtering applied.
+* NPCs can now use rocket launchers.
 * ⚙️ Fixed siren corona placements in Police, Firetruck, Ambulance, Enforcer, Vice Cheetah, and FBI Washington.
 * ⚙️ Added siren corona to FBI Washington.
 * ⚙️ Fixed taxi light corona placement for Taxi.

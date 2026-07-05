@@ -88,6 +88,7 @@ All the remaining, non-critical fixes.
 * Cops now take cover behind cars in the same way they do on the PS2; previously, on PC cops behaved like in Vice City (researched by **Nick007J**).
 * In the wanted level 'tutorial' cutscene, cops now ram the car they chase and they keep their sirens on, as it was set originally set up in the mission script.
 * Road blocks in 'Decoy' now use Enforcers instead of the army vehicles.
+* NPCs can now use sniper rifles and rocket launchers.
 * ⚙️ Fixed siren corona placements in Firetruck, Ambulance, and Enforcer.
 * ⚙️ Fixed taxi light corona placement for Taxi.
 * ⚙️ Fixed police chopper's searchlight placement.

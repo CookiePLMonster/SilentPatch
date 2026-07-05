@@ -1915,9 +1915,9 @@ namespace CastShadowEntityFix
 	{
 		const CMatrix& mat = entity->GetMatrix();
 		const CVector& right = mat.GetRight();
-		const CVector& up = mat.GetUp();
-		const CVector& at = mat.GetAt();
-		const CVector& pos = mat.GetPos();
+		const CVector& up = mat.GetForward();
+		const CVector& at = mat.GetUp();
+		const CVector& pos = mat.GetTranslate();
 
 		// We *must* use SSE, so we preserve the x87 state
 		__m128 rightV = _mm_loadu_ps(&right.x);
@@ -2105,6 +2105,34 @@ namespace RamcarCloseMissionGiveUpFix
 			Ramcar_Close_End_DontGiveUp:
 			jmp		[Ramcar_Close_DontGiveUp]
 		}
+	}
+}
+
+
+// ============= Allow NPCs to use RPGs properly =============
+namespace NPCFireRPGFix
+{
+	static const CVector* s_savedProjectilePos = nullptr;
+
+	static void* (*orgAddProjectile)(void *entity, void* weapon, CVector pos, void* speed);
+	static void* AddProjectile_SavePosition(void *entity, void* weapon, CVector pos, void* speed)
+	{
+		s_savedProjectilePos = &pos;
+		void* result = orgAddProjectile(entity, weapon, pos, speed);
+		s_savedProjectilePos = nullptr;
+		return result;
+	}
+
+	static CMatrix& (__thiscall* orgMatrixAssignOp)(CMatrix* obj, const CMatrix& mat);
+	static CMatrix& __fastcall MatrixAssignOp_RestorePos(CMatrix* obj, void*, const CMatrix& mat)
+	{
+		if (s_savedProjectilePos != nullptr)
+		{
+			CMatrix matrix(mat);
+			matrix.GetTranslate() = *s_savedProjectilePos;
+			return orgMatrixAssignOp(obj, matrix);
+		}
+		return orgMatrixAssignOp(obj, mat);
 	}
 }
 
@@ -4189,6 +4217,20 @@ void Patch_VC_Common()
 
 		Patch(generate_road_blocks.get<void>(0xA), swat_model_id);
 		Patch(generate_road_blocks.get<void>(0x4B), army_model_id);
+	}
+	TXN_CATCH();
+
+
+	// Allow NPCs to use RPGs properly
+	try
+	{
+		using namespace NPCFireRPGFix;
+
+		auto add_projectile = get_pattern("E8 ? ? ? ? 83 C4 ? C7 05 ? ? ? ? ? ? ? ? 8A 45");
+		auto matrix_assign = get_pattern("50 E8 ? ? ? ? 8B 44 24 ? C7 84 24", 1);
+
+		InterceptCall(add_projectile, orgAddProjectile, AddProjectile_SavePosition);
+		InterceptCall(matrix_assign, orgMatrixAssignOp, MatrixAssignOp_RestorePos);
 	}
 	TXN_CATCH();
 }

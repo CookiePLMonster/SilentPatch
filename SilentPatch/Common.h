@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "ExternalBindings.hpp"
 
 namespace ExtraCompSpecularity
 {
@@ -15,3 +16,5 @@ namespace Common
 		void III_VC_Common();
 	}
 };
+
+extern ExternalFunc<class CEntity*()> FindPlayerPed;

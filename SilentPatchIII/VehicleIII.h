@@ -34,7 +34,7 @@ public:
 
 	inline const CVector& GetPosition() const
 	{
-		return m_matrix.GetPos();
+		return m_matrix.GetTranslate();
 	}
 
 	uint32_t		GetClass() const

@@ -359,14 +359,14 @@ void CVehicle::SetComponentRotation( RwFrame* component, eRotAxis axis, float an
 	}
 	else
 	{
-		const CVector pos = matrix.GetPos();
+		const CVector pos = matrix.GetTranslate();
 		matrix.SetTranslateOnly(0.0f, 0.0f, 0.0f);
 
 		if ( axis == ROT_AXIS_X ) matrix.RotateX(angle);
 		else if ( axis == ROT_AXIS_Y ) matrix.RotateY(angle);
 		else if ( axis == ROT_AXIS_Z ) matrix.RotateZ(angle);
 
-		matrix.GetPos() += pos;
+		matrix.GetTranslate() += pos;
 	}
 	matrix.UpdateRW();
 }
@@ -714,7 +714,7 @@ void CAutomobile::ResetFrames()
 				{
 					// Same as original code
 					CMatrix matrix( RwFrameGetMatrix(m_pCarNode[i]) );
-					const CVector pos( matrix.GetPos() );
+					const CVector pos( matrix.GetTranslate() );
 					matrix.SetTranslate( pos.x, pos.y, pos.z );
 					matrix.UpdateRW();
 				}

@@ -190,9 +190,9 @@ public:
 	inline CMatrix(const CVector& vecRight, const CVector& vecUp, const CVector& vecAt, const CVector& vecPos)
 	{
 		GetRight() = vecRight;
-		GetUp() = vecUp;
-		GetAt() = vecAt;
-		GetPos() = vecPos;
+		GetForward() = vecUp;
+		GetUp() = vecAt;
+		GetTranslate() = vecPos;
 	}
 
 	inline ~CMatrix()
@@ -215,9 +215,9 @@ public:
 			this->m_matrix.pos.x * right.m_matrix.right.z + this->m_matrix.pos.y * right.m_matrix.up.z + this->m_matrix.pos.z * right.m_matrix.at.z + right.m_matrix.pos.z);
 
 		GetRight() = vright;
-		GetUp() = vup;
-		GetAt() = vat;
-		GetPos() = vpos;
+		GetForward() = vup;
+		GetUp() = vat;
+		GetTranslate() = vpos;
 
 		return *this;
 	}
@@ -242,7 +242,7 @@ public:
 								m_matrix.m_matrix.up.z * vec.y + m_matrix.m_matrix.right.z * vec.x + m_matrix.m_matrix.at.z * vec.z + m_matrix.m_matrix.pos.z); };
 
 	friend inline CMatrix operator+(const CMatrix& Rot1, const CMatrix& Rot2)
-			{ return CMatrix( Rot1.GetRight() + Rot2.GetRight(), Rot1.GetUp() + Rot2.GetUp(), Rot1.GetAt() + Rot2.GetAt(), Rot1.GetPos() + Rot2.GetPos() ); }
+			{ return CMatrix( Rot1.GetRight() + Rot2.GetRight(), Rot1.GetForward() + Rot2.GetForward(), Rot1.GetUp() + Rot2.GetUp(), Rot1.GetTranslate() + Rot2.GetTranslate() ); }
 
 	inline CMatrix& operator=(const CMatrix& mat)
 	{
@@ -255,9 +255,9 @@ public:
 	inline CMatrix& operator+=(const CMatrix& mat)
 	{
 		GetRight() += mat.GetRight();
+		GetForward() += mat.GetForward();
 		GetUp() += mat.GetUp();
-		GetAt() += mat.GetAt();
-		GetPos() += mat.GetPos();
+		GetTranslate() += mat.GetTranslate();
 
 		return *this;
 	}
@@ -265,10 +265,10 @@ public:
 	friend inline CMatrix& Invert(const CMatrix& src, CMatrix& dst)
 	{
 		dst.GetRight() = CVector(src.m_matrix.right.x, src.m_matrix.up.x, src.m_matrix.at.x);
-		dst.GetUp() = CVector(src.m_matrix.right.y, src.m_matrix.up.y, src.m_matrix.at.y);
-		dst.GetAt() = CVector(src.m_matrix.right.z, src.m_matrix.up.z, src.m_matrix.at.z);
+		dst.GetForward() = CVector(src.m_matrix.right.y, src.m_matrix.up.y, src.m_matrix.at.y);
+		dst.GetUp() = CVector(src.m_matrix.right.z, src.m_matrix.up.z, src.m_matrix.at.z);
 
-		dst.GetPos() = -(dst.GetRight() * src.GetPos().x + dst.GetUp() * src.GetPos().y + dst.GetAt() * src.GetPos().z);
+		dst.GetTranslate() = -(dst.GetRight() * src.GetTranslate().x + dst.GetForward() * src.GetTranslate().y + dst.GetUp() * src.GetTranslate().z);
 
 		return dst;
 	}
@@ -286,24 +286,24 @@ public:
 								m_matrix.m_matrix.up.z * vec.y + m_matrix.m_matrix.right.z * vec.x + m_matrix.m_matrix.at.z * vec.z); };
 
 	friend inline CVector Multiply3x3(const CVector& vec, const CMatrix& m_matrix)
-			{ return CVector(DotProduct(m_matrix.GetRight(), vec), DotProduct(m_matrix.GetUp(), vec), DotProduct(m_matrix.GetAt(), vec)); }
+			{ return CVector(DotProduct(m_matrix.GetRight(), vec), DotProduct(m_matrix.GetForward(), vec), DotProduct(m_matrix.GetUp(), vec)); }
 
 	inline CVector&	GetRight()
 		{ return *reinterpret_cast<CVector*>(&m_matrix.right); }
-	inline CVector&	GetUp()
+	inline CVector&	GetForward()
 		{ return *reinterpret_cast<CVector*>(&m_matrix.up); }
-	inline CVector&	GetAt()
+	inline CVector&	GetUp()
 		{ return *reinterpret_cast<CVector*>(&m_matrix.at); }
-	inline CVector& GetPos()
+	inline CVector& GetTranslate()
 		{ return *reinterpret_cast<CVector*>(&m_matrix.pos); }
 
 	inline const CVector&	GetRight() const
 	{ return *reinterpret_cast<const CVector*>(&m_matrix.right); }
-	inline const CVector&	GetUp() const
+	inline const CVector&	GetForward() const
 	{ return *reinterpret_cast<const CVector*>(&m_matrix.up); }
-	inline const CVector&	GetAt() const
+	inline const CVector&	GetUp() const
 	{ return *reinterpret_cast<const CVector*>(&m_matrix.at); }
-	inline const CVector& GetPos() const
+	inline const CVector& GetTranslate() const
 	{ return *reinterpret_cast<const CVector*>(&m_matrix.pos); }
 
 	inline void		SetTranslateOnly(float fX, float fY, float fZ)

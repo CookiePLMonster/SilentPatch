@@ -101,6 +101,9 @@ static ExternalRef<bool> bIsFrontEndActive("80 3D ? ? ? ? 00 74 ? 80 3D ? ? ? ? 
 
 ExternalFunc<CVehicle()> FindPlayerVehicle("6B C0 ? 8B 0C 85 ? ? ? ? 85 C9 74", -7);
 
+class CWeapon {};
+ExternalMethod<CWeapon, bool(class CEntity* pEntity, CVector* pStartPosn)> FireInstantHit("55 81 EC ? ? ? ? 8B AC 24 ? ? ? ? 8B BC 24", -5);
+
 namespace UIScales
 {
 	static float** Width_Internal(std::string_view pattern_string, ptrdiff_t offset = 0) try
@@ -1938,9 +1941,9 @@ namespace CastShadowEntityFix
 	{
 		const CMatrix& mat = entity->GetMatrix();
 		const CVector& right = mat.GetRight();
-		const CVector& up = mat.GetUp();
-		const CVector& at = mat.GetAt();
-		const CVector& pos = mat.GetPos();
+		const CVector& up = mat.GetForward();
+		const CVector& at = mat.GetUp();
+		const CVector& pos = mat.GetTranslate();
 
 		// We *must* use SSE, so we preserve the x87 state
 		__m128 rightV = _mm_loadu_ps(&right.x);
@@ -2212,6 +2215,86 @@ namespace RamcarCloseMissionGiveUpFix
 		Ramcar_Close_End_DontGiveUp:
 			jmp		[Ramcar_Close_DontGiveUp]
 		}
+	}
+}
+
+
+// ============= Backport a Vice City fix allowing NPCs to use snipers, as they can use them in the Vigilante mission =============
+namespace NPCFireSniperFix
+{
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(FindPlayerPed, FireInstantHit);
+	}
+
+	static bool (__thiscall* orgFireSniper)(CWeapon* obj, class CEntity* pEntity);
+	static bool __fastcall FireSniper_OrInstantHit(CWeapon* obj, CVector* pStartPosn, class CEntity* pEntity)
+	{
+		if (FindPlayerPed.Call() == pEntity)
+		{
+			return orgFireSniper(obj, pEntity);
+		}
+		else
+		{
+			return FireInstantHit.Call(obj, pEntity, pStartPosn);
+		}
+	}
+
+	__declspec(naked) static void FireSniper_GetSource()
+	{
+		_asm
+		{
+			mov		edx, esi
+			jmp		FireSniper_OrInstantHit
+		}
+	}
+
+	static int (*orgSscanf)(const char* s, const char* format, ...);
+	static int sscanf_PatchSniper(const char* s, const char* format, char* weaponName, char* fireType, float* range, int* firingRate, int* reload, int* ammoAmount, int* damage,
+						float* speed, float* radius, float* lifeSpan, float* spread, float* fireOffsetX, float* fireOffsetY, float* fireOffsetZ, char* animToPlay, char* anim2ToPlay,
+						float* animLoopStart, float* animLoopEnd, float* delayBetweenAnimAndFire, float* delayBetweenAnim2AndFire, int* modelId, int* flags)
+	{
+		const int result = orgSscanf(s, format, weaponName, fireType, range, firingRate, reload, ammoAmount, damage, speed, radius, lifeSpan, spread, fireOffsetX, fireOffsetY, fireOffsetZ,
+							animToPlay, anim2ToPlay, animLoopStart, animLoopEnd, delayBetweenAnimAndFire, delayBetweenAnim2AndFire, modelId, flags);
+
+		if (result >= 19)
+		{
+			if (_stricmp(animToPlay, "WEAPON_sniper") == 0 && *animLoopStart == 0.0f && *animLoopEnd == 10.0f && *delayBetweenAnimAndFire == 3.0f)
+			{
+				*animLoopEnd = 99.0f;
+				*delayBetweenAnimAndFire = 14.0f;
+			}
+		}
+
+		return result;
+	}
+}
+
+
+// ============= Allow NPCs to use RPGs properly =============
+namespace NPCFireRPGFix
+{
+	static const CVector* s_savedProjectilePos = nullptr;
+
+	static void* (*orgAddProjectile)(void *entity, void* weapon, CVector pos, void* speed);
+	static void* AddProjectile_SavePosition(void *entity, void* weapon, CVector pos, void* speed)
+	{
+		s_savedProjectilePos = &pos;
+		void* result = orgAddProjectile(entity, weapon, pos, speed);
+		s_savedProjectilePos = nullptr;
+		return result;
+	}
+
+	static CMatrix& (__thiscall* orgMatrixAssignOp)(CMatrix* obj, const CMatrix& mat);
+	static CMatrix& __fastcall MatrixAssignOp_RestorePos(CMatrix* obj, void*, const CMatrix& mat)
+	{
+		if (s_savedProjectilePos != nullptr)
+		{
+			CMatrix matrix(mat);
+			matrix.GetTranslate() = *s_savedProjectilePos;
+			return orgMatrixAssignOp(obj, matrix);
+		}
+		return orgMatrixAssignOp(obj, mat);
 	}
 }
 
@@ -2912,6 +2995,21 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 		{
 			DebugMenuAddVar("SilentPatch", "Gang formations", &s_bFormationsEnabled, nullptr);
 		}
+	}
+	TXN_CATCH();
+
+
+	// Backport a Vice City fix allowing NPCs to use snipers, as they can use them in the Vigilante mission
+	// Delayed hook so we don't get in LC01's way (their weapon.dat is very different)
+	if (!bLC01 && NPCFireSniperFix::HasGameBindings()) try
+	{
+		using namespace NPCFireSniperFix;
+
+		auto fire_sniper = get_pattern("89 F9 55 DD D8 E8", 5);
+		auto load_weapon_dat = get_pattern("E8 ? ? ? ? 8D 84 24 ? ? ? ? 83 C4 ? 6A ? 68 ? ? ? ? 50 E8 ? ? ? ? 83 C4 ? 85 C0 75 ? 81 C4 ? ? ? ? 5D 5F 5E 5B C3 8D 80");
+
+		InterceptCall(fire_sniper, orgFireSniper, FireSniper_GetSource);
+		InterceptCall(load_weapon_dat, orgSscanf, sscanf_PatchSniper);
 	}
 	TXN_CATCH();
 
@@ -4110,6 +4208,20 @@ void Patch_III_Common()
 
 		Patch(generate_road_blocks.get<void>(0xD), swat_model_id);
 		Patch(generate_road_blocks.get<void>(0x49), army_model_id);
+	}
+	TXN_CATCH();
+
+
+	// Allow NPCs to use RPGs properly
+	try
+	{
+		using namespace NPCFireRPGFix;
+
+		auto add_projectile = get_pattern("E8 ? ? ? ? 83 C4 ? 83 C4 ? B0");
+		auto matrix_assign = get_pattern("E8 ? ? ? ? 8B 44 24 ? C7 84 24 ? ? ? ? ? ? ? ? 89 84 24 ? ? ? ? 8D 84 24");
+
+		InterceptCall(add_projectile, orgAddProjectile, AddProjectile_SavePosition);
+		InterceptCall(matrix_assign, orgMatrixAssignOp, MatrixAssignOp_RestorePos);
 	}
 	TXN_CATCH();
 }
