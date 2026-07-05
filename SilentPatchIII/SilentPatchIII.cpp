@@ -2299,6 +2299,37 @@ namespace NPCFireRPGFix
 }
 
 
+// ============= Fix road blocks spawning with an incorrect rotation on roads with the east-west flag =============
+namespace RoadBlocksHeadingFix
+{
+	static void* objectEastWestFlag = nullptr; // If non-null, EastWestObject is set
+
+	static float savedRotationZ;
+	static void (__thiscall* orgSetRotateZ)(CMatrix* obj, float rotZ);
+	static void __fastcall SetRotateZ_SaveForLater(CMatrix* /*obj*/, void*, float rotZ)
+	{
+		// Just save for now
+		savedRotationZ = rotZ;
+	}
+
+	static CMatrix* (*orgMatrixMultiplyOp)(CMatrix* out, const CMatrix& left, const CMatrix& right);
+	static CMatrix* MatrixMultiplyOp_FixupRotation(CMatrix* out, const CMatrix& left, CMatrix& right)
+	{
+		// We could use SetRotateZOnly here, but we want to preserve the hook chains if any, so just restore the position after
+		const CVector pos(right.GetTranslate());
+
+		float rotation = savedRotationZ;
+		if (std::exchange(objectEastWestFlag, nullptr) != nullptr)
+		{
+			rotation -= static_cast<float>(M_PI_2);
+		}
+		orgSetRotateZ(&right, rotation);
+		right.GetTranslate() = pos;
+		return orgMatrixMultiplyOp(out, left, right);
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -4222,6 +4253,31 @@ void Patch_III_Common()
 
 		InterceptCall(add_projectile, orgAddProjectile, AddProjectile_SavePosition);
 		InterceptCall(matrix_assign, orgMatrixAssignOp, MatrixAssignOp_RestorePos);
+	}
+	TXN_CATCH();
+
+
+	// Fix road blocks spawning with an incorrect rotation on roads with the east-west flag
+	try
+	{
+		using namespace RoadBlocksHeadingFix;
+
+		auto set_rotate_z = get_pattern("E8 ? ? ? ? 0F BF 0C 75");
+		auto set_node_flag = pattern("EB ? 8D 80 ? ? ? ? 0F BF 44 24").get_one();
+		auto matrix_multiply = get_pattern("E8 ? ? ? ? 8D 84 24 ? ? ? ? 83 C4 ? 8D 8C 24 ? ? ? ? 50 E8 ? ? ? ? 8D 8C 24 ? ? ? ? E8 ? ? ? ? 8D 84 24");
+
+		InterceptCall(set_rotate_z, orgSetRotateZ, SetRotateZ_SaveForLater);
+
+		// mov [objectEastWestFlag], esp
+		// jmp loc_4373B7
+		// We set our canary to esp when the flag is set, so we can test it for non-null
+		int8_t jmp_offset;
+		Read(set_node_flag.get<void>(1), jmp_offset);
+		Patch(set_node_flag.get<void>(), { 0x89, 0x25 });
+		WriteMemDisplacement(set_node_flag.get<void>(2), &objectEastWestFlag);
+		Patch(set_node_flag.get<void>(6), { 0xEB, static_cast<uint8_t>(jmp_offset - 6) });
+
+		InterceptCall(matrix_multiply, orgMatrixMultiplyOp, MatrixMultiplyOp_FixupRotation);
 	}
 	TXN_CATCH();
 }
