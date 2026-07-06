@@ -24,13 +24,16 @@ CVehicle* CStoredCar::RestoreCar_SilentPatch()
 	{
 		// Fixup bomb stuff
 #if _GTA_VC
-		if ( vehicle->GetClass() == VEHICLE_AUTOMOBILE || vehicle->GetClass() == VEHICLE_BIKE )
+		if (vehicle->GetClass() == VEHICLE_AUTOMOBILE || vehicle->GetClass() == VEHICLE_BIKE)
 		{
 			vehicle->SetBombOnBoard( m_bombType );
 			vehicle->SetBombOwner( FindPlayerPed.Call() );
 		}
 #elif _GTA_III
-		static_cast<CAutomobile*>(vehicle)->SetBombOwner( FindPlayerPed.Call() );
+		if (vehicle->GetClass() == VEHICLE_AUTOMOBILE)
+		{
+			static_cast<CAutomobile*>(vehicle)->SetBombOwner( FindPlayerPed.Call() );
+		}
 #endif
 	}
 
