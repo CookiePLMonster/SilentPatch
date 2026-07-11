@@ -6,11 +6,13 @@
 
 enum eVehicleType
 {
-	VEHICLE_AUTOMOBILE,
-	VEHICLE_BOAT,
-	VEHICLE_TRAIN,
-	VEHICLE_HELI,
-	VEHICLE_PLANE
+	VEHICLE_TYPE_CAR,
+	VEHICLE_TYPE_BOAT,
+	VEHICLE_TYPE_TRAIN,
+	VEHICLE_TYPE_HELI,
+	VEHICLE_TYPE_PLANE,
+	VEHICLE_TYPE_BIKE, // VC leftover
+	NUM_VEHICLE_TYPES
 };
 
 class CVehicle
@@ -55,6 +57,10 @@ public:
 	{ m_BombOnBoard = bombOnBoard; }
 	void			SetBombOwner( class CEntity* owner )
 	{ m_pBombOwner = owner; }
+};
+
+class CBoat : public CVehicle
+{
 };
 
 

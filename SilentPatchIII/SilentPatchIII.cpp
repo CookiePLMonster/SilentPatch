@@ -104,6 +104,9 @@ ExternalFunc<CVehicle()> FindPlayerVehicle("6B C0 ? 8B 0C 85 ? ? ? ? 85 C9 74", 
 class CWeapon {};
 ExternalMethod<CWeapon, bool(class CEntity* pEntity, CVector* pStartPosn)> FireInstantHit("55 81 EC ? ? ? ? 8B AC 24 ? ? ? ? 8B BC 24", -5);
 
+ExternalFunc<bool(int modelID)> IsBoatModel("89 D0 80 78 ? ? 75", -0xB);
+ExternalMethod<CBoat, CBoat*(int modelID, uint8_t createdBy)> CBoatCtor("8B 44 24 ? 50 8B 6C 24", -6);
+
 namespace UIScales
 {
 	static float** Width_Internal(std::string_view pattern_string, ptrdiff_t offset = 0) try
@@ -2330,6 +2333,26 @@ namespace RoadBlocksHeadingFix
 }
 
 
+// ============= Allow to store boats in garages =============
+namespace BoatsInGarages
+{
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(IsBoatModel, CBoatCtor);
+	}
+
+	CAutomobile* (__thiscall* orgCAutomobileCtor)(void*, int modelID, uint8_t createdBy);
+	CVehicle* __fastcall CAutomobileCtor_OrBoat(CVehicle* obj, void*, int modelID, uint8_t createdBy)
+	{
+		if (IsBoatModel.Call(modelID))
+		{
+			return CBoatCtor.Call(static_cast<CBoat*>(obj), modelID, createdBy);
+		}
+		return orgCAutomobileCtor(obj, modelID, createdBy);
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -4278,6 +4301,21 @@ void Patch_III_Common()
 		Patch(set_node_flag.get<void>(6), { 0xEB, static_cast<uint8_t>(jmp_offset - 6) });
 
 		InterceptCall(matrix_multiply, orgMatrixMultiplyOp, MatrixMultiplyOp_FixupRotation);
+	}
+	TXN_CATCH();
+
+
+	// Allow to store boats in garages
+	if (BoatsInGarages::HasGameBindings()) try
+	{
+		using namespace BoatsInGarages;
+
+		// Don't apply CAutomobile::m_bombType unconditionally, bomb ownership fix already handles it
+		auto restore_bomb_type = get_pattern("88 90 ? ? ? ? 8A 90");
+		auto automobile_ctor = get_pattern("89 C1 E8 ? ? ? ? D9 EE D9 EE", 2);
+
+		Nop(restore_bomb_type, 6);
+		InterceptCall(automobile_ctor, orgCAutomobileCtor, CAutomobileCtor_OrBoat);
 	}
 	TXN_CATCH();
 }

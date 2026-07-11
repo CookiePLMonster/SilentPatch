@@ -14,7 +14,7 @@ bool CVehicleModelInfo::HasGameBindings_Extras()
 RwFrame* CVehicleModelInfo::GetExtrasFrame( RpClump* clump )
 {
 	RwFrame* frame;
-	if ( m_dwType == VEHICLE_HELI || m_dwType == VEHICLE_BIKE )
+	if ( m_dwType == VEHICLE_TYPE_HELI || m_dwType == VEHICLE_TYPE_BIKE )
 	{
 		frame = GetFrameFromId.Call( clump, 1 );
 		if ( frame == nullptr )
