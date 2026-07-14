@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="ExternalRef&lt;*&gt;">
+		<Intrinsic Name="get" Expression="(pointer_type)(s_rip_relative ? (char*)m_operand_ptr + 4 + m_adjust + *(const int*)m_operand_ptr : *(void**)m_operand_ptr)" />
+		<DisplayString Condition="m_operand_ptr == 0">unbound</DisplayString>
+		<DisplayString>{*get()}</DisplayString>
+		<Expand>
+			<Item Name="[ptr]" Condition="m_operand_ptr != 0">get()</Item>
+			<Item Name="[operand]" Condition="m_operand_ptr != 0" ExcludeView="simple">m_operand_ptr</Item>
+			<Item Name="[adjust]" Condition="m_operand_ptr != 0 &amp;&amp; m_adjust != 0" ExcludeView="simple">m_adjust</Item>
+		</Expand>
+	</Type>
+	<Type Name="ExternalValue&lt;*&gt;">
+		<DisplayString Condition="m_ptr == 0">unbound</DisplayString>
+		<DisplayString>{*m_ptr}</DisplayString>
+		<Expand>
+			<Item Name="[ptr]" Condition="m_ptr != 0">m_ptr</Item>
+		</Expand>
+	</Type>
+	<Type Name="ExternalFunc&lt;*&gt;">
+		<DisplayString Condition="m_func == 0">unbound</DisplayString>
+		<DisplayString>{m_func}</DisplayString>
+		<Expand>
+			<Item Name="[func]" Condition="m_func != 0">*m_func</Item>
+		</Expand>
+	</Type>
+	<Type Name="ExternalMethod&lt;*,*&gt;">
+		<DisplayString Condition="m_func == 0">unbound</DisplayString>
+		<DisplayString>{m_func}</DisplayString>
+		<Expand>
+			<Item Name="[func]" Condition="m_func != 0">*m_func</Item>
+		</Expand>
+	</Type>
+</AutoVisualizer>

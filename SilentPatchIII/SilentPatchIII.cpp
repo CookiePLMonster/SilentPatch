@@ -1019,15 +1019,22 @@ namespace VariableResets
 {
 	static void (*TimerInitialise)();
 
-	using VarVariant = std::variant< bool*, int* >;
-	std::vector<VarVariant> GameVariablesToReset;
+	using VarVariant = std::variant< ExternalRef<bool>, ExternalRef<int> >;
+	static std::vector<VarVariant> GameVariablesToReset;
+
+	template<typename T>
+	static void AddVariableToReset(std::string_view pattern, std::ptrdiff_t offset = 0) try
+	{
+		GameVariablesToReset.emplace_back(std::in_place_type<ExternalRef<T>>, hook::txn::get_pattern<T*>(pattern, offset));
+	}
+	TXN_CATCH();
 
 	static void ReInitOurVariables()
 	{
 		for ( const auto& var : GameVariablesToReset )
 		{
 			std::visit( []( auto&& v ) {
-				*v = {};
+				v.Get() = {};
 				}, var );
 		}
 
@@ -3797,9 +3804,9 @@ void Patch_III_Common()
 		HookEach_Service(audio_service_instances, InterceptCall);
 
 		// Variables to reset
-		GameVariablesToReset.emplace_back(*get_pattern<bool*>("80 3D ? ? ? ? ? 74 2A", 2)); // Free resprays
-		GameVariablesToReset.emplace_back(*get_pattern<int*>("7D 72 A1 ? ? ? ? 05", 2 + 1)); // LastTimeAmbulanceCreated
-		GameVariablesToReset.emplace_back(*get_pattern<int*>("74 7F A1 ? ? ? ? 05", 2 + 1)); // LastTimeFireTruckCreated
+		AddVariableToReset<bool>("80 3D ? ? ? ? ? 74 2A", 2); // CGarages::RespraysAreFree
+		AddVariableToReset<int>("7D 72 A1 ? ? ? ? 05", 2 + 1); // CCarCtrl::LastTimeAmbulanceCreated
+		AddVariableToReset<int>("74 7F A1 ? ? ? ? 05", 2 + 1); // CCarCtrl::LastTimeFireTruckCreated
 	}
 	TXN_CATCH();
 

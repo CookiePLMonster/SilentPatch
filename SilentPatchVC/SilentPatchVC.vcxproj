@@ -237,6 +237,9 @@
   <ItemGroup>
     <ResourceCompile Include="..\SilentPatch\SilentPatch.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\SilentPatch\ExternalBindings.natvis" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />

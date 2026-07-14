@@ -2031,16 +2031,29 @@ namespace VariableResets
 
 	using ResetToTrue_t = ResetToValue_t<bool, true>;
 
-	using VarVariant = std::variant< bool*, int*, TimeNextMadDriverChaseCreated_t<float>*, ResetToTrue_t* >;
-	std::vector<VarVariant> GameVariablesToReset;
-	std::vector<std::string> PickupDefs, CarGeneratorDefs, StuntJumpDefs;
+	using VarVariant = std::variant< ExternalRef<bool>, ExternalRef<int>, ExternalRef<TimeNextMadDriverChaseCreated_t<float>>, ExternalRef<ResetToTrue_t> >;
+	static std::vector<VarVariant> GameVariablesToReset;
+	static std::vector<std::string> PickupDefs, CarGeneratorDefs, StuntJumpDefs;
+
+	template<typename T>
+	static void AddVariableToReset(T** ptr)
+	{
+		GameVariablesToReset.emplace_back(std::in_place_type<ExternalRef<T>>, ptr);
+	}
+
+	template<typename T>
+	static void AddVariableToReset(std::string_view pattern, std::ptrdiff_t offset = 0) try
+	{
+		GameVariablesToReset.emplace_back(std::in_place_type<ExternalRef<T>>, hook::txn::get_pattern<T*>(pattern, offset));
+	}
+	TXN_CATCH();
 
 	static void ReInitOurVariables()
 	{
 		for ( const auto& var : GameVariablesToReset )
 		{
 			std::visit( []( auto&& v ) {
-				*v = {};
+				v.Get() = {};
 				}, var );
 		}
 	}
@@ -7622,26 +7635,26 @@ void Patch_SA_10(HINSTANCE hInstance)
 		InterceptCall(0x5B89F9, orgLoadStuntJump, LoadStuntJump_SaveLine);
 
 		// Variables to reset
-		GameVariablesToReset.emplace_back( *(bool**)(0x63E8D8+1) ); // CPlayerPed::bHasDisplayedPlayerQuitEnterCarHelpText
-		GameVariablesToReset.emplace_back( *(bool**)(0x44AC97+1) ); // CGarages::RespraysAreFree
-		GameVariablesToReset.emplace_back( *(bool**)(0x44B49D+1) ); // CGarages::BombsAreFree
+		AddVariableToReset( (bool**)(0x63E8D8+1) ); // CPlayerPed::bHasDisplayedPlayerQuitEnterCarHelpText
+		AddVariableToReset( (bool**)(0x44AC97+1) ); // CGarages::RespraysAreFree
+		AddVariableToReset( (bool**)(0x44B49D+1) ); // CGarages::BombsAreFree
 
-		GameVariablesToReset.emplace_back( *(int**)(0x42131F + 2) ); // CCarCtrl::LastTimeFireTruckCreated
-		GameVariablesToReset.emplace_back( *(int**)(0x421319 + 2) ); // CCarCtrl::LastTimeAmbulanceCreated
+		AddVariableToReset( (int**)(0x42131F + 2) ); // CCarCtrl::LastTimeFireTruckCreated
+		AddVariableToReset( (int**)(0x421319 + 2) ); // CCarCtrl::LastTimeAmbulanceCreated
 
-		GameVariablesToReset.emplace_back( *(int**)(0x55C843 + 1) ); // CStats::m_CycleSkillCounter
-		GameVariablesToReset.emplace_back( *(int**)(0x55CA39 + 1) ); // CStats::m_SwimUnderWaterCounter
-		GameVariablesToReset.emplace_back( *(int**)(0x55CF3E + 2) ); // CStats::m_WeaponCounter
-		GameVariablesToReset.emplace_back( *(int**)(0x55CF2A + 2) ); // CStats::m_LastWeaponTypeFired
-		GameVariablesToReset.emplace_back( *(int**)(0x55CFC1 + 1) ); // CStats::m_DeathCounter
-		GameVariablesToReset.emplace_back( *(int**)(0x55C5E5 + 1) ); // CStats::m_MaxHealthCounter
-		GameVariablesToReset.emplace_back( *(int**)(0x55D043 + 1) ); // CStats::m_AddToHealthCounter
+		AddVariableToReset( (int**)(0x55C843 + 1) ); // CStats::m_CycleSkillCounter
+		AddVariableToReset( (int**)(0x55CA39 + 1) ); // CStats::m_SwimUnderWaterCounter
+		AddVariableToReset( (int**)(0x55CF3E + 2) ); // CStats::m_WeaponCounter
+		AddVariableToReset( (int**)(0x55CF2A + 2) ); // CStats::m_LastWeaponTypeFired
+		AddVariableToReset( (int**)(0x55CFC1 + 1) ); // CStats::m_DeathCounter
+		AddVariableToReset( (int**)(0x55C5E5 + 1) ); // CStats::m_MaxHealthCounter
+		AddVariableToReset( (int**)(0x55D043 + 1) ); // CStats::m_AddToHealthCounter
 
 		// Non-zero inits still need to be done
-		GameVariablesToReset.emplace_back( *(TimeNextMadDriverChaseCreated_t<float>**)(0x421369 + 2) ); // CCarCtrl::TimeNextMadDriverChaseCreated
+		AddVariableToReset( (TimeNextMadDriverChaseCreated_t<float>**)(0x421369 + 2) ); // CCarCtrl::TimeNextMadDriverChaseCreated
 
-		GameVariablesToReset.emplace_back( *(ResetToTrue_t**)(0x4758A4 + 2) ); // CGameLogic::bPenaltyForDeathApplies
-		GameVariablesToReset.emplace_back( *(ResetToTrue_t**)(0x4758C4 + 1) ); // CGameLogic::bPenaltyForArrestApplies
+		AddVariableToReset( (ResetToTrue_t**)(0x4758A4 + 2) ); // CGameLogic::bPenaltyForDeathApplies
+		AddVariableToReset( (ResetToTrue_t**)(0x4758C4 + 1) ); // CGameLogic::bPenaltyForArrestApplies
 	}
 
 	// Don't clean the car BEFORE Pay 'n Spray doors close, as it gets cleaned later again anyway!
@@ -9798,22 +9811,24 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Reset variables on New Game
-	try
 	{
 		using namespace VariableResets;
 
 		// Variables to reset
+		try
 		{
 			auto timers_init = pattern( "89 45 FC DB 45 FC C6 05 ? ? ? ? 01" ).get_one();
 
-			GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-17 + 2) );
-			GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-11 + 2) );
-			GameVariablesToReset.emplace_back( *timers_init.get<TimeNextMadDriverChaseCreated_t<float>*>(0x41 + 2) );
+			AddVariableToReset( timers_init.get<signed int*>(-17 + 2) );
+			AddVariableToReset( timers_init.get<signed int*>(-11 + 2) );
+			AddVariableToReset( timers_init.get<TimeNextMadDriverChaseCreated_t<float>*>(0x41 + 2) );
 		}
+		TXN_CATCH();
 
-		GameVariablesToReset.emplace_back( *get_pattern<ResetToTrue_t*>( "A2 ? ? ? ? E9 ? ? ? ? 6A 01 8B CE", 1 ) ); // CGameLogic::bPenaltyForDeathApplies
-		GameVariablesToReset.emplace_back( *get_pattern<ResetToTrue_t*>( "88 0D ? ? ? ? E9 ? ? ? ? 6A 05", 2 ) ); // CGameLogic::bPenaltyForArrestApplies
+		AddVariableToReset<ResetToTrue_t>( "A2 ? ? ? ? E9 ? ? ? ? 6A 01 8B CE", 1 ); // CGameLogic::bPenaltyForDeathApplies
+		AddVariableToReset<ResetToTrue_t>( "88 0D ? ? ? ? E9 ? ? ? ? 6A 05", 2 ); // CGameLogic::bPenaltyForArrestApplies
 
+		try
 		{
 			auto loadPickup = get_pattern("E8 ? ? ? ? EB 1B 6A 00");
 			auto loadCarGenerator = get_pattern("E8 ? ? ? ? 83 C4 08 EB 11");
@@ -9829,8 +9844,8 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			InterceptCall(loadCarGenerator, orgLoadCarGenerator, LoadCarGenerator_SaveLine);
 			InterceptCall(loadStuntJump, orgLoadStuntJump, LoadStuntJump_SaveLine);
 		}
+		TXN_CATCH();
 	}
-	TXN_CATCH();
 
 
 	// FuckCarCompletely not fixing panels

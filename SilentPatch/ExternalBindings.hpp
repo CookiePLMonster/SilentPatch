@@ -249,12 +249,24 @@ public:
 	ExternalRef(const ExternalRef&) = delete;
 	ExternalRef& operator=(const ExternalRef&) = delete;
 
+	ExternalRef(ExternalRef&&) noexcept = default;
+	ExternalRef& operator=(ExternalRef&&) noexcept = default;
+
 private:
 	const void* m_operand_ptr = nullptr;
 #ifdef _M_X64
-	ptrdiff_t m_adjust = 0;
+	std::ptrdiff_t m_adjust = 0;
 #else
 	static constexpr std::ptrdiff_t m_adjust = 0; // Adjust is not needed for 32-bit code
+#endif
+
+private:
+	// For natvis visualization only
+	using pointer_type = T*;
+#ifdef _M_X64
+	static constexpr bool s_rip_relative = true;
+#else
+	static constexpr bool s_rip_relative = false;
 #endif
 };
 
@@ -283,7 +295,7 @@ public:
 		Bind(static_cast<stored_type const*>(external_bindings::details::try_get_pattern(pattern_string, offset)));
 	}
 
-	[[nodiscard]] stored_type Get() const
+	[[nodiscard]] const stored_type& Get() const
 	{
 		return *Address();
 	}
@@ -307,6 +319,9 @@ public:
 	// Copy construction and assignment almost certainly indicates user error
 	ExternalValue(const ExternalValue&) = delete;
 	ExternalValue& operator=(const ExternalValue&) = delete;
+
+	ExternalValue(ExternalValue&&) noexcept = default;
+	ExternalValue& operator=(ExternalValue&&) noexcept = default;
 
 private:
 	stored_type const* m_ptr = nullptr;
@@ -358,6 +373,9 @@ public:
 	// Copy construction and assignment almost certainly indicates user error
 	ExternalFunc(const ExternalFunc&) = delete;
 	ExternalFunc& operator=(const ExternalFunc&) = delete;
+
+	ExternalFunc(ExternalFunc&&) noexcept = default;
+	ExternalFunc& operator=(ExternalFunc&&) noexcept = default;
 
 private:
 	fnptr_type m_func = nullptr;
@@ -417,6 +435,9 @@ public:
 	// Copy construction and assignment almost certainly indicates user error
 	ExternalMethod(const ExternalMethod&) = delete;
 	ExternalMethod& operator=(const ExternalMethod&) = delete;
+
+	ExternalMethod(ExternalMethod&&) noexcept = default;
+	ExternalMethod& operator=(ExternalMethod&&) noexcept = default;
 
 private:
 	static fnptr_type to_fnptr(member_fnptr_type func)

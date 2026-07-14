@@ -172,6 +172,9 @@
     <ClInclude Include="..\SilentPatch\Utils\MemoryMgr.h" />
     <ClInclude Include="..\SilentPatch\Utils\Patterns.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\SilentPatch\ExternalBindings.natvis" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

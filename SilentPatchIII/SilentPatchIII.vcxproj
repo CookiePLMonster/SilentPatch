@@ -87,6 +87,9 @@
   <ItemGroup>
     <ResourceCompile Include="..\SilentPatch\SilentPatch.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\SilentPatch\ExternalBindings.natvis" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{652975D8-60B0-48E4-A973-4F10BA54FFCB}</ProjectGuid>
     <RootNamespace>IIIFix</RootNamespace>
