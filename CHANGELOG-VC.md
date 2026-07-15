@@ -52,6 +52,7 @@ All the remaining, non-critical fixes.
 * Free resprays will not carry on a New Game now.
 * Fixed ambulance and firetruck dispatch timers - they reset on New Game now.
 * The rain stream effect on roads, which displays for a short period after the rain stops, now resets on loading a save. This prevents the effect from showing when the weather in the loaded save is sunny.
+* Enter car and threat reaction range multipliers (set during several missions) now reset on New Game and on loading a save.
 * Adjusted the probability of traffic vehicles turning on their lights to match the PS2 version, including a low chance that they may never turn them on.
 * Fixed an issue where vehicles exploded twice if the driver left the car before the explosion.
 * Script randomness is now 16-bit instead of 15-bit.

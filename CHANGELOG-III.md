@@ -91,6 +91,7 @@ All the remaining, non-critical fixes.
 * Road blocks in 'Decoy' now use Enforcers instead of the army vehicles.
 * NPCs can now use sniper rifles and rocket launchers.
 * Fixed road blocks spawning vehicles with an incorrect rotation on select roads.
+* `SET_ENTER_CAR_RANGE_MULTIPLIER` and `SET_THREAT_REACTION_RANGE_MULTIPLIER` script commands are now functional and their effects reset on New Game, loading a save, and during the mission cleanup.
 * ⚙️ Fixed siren corona placements in Firetruck, Ambulance, and Enforcer.
 * ⚙️ Fixed taxi light corona placement for Taxi.
 * ⚙️ Fixed police chopper's searchlight placement.

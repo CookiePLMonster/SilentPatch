@@ -1607,7 +1607,15 @@ namespace VariableResets
 {
 	static void (*TimerInitialise)();
 
-	using VarVariant = std::variant< ExternalRef<bool>, ExternalRef<int> >;
+	template<typename T, T val>
+	struct ResetToValue_t
+	{
+		T m_value = val;
+	};
+
+	using ResetShortToOne_t = ResetToValue_t<short, 1>;
+
+	using VarVariant = std::variant< ExternalRef<bool>, ExternalRef<int>, ExternalRef<ResetShortToOne_t> >;
 	static std::vector<VarVariant> GameVariablesToReset;
 
 	template<typename T>
@@ -3776,6 +3784,8 @@ void Patch_VC_Common()
 		AddVariableToReset<int>("7D 78 A1 ? ? ? ? 05", 2 + 1); // CCarCtrl::LastTimeAmbulanceCreated
 		AddVariableToReset<int>("A1 ? ? ? ? 05 ? ? ? ? 39 05 ? ? ? ? 0F 86 ? ? ? ? 8B 15", 1); // CCarCtrl::LastTimeFireTruckCreated
 		AddVariableToReset<int>("FF 0D ? ? ? ? EB 15 90", 2); // CWeather::StreamAfterRainTimer
+		AddVariableToReset<ResetShortToOne_t>("0F BF 05 ? ? ? ? 89 CD", 3); // CPed::nThreatReactionRangeMultiplier
+		AddVariableToReset<ResetShortToOne_t>("0F BF 05 ? ? ? ? 89 6C 24", 3); // CPed::nEnterCarRangeMultiplier
 	}
 	TXN_CATCH();
 

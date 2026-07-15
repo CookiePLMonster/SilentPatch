@@ -2021,12 +2021,7 @@ namespace VariableResets
 	template<typename T, T val>
 	struct ResetToValue_t
 	{
-		T m_value;
-
-		ResetToValue_t()
-			: m_value(val)
-		{
-		}
+		T m_value = val;
 	};
 
 	using ResetToTrue_t = ResetToValue_t<bool, true>;

@@ -1019,19 +1019,33 @@ namespace VariableResets
 {
 	static void (*TimerInitialise)();
 
-	using VarVariant = std::variant< ExternalRef<bool>, ExternalRef<int> >;
-	static std::vector<VarVariant> GameVariablesToReset;
+	template<typename T, T val>
+	struct ResetToValue_t
+	{
+		T m_value = val;
+	};
+
+	using ResetShortToOne_t = ResetToValue_t<short, 1>;
+
+	using VarVariant = std::variant< ExternalRef<bool>, ExternalRef<int>, ExternalRef<ResetShortToOne_t> >;
+	static std::vector<VarVariant> GameVariablesToReset, GameVariablesToMissionCleanup;
 
 	template<typename T>
-	static void AddVariableToReset(std::string_view pattern, std::ptrdiff_t offset = 0) try
+	static void AddVariableToReset(std::vector<VarVariant>& variables, T** ptr)
 	{
-		GameVariablesToReset.emplace_back(std::in_place_type<ExternalRef<T>>, hook::txn::get_pattern<T*>(pattern, offset));
+		variables.emplace_back(std::in_place_type<ExternalRef<T>>, ptr);
+	}
+
+	template<typename T>
+	static void AddVariableToReset(std::vector<VarVariant>& variables, std::string_view pattern, std::ptrdiff_t offset = 0) try
+	{
+		variables.emplace_back(std::in_place_type<ExternalRef<T>>, hook::txn::get_pattern<T*>(pattern, offset));
 	}
 	TXN_CATCH();
 
-	static void ReInitOurVariables()
+	static void ReInitOurVariables(const std::vector<VarVariant>& variables)
 	{
-		for ( const auto& var : GameVariablesToReset )
+		for (const auto& var : variables)
 		{
 			std::visit( []( auto&& v ) {
 				v.Get() = {};
@@ -1048,7 +1062,7 @@ namespace VariableResets
 	void ReInitGameObjectVariables()
 	{
 		// First reinit "our" variables in case stock ones rely on those during resetting
-		ReInitOurVariables();
+		ReInitOurVariables(GameVariablesToReset);
 		orgReInitGameObjectVariables<Index>();
 	}
 	HOOK_EACH_INIT(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
@@ -1056,9 +1070,16 @@ namespace VariableResets
 	static void (*orgGameInitialise)(const char*);
 	void GameInitialise(const char* path)
 	{
-		ReInitOurVariables();
+		ReInitOurVariables(GameVariablesToReset);
 		TimerInitialise();
 		orgGameInitialise(path);
+	}
+
+	static void* (*orgFindPlayerPed_MissionCleanupProcess)();
+	static void* FindPlayerPed_MissionCleanupProcess_DoOurCleanup()
+	{
+		ReInitOurVariables(GameVariablesToMissionCleanup);
+		return orgFindPlayerPed_MissionCleanupProcess();
 	}
 
 	static void (__fastcall* DestroyAllGameCreatedEntities)(void* DMAudio);
@@ -3775,40 +3796,66 @@ void Patch_III_Common()
 	TXN_CATCH();
 
 
-	// Reset variables on New Game
-	try
+	// Reset variables on New Game and mission cleanup
 	{
 		using namespace VariableResets;
 
-		auto game_initialise = get_pattern("6A 00 E8 ? ? ? ? 83 C4 0C 68 ? ? ? ? E8 ? ? ? ? 59 C3", 15);
-		std::array<void*, 2> reinit_game_object_variables = {
-			get_pattern("E8 ? ? ? ? 80 3D ? ? ? ? ? 75 6B"),
-			get_pattern("C6 05 ? ? ? ? ? E8 ? ? ? ? C7 05", 7)
-		};
+		// New/Load Game
+		try
+		{
+			auto game_initialise = get_pattern("6A 00 E8 ? ? ? ? 83 C4 0C 68 ? ? ? ? E8 ? ? ? ? 59 C3", 15);
+			std::array<void*, 2> reinit_game_object_variables = {
+				get_pattern("E8 ? ? ? ? 80 3D ? ? ? ? ? 75 6B"),
+				get_pattern("C6 05 ? ? ? ? ? E8 ? ? ? ? C7 05", 7)
+			};
 
-		TimerInitialise = reinterpret_cast<decltype(TimerInitialise)>(get_pattern("83 E4 F8 68 ? ? ? ? E8", -6));
+			TimerInitialise = reinterpret_cast<decltype(TimerInitialise)>(get_pattern("83 E4 F8 68 ? ? ? ? E8", -6));
 
-		// In GTA III, we also need to backport one more fix from VC to avoid issues with looping audio entities:
-		// CMenuManager::DoSettingsBeforeStartingAGame needs to call cDMAudio::DestroyAllGameCreatedEntities
-		DestroyAllGameCreatedEntities = reinterpret_cast<decltype(DestroyAllGameCreatedEntities)>(ReadCallFrom(
-			get_pattern("B9 ? ? ? ? E8 ? ? ? ? 31 DB BD ? ? ? ? 8D 40 00", 5)));
+			// In GTA III, we also need to backport one more fix from VC to avoid issues with looping audio entities:
+			// CMenuManager::DoSettingsBeforeStartingAGame needs to call cDMAudio::DestroyAllGameCreatedEntities
+			DestroyAllGameCreatedEntities = reinterpret_cast<decltype(DestroyAllGameCreatedEntities)>(ReadCallFrom(
+				get_pattern("B9 ? ? ? ? E8 ? ? ? ? 31 DB BD ? ? ? ? 8D 40 00", 5)));
 
-		auto audio_service = pattern("B9 ? ? ? ? E8 ? ? ? ? B9 ? ? ? ? C6 05 ? ? ? ? ? E8").count(2);
-		std::array<void*, 2> audio_service_instances = {
-			audio_service.get(0).get<void>(5),
-			audio_service.get(1).get<void>(5),
-		};
+			auto audio_service = pattern("B9 ? ? ? ? E8 ? ? ? ? B9 ? ? ? ? C6 05 ? ? ? ? ? E8").count(2);
+			std::array<void*, 2> audio_service_instances = {
+				audio_service.get(0).get<void>(5),
+				audio_service.get(1).get<void>(5),
+			};
 
-		InterceptCall(game_initialise, orgGameInitialise, GameInitialise);
-		HookEach_ReInitGameObjectVariables(reinit_game_object_variables, InterceptCall);
-		HookEach_Service(audio_service_instances, InterceptCall);
+			InterceptCall(game_initialise, orgGameInitialise, GameInitialise);
+			HookEach_ReInitGameObjectVariables(reinit_game_object_variables, InterceptCall);
+			HookEach_Service(audio_service_instances, InterceptCall);
+		}
+		TXN_CATCH();
+
+		// Mission cleanup
+		try
+		{
+			auto find_player_ped = get_pattern("E8 ? ? ? ? B9 ? ? ? ? 8B 80");
+			InterceptCall(find_player_ped, orgFindPlayerPed_MissionCleanupProcess, FindPlayerPed_MissionCleanupProcess_DoOurCleanup);
+		}
+		TXN_CATCH();
 
 		// Variables to reset
-		AddVariableToReset<bool>("80 3D ? ? ? ? ? 74 2A", 2); // CGarages::RespraysAreFree
-		AddVariableToReset<int>("7D 72 A1 ? ? ? ? 05", 2 + 1); // CCarCtrl::LastTimeAmbulanceCreated
-		AddVariableToReset<int>("74 7F A1 ? ? ? ? 05", 2 + 1); // CCarCtrl::LastTimeFireTruckCreated
+		AddVariableToReset<bool>(GameVariablesToReset, "80 3D ? ? ? ? ? 74 2A", 2); // CGarages::RespraysAreFree
+		AddVariableToReset<int>(GameVariablesToReset, "7D 72 A1 ? ? ? ? 05", 2 + 1); // CCarCtrl::LastTimeAmbulanceCreated
+		AddVariableToReset<int>(GameVariablesToReset, "74 7F A1 ? ? ? ? 05", 2 + 1); // CCarCtrl::LastTimeFireTruckCreated
+
+		try
+		{
+			auto var = get_pattern<ResetShortToOne_t*>("0F BF 05 ? ? ? ? DD DC", 3); // CPed::nThreatReactionRangeMultiplier
+			AddVariableToReset(GameVariablesToReset, var);
+			AddVariableToReset(GameVariablesToMissionCleanup, var);
+		}
+		TXN_CATCH();
+		try
+		{
+			auto var = get_pattern<ResetShortToOne_t*>("0F BF 05 ? ? ? ? D9 5C 24", 3); // CPed::nEnterCarRangeMultiplier
+			AddVariableToReset(GameVariablesToReset, var);
+			AddVariableToReset(GameVariablesToMissionCleanup, var);
+		}
+		TXN_CATCH();
 	}
-	TXN_CATCH();
 
 
 	// Clean up the pickup object when reusing a temporary slot
@@ -4323,6 +4370,23 @@ void Patch_III_Common()
 
 		Nop(restore_bomb_type, 6);
 		InterceptCall(automobile_ctor, orgCAutomobileCtor, CAutomobileCtor_OrBoat);
+	}
+	TXN_CATCH();
+
+
+	// Fixed SET_ENTER_CAR_RANGE_MULTIPLIER and SET_THREAT_REACTION_RANGE_MULTIPLIER commands
+	try
+	{
+		auto script_param_0 = *get_pattern<void*>("A1 ? ? ? ? 8B 0D ? ? ? ? 50 E8 ? ? ? ? 30 DB 31 ED", 1);
+
+		// SET_THREAT_REACTION_RANGE_MULTIPLIER is 1.0-only, so assume that the patterns may have 1 or 2 matches
+		auto fild_param_1 = pattern("DB 05 ? ? ? ? D9 7C 24 20").count_hint(2);
+
+		fild_param_1.for_each_result([script_param_0](pattern_match match)
+			{
+				Patch(match.get<void>(), { 0xD9, 0x05 }); // fld
+				Patch(match.get<void>(2), script_param_0);
+			});
 	}
 	TXN_CATCH();
 }
