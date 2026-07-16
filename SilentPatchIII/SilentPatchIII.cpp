@@ -107,6 +107,9 @@ ExternalMethod<CWeapon, bool(class CEntity* pEntity, CVector* pStartPosn)> FireI
 ExternalFunc<bool(int modelID)> IsBoatModel("89 D0 80 78 ? ? 75", -0xB);
 ExternalMethod<CBoat, CBoat*(int modelID, uint8_t createdBy)> CBoatCtor("8B 44 24 ? 50 8B 6C 24", -6);
 
+// This will be defined below, relying on the script scaling boolean
+bool ShouldUseNewSpritesBehaviour();
+
 namespace UIScales
 {
 	static float** Width_Internal(std::string_view pattern_string, ptrdiff_t offset = 0) try
@@ -1094,6 +1097,44 @@ namespace VariableResets
 		orgService<Index>(DMAudio);
 	}
 	HOOK_EACH_INIT(Service, orgService, Service_AndDestroyEntities);
+
+
+	// Resetting script sprites on cleanup
+	class CSprite2d
+	{
+	public:
+		static inline ExternalMethod<CSprite2d, void()> Delete;
+	};
+
+	static ExternalRef<CSprite2d[]> ScriptSprites;
+	static ExternalValue<int8_t> NumScriptSprites;
+
+	static ExternalValue<const char*> scriptSlotName; // Just so we don't hardcode "script"
+
+	static ExternalFunc<int (const char* pName)> FindTxdSlot;
+	static ExternalFunc<void (int index)> RemoveTxd;
+
+	static void* (*orgFindPlayerPed_ResetScriptSpritesOnMissionCleanup)();
+	static void* FindPlayerPed_ResetScriptSpritesOnMissionCleanup()
+	{
+		if (ShouldUseNewSpritesBehaviour())
+		{
+			auto& Sprites = ScriptSprites.Get();
+			const size_t NumSprites = NumScriptSprites.Get();
+			for (size_t i = 0; i < NumSprites; ++i)
+			{
+				Sprites[i].Delete.Call(&Sprites[i]);
+			}
+
+			const int slot = FindTxdSlot.Call(scriptSlotName.Get());
+			if (slot != -1)
+			{
+				RemoveTxd.Call(slot);
+			}
+		}
+		return orgFindPlayerPed_ResetScriptSpritesOnMissionCleanup();
+	}
+
 }
 
 
@@ -2071,6 +2112,11 @@ namespace ScriptSpritesScaling
 
 	HOOK_EACH_INIT(Scaling_Sprite2d, orgSprite2dDraw_Scaling, Sprite2dDraw_Scaling);
 	HOOK_EACH_INIT(Scaling_DrawRect, orgDrawRect_Scaling, DrawRect_Scaling);
+}
+
+bool ShouldUseNewSpritesBehaviour()
+{
+	return ScriptSpritesScaling::bScaleScriptSprites;
 }
 
 
@@ -3833,6 +3879,25 @@ void Patch_III_Common()
 		{
 			auto find_player_ped = get_pattern("E8 ? ? ? ? B9 ? ? ? ? 8B 80");
 			InterceptCall(find_player_ped, orgFindPlayerPed_MissionCleanupProcess, FindPlayerPed_MissionCleanupProcess_DoOurCleanup);
+
+			// Clear script sprites on mission cleanup, like in VC
+			// This is independent from the previous patch, but relies on the same pattern for convenience
+			try
+			{
+				auto remove_texture_dictionary = pattern("BE ? ? ? ? 8D 40 ? 89 F1 E8 ? ? ? ? 45 83 C6 ? 83 FD ? 7C ? 68 ? ? ? ? E8 ? ? ? ? 59 50 E8").get_one();
+
+				CSprite2d::Delete.Bind(static_cast<typename decltype(CSprite2d::Delete)::fnptr_type>(ReadCallFrom(remove_texture_dictionary.get<void>(0xA))));
+				FindTxdSlot.Bind(static_cast<typename decltype(FindTxdSlot)::fnptr_type>(ReadCallFrom(remove_texture_dictionary.get<void>(0x1D))));
+				RemoveTxd.Bind(static_cast<typename decltype(RemoveTxd)::fnptr_type>(ReadCallFrom(remove_texture_dictionary.get<void>(0x24))));
+
+				ScriptSprites.Bind(remove_texture_dictionary.get<typename decltype(ScriptSprites)::stored_type*>(1));
+				NumScriptSprites.Bind(remove_texture_dictionary.get<typename decltype(NumScriptSprites)::stored_type>(0x13 + 2));
+
+				scriptSlotName.Bind(remove_texture_dictionary.get<typename decltype(scriptSlotName)::stored_type>(0x18 + 1));
+
+				InterceptCall(find_player_ped, orgFindPlayerPed_ResetScriptSpritesOnMissionCleanup, FindPlayerPed_ResetScriptSpritesOnMissionCleanup);
+			}
+			TXN_CATCH();
 		}
 		TXN_CATCH();
 
