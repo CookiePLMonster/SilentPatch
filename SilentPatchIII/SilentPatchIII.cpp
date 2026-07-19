@@ -2763,10 +2763,7 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 				original.second = newPos;
 			});
 
-		if (bUseConsolePlacements)
-		{
-			UpdateUIPlacements<YPositions.size()>();
-		}
+		UpdateUIPlacements<YPositions.size()>();
 
 		if (bHasDebugMenu)
 		{
