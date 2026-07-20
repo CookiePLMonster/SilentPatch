@@ -4250,6 +4250,31 @@ void Patch_VC_Common()
 		InterceptCall(matrix_assign, orgMatrixAssignOp, MatrixAssignOp_RestorePos);
 	}
 	TXN_CATCH();
+
+
+	// Fix the heat haze effect scaling twice
+	// (once when projecting 3D to 2D, again when rendering the actual FX)
+	try
+	{
+		auto scale_x = pattern("DB 05 ? ? ? ? D8 0D ? ? ? ? DD DA D9 43 ? D8 8D").count(3);
+		auto scale_y = pattern("DB 05 ? ? ? ? 8B 44 24 ? 89 44 24 ? D8 0D ? ? ? ? DD D9 D9 43 ? D8 8D").count(3);
+
+		static const int32_t FAKE_SCALE_INT = 1;
+		static const float FAKE_SCALE_FLOAT = 1.0f;
+
+		scale_x.for_each_result([](pattern_match match)
+			{
+				WriteMemDisplacement(match.get<void>(2), &FAKE_SCALE_INT);
+				WriteMemDisplacement(match.get<void>(6 + 2), &FAKE_SCALE_FLOAT);
+			});
+
+		scale_y.for_each_result([](pattern_match match)
+			{
+				WriteMemDisplacement(match.get<void>(2), &FAKE_SCALE_INT);
+				WriteMemDisplacement(match.get<void>(0xE + 2), &FAKE_SCALE_FLOAT);
+			});
+	}
+	TXN_CATCH();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

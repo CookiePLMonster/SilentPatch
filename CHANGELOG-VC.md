@@ -83,6 +83,7 @@ All the remaining, non-critical fixes.
 * The Stats menu now displays the actual number of Hidden Packages, instead of displaying a percentage collected + "out of 100". This fixes the stat display for mods that remove or add additional Hidden Packages.
 * Script sprites now have bilinear filtering applied.
 * NPCs can now use rocket launchers.
+* The heat haze effect (the distortion around vehicle exhausts) that is part of Trails now scales correctly with resolution. Previously, at 4K, it appeared as a pixelated blob around the player's vehicle.
 * ⚙️ Fixed siren corona placements in Police, Firetruck, Ambulance, Enforcer, Vice Cheetah, and FBI Washington.
 * ⚙️ Added siren corona to FBI Washington.
 * ⚙️ Fixed taxi light corona placement for Taxi.
