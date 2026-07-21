@@ -371,11 +371,11 @@ namespace ScalingFixes
 	static CRect* __fastcall CRectCtor_ShadowAdjust(CRect* obj, void*, float left, float bottom, float right, float top)
 	{
 		const int16_t shadow = *wDropShadowPosition;
-		const float scaledShadowX = shadow * UIScales::Stuff2d::Width();
-		const float scaledShadowY = shadow * UIScales::Stuff2d::Height();
+		const float scaledShadowX = shadow * (UIScales::Stuff2d::Width() - 1.0f);
+		const float scaledShadowY = shadow * (UIScales::Stuff2d::Height() - 1.0f);
 
-		return orgCRectCtor(obj, left - shadow + scaledShadowX, bottom - shadow + scaledShadowY,
-				right - shadow + scaledShadowX, top - shadow + scaledShadowY);
+		return orgCRectCtor(obj, left + scaledShadowX, bottom + scaledShadowY,
+				right + scaledShadowX, top + scaledShadowY);
 	}
 }
 
@@ -565,7 +565,9 @@ namespace PrintStringShadows
 
 	static void PrintString_Internal(void (*printFn)(float,float,const wchar_t*), float fX, float fY, float fMarginX, float fMarginY, float fScaleX, float fScaleY, const wchar_t* pText)
 	{
-		printFn(fX - fMarginX + (fMarginX * fScaleX), fY - fMarginY + (fMarginY * fScaleY), pText);
+		fX += fMarginX * (fScaleX - 1.0f);
+		fY += fMarginY * (fScaleY - 1.0f);
+		printFn(fX, fY, pText);
 	}
 
 	template<uintptr_t pFltX, uintptr_t pFltY, typename Scaler>

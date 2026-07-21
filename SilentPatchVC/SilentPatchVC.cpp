@@ -418,7 +418,9 @@ namespace PrintStringShadows
 
 	static void PrintString_Internal(void (*printFn)(float,float,const wchar_t*), float fX, float fY, float fMarginX, float fMarginY, float fScaleX, float fScaleY, const wchar_t* pText)
 	{
-		printFn(fX - fMarginX + (fMarginX * fScaleX), fY - fMarginY + (fMarginY * fScaleY), pText);
+		fX += fMarginX * (fScaleX - 1.0f);
+		fY += fMarginY * (fScaleY - 1.0f);
+		printFn(fX, fY, pText);
 	}
 
 	template<uintptr_t pFltX, uintptr_t pFltY, typename Scaler>
@@ -924,7 +926,7 @@ namespace ShadowScalingFixes
 			scaleX = UIScales::MenuManager::Width();
 			scaleY = UIScales::MenuManager::Height();
 		}
-		return { (shadow * scaleX) - shadow, (shadow * scaleY) - shadow };
+		return { (shadow * (scaleX - 1.0f)), (shadow * (scaleY - 1.0f)) };
 	}
 
 	template<std::size_t Index>
