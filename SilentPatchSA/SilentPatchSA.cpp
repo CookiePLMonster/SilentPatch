@@ -7112,6 +7112,10 @@ void Patch_SA_10(HINSTANCE hInstance)
 	// Impounding after busted works
 	Nop(0x443292, 5);
 
+	// Impound garages can no longer delete the cars with peds inside (mostly players can trigger them anyways)
+	InjectHook(0x449B3D, &CPlayerInfo::CancelPlayerEnteringCars_ImpoundGarage);
+	Nop(0x449B42, 17); // disable the other calls after
+
 	// Mouse rotates an airborne car only with Steer with Mouse option enabled
 	bool*	bEnableMouseSteering = *(bool**)0x6AD7AD; // CVehicle::m_bEnableMouseSteering
 	Patch<bool*>(0x6B4EC0, bEnableMouseSteering);

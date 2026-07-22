@@ -29,6 +29,8 @@ private:
 public:
 	CPlayerPed*		GetPlayerPed() const { return m_pPed; }
 	CVehicle*		GetControlledVehicle() const { return m_pControlledVehicle; }
+
+	void CancelPlayerEnteringCars_ImpoundGarage(CVehicle *pVehicle);
 };
 
 CPlayerPed* FindPlayerPed( int playerID = -1 );
