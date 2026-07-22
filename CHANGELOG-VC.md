@@ -84,6 +84,9 @@ All the remaining, non-critical fixes.
 * Script sprites now have bilinear filtering applied.
 * NPCs can now use rocket launchers.
 * The heat haze effect (the distortion around vehicle exhausts) that is part of Trails now scales correctly with resolution. Previously, at 4K, it appeared as a pixelated blob around the player's vehicle.
+* The heat haze effect is now used correctly on both exhausts of vehicles that had the dual exhausts very close to each other.
+* The heat haze effect is no longer disabled when the zone or vehicle name shows on screen.
+* Water and blood on-screen droplets can no longer be placed under the HUD or radar on higher resolutions, and they are no longer confined to a small area of the screen when the zone or vehicle name shows on screen.
 * ⚙️ Fixed siren corona placements in Police, Firetruck, Ambulance, Enforcer, Vice Cheetah, and FBI Washington.
 * ⚙️ Added siren corona to FBI Washington.
 * ⚙️ Fixed taxi light corona placement for Taxi.

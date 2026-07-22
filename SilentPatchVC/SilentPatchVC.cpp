@@ -117,6 +117,28 @@ namespace UIScales
 		return &pFallback;
 	}
 
+	static float** Width_Internal_Nth(std::string_view pattern_string, ptrdiff_t offset, uint32_t hit_no) try
+	{
+		return hook::txn::pattern(pattern_string).count(hit_no + 1).get(hit_no).get<float*>(offset);
+	}
+	catch (const hook::txn_exception&)
+	{
+		static float fallback = 1.0f / 640.0f;
+		static float* pFallback = &fallback;
+		return &pFallback;
+	}
+
+	static float** Height_Internal_Nth(std::string_view pattern_string, ptrdiff_t offset, uint32_t hit_no) try
+	{
+		return hook::txn::pattern(pattern_string).count(hit_no + 1).get(hit_no).get<float*>(offset);
+	}
+	catch (const hook::txn_exception&)
+	{
+		static float fallback = 1.0f / 448.0f;
+		static float* pFallback = &fallback;
+		return &pFallback;
+	}
+
 	static float Width_Internal_Scale(float** factor)
 	{
 		return RsGlobal.Get().MaximumWidth * **factor;
@@ -296,6 +318,23 @@ namespace UIScales
 		static float Height()
 		{
 			static float** Mult = Height_Internal("80 3D ? ? ? ? ? 0F 84 ? ? ? ? DB 05 ? ? ? ? 50 D8 0D ? ? ? ? D8 0D ? ? ? ? D9 1C 24 DB 05 ? ? ? ? 50 D8 0D", 0x14 + 2);
+			return Height_Internal_Scale(Mult);
+		}
+	};
+
+
+	// CMBlur - not widescreen fixed, at least right now
+	struct MBlur
+	{
+		static float Width()
+		{
+			static float** Mult = Width_Internal_Nth("D8 0D ? ? ? ? DD D9 D9 05 ? ? ? ? D8 C9 D9 05 ? ? ? ? D8 CA DA 6C 24 ? DD DA D8 C1 D9 1C 24 DB 05 ? ? ? ? 50 D8 0D", 0x2A + 2, 1);
+			return Width_Internal_Scale(Mult);
+		}
+
+		static float Height()
+		{
+			static float** Mult = Height_Internal_Nth("D8 0D ? ? ? ? DD D9 D9 05 ? ? ? ? D8 C9 D9 05 ? ? ? ? D8 CA DA 6C 24 ? DD DA D8 C1 D9 1C 24 DB 05 ? ? ? ? 50 D8 0D", 2, 1);
 			return Height_Internal_Scale(Mult);
 		}
 	};
@@ -2151,6 +2190,119 @@ namespace NPCFireRPGFix
 		}
 		return orgMatrixAssignOp(obj, mat);
 	}
+}
+
+
+// ============= Fix the "safe zones" in CMBlur::AddRenderFx - some margins scale to resolution incorrectly, some don't scale at all =============
+namespace MBlurSafeZoneRects
+{
+	static bool HasGameBindings()
+	{
+		return UIScales::HasGameBindings();
+	}
+
+	static ExternalRef<float> DropletMarginX1, DropletMarginX2, DropletMarginY1, DropletMarginY2;
+	static uint32_t (*orgPosInside_DropletCheck)(const RwRect& pos, float x1, float y1, float x2, float y2);
+	static uint32_t PosInside_DropletCheck(const RwRect& pos, float x1, float y1, float x2, float y2)
+	{
+		// "Add" scaled margins
+		const float WidthScale = UIScales::MBlur::Width() - 1.0f;
+		const float HeightScale = UIScales::MBlur::Height() - 1.0f;
+
+		x1 -= DropletMarginX1.Get() * WidthScale;
+		y1 -= DropletMarginY1.Get() * HeightScale;
+		x2 += DropletMarginX2.Get() * WidthScale;
+		y2 += DropletMarginY2.Get() * HeightScale;
+
+		return orgPosInside_DropletCheck(pos, x1, y1, x2, y2);
+	}
+
+	static uint32_t (*orgPosInside_HazeCheck)(const RwRect& pos, float x1, float y1, float x2, float y2);
+	// We modified this caller
+	static uint32_t PosInside_HazeCheck(const RwRect& pos, RwRect& prevPos)
+	{
+		const uint32_t result = orgPosInside_HazeCheck(pos, static_cast<float>(prevPos.x), static_cast<float>(prevPos.y), static_cast<float>(prevPos.w), static_cast<float>(prevPos.h));
+		if (result != 0)
+		{
+			// Instead of just ignoring this haze, grow the previous one
+			prevPos.x = std::min(pos.x, prevPos.x);
+			prevPos.y = std::min(pos.y, prevPos.y);
+			prevPos.w = std::max(pos.w, prevPos.w);
+			prevPos.h = std::max(pos.h, prevPos.h);
+		}
+
+		return result;
+	}
+
+	// Values got "unscaled" outside, Y1/Y2 are shifted by 1 unit
+	// Both need scaling by Radar
+	static uint32_t (*orgPosInside_Radar)(const RwRect& pos, float x1, float y1, float x2, float y2);
+	static uint32_t PosInside_Radar(const RwRect& pos, float x1, float y1, float x2, float y2)
+	{
+		y1 -= 1.0f;
+		y2 -= 1.0f;
+
+		const float WidthScale = UIScales::Radar::Width();
+		const float HeightScale = UIScales::Radar::Height();
+		const int Height = RsGlobal.Get().MaximumHeight;
+
+		x1 *= WidthScale;
+		y1 *= HeightScale;
+		x2 *= WidthScale;
+		y2 *= HeightScale;
+
+		y1 += Height;
+		y2 += Height;
+
+		return orgPosInside_Radar(pos, x1, y1, x2, y2);
+	}
+
+	// Everything but x2 is unscaled, needs scaling by Hud, x1 needs anchoring to the right side of the screen
+	static uint32_t (*orgPosInside_HUD)(const RwRect& pos, float x1, float y1, float x2, float y2);
+	static uint32_t PosInside_HUD(const RwRect& pos, float x1, float y1, float x2, float y2)
+	{
+		x1 -= 640.0f;
+
+		const float WidthScale = UIScales::Hud::Width();
+		const float HeightScale = UIScales::Hud::Height();
+		const int Width = RsGlobal.Get().MaximumWidth;
+
+		x1 *= WidthScale;
+		y1 *= HeightScale;
+		y2 *= HeightScale;
+
+		x1 += Width;
+
+		return orgPosInside_HUD(pos, x1, y1, x2, y2);
+	}
+
+	// x1 needs to be overwritten to 320 from the right, y1 needs re-anchoring to the bottom and scaling
+	static void PosInside_ZoneVehicleName_AdjustCoords(float& x1, float& y1)
+	{
+		y1 -= 448.0f;
+
+		const float WidthScale = UIScales::Hud::Width();
+		const float HeightScale = UIScales::Hud::Height();
+		const int Width = RsGlobal.Get().MaximumWidth;
+		const int Height = RsGlobal.Get().MaximumHeight;
+
+		x1 = Width - 320.0f * WidthScale;
+		y1 *= HeightScale;
+
+		y1 += Height;
+	}
+
+	template<std::size_t Index>
+	static uint32_t (*orgPosInside_ZoneVehicleName)(const RwRect& pos, float x1, float y1, float x2, float y2);
+
+	template<std::size_t Index>
+	static uint32_t PosInside_ZoneVehicleName(const RwRect& pos, float x1, float y1, float x2, float y2)
+	{
+		PosInside_ZoneVehicleName_AdjustCoords(x1, y1);
+		return orgPosInside_ZoneVehicleName<Index>(pos, x1, y1, x2, y2);
+	}
+
+	HOOK_EACH_INIT(ZoneVehicleName, orgPosInside_ZoneVehicleName, PosInside_ZoneVehicleName);
 }
 
 
@@ -4277,6 +4429,108 @@ void Patch_VC_Common()
 			});
 	}
 	TXN_CATCH();
+
+
+	// Fix the "safe zones" in CMBlur::AddRenderFx - some margins scale to resolution incorrectly, some don't scale at all
+	{
+		using namespace MBlurSafeZoneRects;
+
+		// FXTYPE_HEATHAZE also checked for the safe zones, which is pointless as it's a "3D" effect
+		try
+		{
+			auto heat_haze_safezone = get_pattern("74 ? 31 C0 83 C4 ? 5D 5F 5E 5B C3 8B 3D");
+
+			Patch<uint8_t>(heat_haze_safezone, 0xEB); // jz -> jmp
+		}
+		TXN_CATCH();
+
+		// Scaled margins in CMBlur overlap checks, and smarter handling of overlapping heat haze FX (merge instead of rejecting)
+		if (HasGameBindings()) try
+		{
+			// Removed superfluous margins in CMBlur::PosInside - keep them on the callers instead
+			// Fixes below "depend" on this one, but the later ones can be treated as independent
+			auto margins_1 = pattern("D8 25 ? ? ? ? DB 04 24 DE D9 DF E0 F6 C4").count(8);
+			auto margins_2 = pattern("D9 05 ? ? ? ? D8 C4 DE D9 DF E0 F6 C4").count(4);
+			auto margins_3 = pattern("D9 05 ? ? ? ? D8 C5 DE D9 DF E0 F6 C4").count(4);
+
+			static const float NO_MARGIN = 0.0f;
+			margins_1.for_each_result([](pattern_match match)
+				{
+					WriteMemDisplacement(match.get<void>(2), &NO_MARGIN);
+				});
+			margins_2.for_each_result([](pattern_match match)
+				{
+					WriteMemDisplacement(match.get<void>(2), &NO_MARGIN);
+				});
+			margins_3.for_each_result([](pattern_match match)
+				{
+					WriteMemDisplacement(match.get<void>(2), &NO_MARGIN);
+				});
+
+			try
+			{
+				// For the first match, we'll collect the margins; for the second, reshape the call slightly
+				auto scale_margins_droplets = pattern("D8 05 ? ? ? ? D9 1C 24 DB 87 ? ? ? ? 50 D8 05 ? ? ? ? D9 1C 24 DB 87 ? ? ? ? 50 D8 25 ? ? ? ? D9 1C 24 DB 87 ? ? ? ? 50 D8 25 ? ? ? ? D9 1C 24 56 E8").count(2);
+
+				DropletMarginY2.Bind(scale_margins_droplets.get(0).get<float*>(2));
+				DropletMarginX2.Bind(scale_margins_droplets.get(0).get<float*>(0x10 + 2));
+				DropletMarginY1.Bind(scale_margins_droplets.get(0).get<float*>(0x20 + 2));
+				DropletMarginX1.Bind(scale_margins_droplets.get(0).get<float*>(0x30 + 2));
+
+				InterceptCall(scale_margins_droplets.get(0).get<void>(0x3A), orgPosInside_DropletCheck, PosInside_DropletCheck);
+
+				// lea eax, rects[edi]
+				// ...
+				// fstp st / nop
+				Patch(scale_margins_droplets.get(1).get<void>(0x29), { 0x8D, 0x87 });
+				Patch(scale_margins_droplets.get(1).get<void>(0x36), { 0xDD, 0xD8, 0x90 });
+				InterceptCall(scale_margins_droplets.get(1).get<void>(0x3A), orgPosInside_HazeCheck, PosInside_HazeCheck);
+			}
+			TXN_CATCH();
+
+
+			// Fixed safe zones
+			try
+			{
+				// We use a pattern that captures both E9 and EB as the last byte. This pattern has 8 matches, but we only want the first 4
+				// E8 ? ? ? ? 83 C4 ? 85 C0 74 ? B8 ? ? ? ? E?
+				constexpr uint8_t bytes[] { 0xE8u, 0x00u, 0x00u, 0x00u, 0x00u, 0x83u, 0xC4u, 0x00u, 0x85u, 0xC0u, 0x74u, 0x00u, 0xB8u, 0x00u, 0x00u, 0x00u, 0x00u, 0xE8u };
+				constexpr uint8_t mask[]  { 0xFFu, 0x00u, 0x00u, 0x00u, 0x00u, 0xFFu, 0xFFu, 0x00u, 0xFFu, 0xFFu, 0xFFu, 0x00u, 0xFFu, 0x00u, 0x00u, 0x00u, 0x00u, 0xF8u };
+				auto pos_inside_check = pattern({ bytes, std::size(bytes) }, { mask, std::size(mask) }).count(4);
+
+				static const int32_t FAKE_RES = 1;
+				static const float FAKE_SCALING = 1.0f;
+
+				// Radar
+				try
+				{
+					// Neutralize the default scaling
+					auto res_y_scaling = pattern("A1 ? ? ? ? 89 04 24 50 D9 EE DB 44 24 ? 89 44 24 ? D8 0D").get_one();
+					auto res_x_scaling = pattern("DB 05 ? ? ? ? 50 D8 0D ? ? ? ? D8 0D ? ? ? ? D8 05 ? ? ? ? D9 1C 24 50 D9 14 24").get_one();
+
+					WriteMemDisplacement(res_y_scaling.get<void>(1), &FAKE_RES);
+					WriteMemDisplacement(res_y_scaling.get<void>(0x13 + 2), &FAKE_SCALING);
+					WriteMemDisplacement(res_x_scaling.get<void>(2), &FAKE_RES);
+					WriteMemDisplacement(res_x_scaling.get<void>(7 + 2), &FAKE_SCALING);
+
+					InterceptCall(pos_inside_check.get(0).get<void>(), orgPosInside_Radar, PosInside_Radar);
+				}
+				TXN_CATCH();
+
+				// HUD
+				InterceptCall(pos_inside_check.get(1).get<void>(), orgPosInside_HUD, PosInside_HUD);
+
+				// Zone/vehicle names
+				std::array<void*, 2> zone_vehicle_names = {
+					pos_inside_check.get(2).get<void>(), pos_inside_check.get(3).get<void>()
+				};
+				HookEach_ZoneVehicleName(zone_vehicle_names, InterceptCall);
+
+			}
+			TXN_CATCH();
+		}
+		TXN_CATCH();
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
