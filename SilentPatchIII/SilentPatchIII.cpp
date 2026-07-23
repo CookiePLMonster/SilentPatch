@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "Common_ddraw.h"
 #include "Desktop.h"
+#include "PhysicalIII.h"
 #include "VehicleIII.h"
 #include "ModelInfoIII.h"
 #include "Random.h"
@@ -102,7 +103,7 @@ static ExternalRef<bool> bIsFrontEndActive("80 3D ? ? ? ? 00 74 ? 80 3D ? ? ? ? 
 ExternalFunc<CVehicle()> FindPlayerVehicle("6B C0 ? 8B 0C 85 ? ? ? ? 85 C9 74", -7);
 
 class CWeapon {};
-ExternalMethod<CWeapon, bool(class CEntity* pEntity, CVector* pStartPosn)> FireInstantHit("55 81 EC ? ? ? ? 8B AC 24 ? ? ? ? 8B BC 24", -5);
+ExternalMethod<CWeapon, bool(CEntity* pEntity, CVector* pStartPosn)> FireInstantHit("55 81 EC ? ? ? ? 8B AC 24 ? ? ? ? 8B BC 24", -5);
 
 ExternalFunc<bool(int modelID)> IsBoatModel("89 D0 80 78 ? ? 75", -0xB);
 ExternalMethod<CBoat, CBoat*(int modelID, uint8_t createdBy)> CBoatCtor("8B 44 24 ? 50 8B 6C 24", -6);
@@ -2010,8 +2011,7 @@ namespace CoronaFlaresScaling
 // ============= Fix CShadows::CastShadowEntityXY ignoring the Up rotation of an object =============
 namespace CastShadowEntityFix
 {
-	// This is actually CEntity*, but we don't have that defined at the moment and we only care about the matrix
-	void __fastcall TransformShadowPoint3D(const CVehicle* entity, CVector* vec)
+	void __fastcall TransformShadowPoint3D(const CEntity* entity, CVector* vec)
 	{
 		const CMatrix& mat = entity->GetMatrix();
 		const CVector& right = mat.GetRight();
@@ -2306,8 +2306,8 @@ namespace NPCFireSniperFix
 		return EnsureBindings(FindPlayerPed, FireInstantHit);
 	}
 
-	static bool (__thiscall* orgFireSniper)(CWeapon* obj, class CEntity* pEntity);
-	static bool __fastcall FireSniper_OrInstantHit(CWeapon* obj, CVector* pStartPosn, class CEntity* pEntity)
+	static bool (__thiscall* orgFireSniper)(CWeapon* obj, CEntity* pEntity);
+	static bool __fastcall FireSniper_OrInstantHit(CWeapon* obj, CVector* pStartPosn, CEntity* pEntity)
 	{
 		if (FindPlayerPed.Call() == pEntity)
 		{
@@ -2425,6 +2425,48 @@ namespace BoatsInGarages
 			return CBoatCtor.Call(static_cast<CBoat*>(obj), modelID, createdBy);
 		}
 		return orgCAutomobileCtor(obj, modelID, createdBy);
+	}
+}
+
+
+// ============= Restore the PS2 automobile buoyancy code, puddles slowing cars down =============
+// ============= Also implemented by IIIParticleEx, this pattern will fail if it's installed =============
+// Contributed by Fire_Head
+namespace AutomobilePS2BuoyancyFix
+{
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(CTimer::ms_fTimeStep, CPhysical::ApplyMoveForce);
+	}
+
+	static CVector* (*orgCrossProduct)(CVector* out, const CVector& left, const CVector& right);
+	static CVector* CrossProduct_ApplyMoveForce(CVector* out, const CVector& left, const CVector& right, CAutomobile* automobile)
+	{
+		CVector* result = orgCrossProduct(out, left, right);
+
+		// Rebuilt GetSpeed()
+		CVector speed = automobile->m_vecMoveSpeed + automobile->m_vecMoveFriction + *result;
+		speed.z = 0.0f;
+
+		constexpr float WATER_RESISTANCE = -0.003f;
+		const CVector moveForce = CTimer::ms_fTimeStep.Get() * (automobile->m_fMass * (speed * WATER_RESISTANCE));
+		automobile->ApplyMoveForce.Call(automobile, moveForce.x, moveForce.y, moveForce.z);
+
+		return result;
+	}
+
+	__declspec(naked) static void CrossProduct_ApplyMoveForce_Hook()
+	{
+		_asm
+		{
+			push	ebp
+			push	[esp+4+0Ch]
+			push	[esp+8+8]
+			push	[esp+0Ch+4]
+			call	CrossProduct_ApplyMoveForce
+			add		esp, 10h
+			retn
+		}
 	}
 }
 
@@ -3137,6 +3179,19 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 
 		InterceptCall(fire_sniper, orgFireSniper, FireSniper_GetSource);
 		InterceptCall(load_weapon_dat, orgSscanf, sscanf_PatchSniper);
+	}
+	TXN_CATCH();
+
+
+	// Restore the PS2 automobile buoyancy code, puddles slowing cars down
+	// Also implemented by IIIParticleEx, this pattern will fail if it's installed
+	// Contributed by Fire_Head
+	if (AutomobilePS2BuoyancyFix::HasGameBindings()) try
+	{
+		using namespace AutomobilePS2BuoyancyFix;
+
+		auto cross_product = get_pattern("50 E8 ? ? ? ? D9 EE D9 EE D9 EE D9 EE D9 84 24", 1);
+		InterceptCall(cross_product, orgCrossProduct, CrossProduct_ApplyMoveForce_Hook);
 	}
 	TXN_CATCH();
 

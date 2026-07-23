@@ -1,5 +1,7 @@
 #pragma once
 
+#include "PhysicalIII.h"
+
 #include <cstdint>
 #include "Maths.h"
 #include "TheFLAUtils.h"
@@ -15,15 +17,10 @@ enum eVehicleType
 	NUM_VEHICLE_TYPES
 };
 
-class CVehicle
+class CVehicle : public CPhysical
 {
 protected:
-	// TODO: Make this part of CEntity properly
-	void*		__vmt;
-	CMatrix		m_matrix;
-	uint8_t		__pad2[16];
-	FLAUtils::int16 m_modelIndex;
-	uint8_t		__pad1[548];
+	uint8_t		__pad1[348];
 	uint32_t	m_dwVehicleClass;
 
 

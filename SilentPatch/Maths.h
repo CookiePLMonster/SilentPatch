@@ -101,6 +101,8 @@ public:
 
 	friend inline CVector operator*(const CVector& in, float fMul)
 		{ return CVector(in.x * fMul, in.y * fMul, in.z * fMul); }
+	friend inline CVector operator*(float fMul, const CVector& in)
+	{ return CVector(fMul * in.x, fMul * in.y, fMul * in.z); }
 	friend inline CVector operator+(const CVector& vec1, const CVector& vec2)
 		{ return CVector(vec1.x + vec2.x, vec1.y + vec2.y, vec1.z + vec2.z); }
 	friend inline CVector operator+(const CVector& vec1, const RwV3d& vec2)
