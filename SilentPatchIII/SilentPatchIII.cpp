@@ -2431,7 +2431,7 @@ namespace BoatsInGarages
 
 // ============= Restore the PS2 automobile buoyancy code, puddles slowing cars down =============
 // ============= Also implemented by IIIParticleEx, this pattern will fail if it's installed =============
-// Contributed by Fire_Head
+// ============= Researched by Fire_Head =============
 namespace AutomobilePS2BuoyancyFix
 {
 	static bool HasGameBindings()
@@ -2466,6 +2466,36 @@ namespace AutomobilePS2BuoyancyFix
 			call	CrossProduct_ApplyMoveForce
 			add		esp, 10h
 			retn
+		}
+	}
+}
+
+
+// ============= Fix a broken heli dust cache in CHeli::PreRender =============
+// ============= Researched by Nick007J =============
+namespace HeliPreRenderDustCacheFix
+{
+	static void* HeliPreRender_CheckIteration_DoLOS;
+	static void* HeliPreRender_CheckIteration_SkipLOS;
+
+	__declspec(naked) static void HeliPreRender_CheckIteration()
+	{
+		_asm
+		{
+			push	dword ptr [esp+0B8h-80h]
+			push	eax
+
+			// if (i == 4*frm)
+			movzx	eax, byte ptr [esp+0C0h-84h] // frm
+			shl		eax, 2
+			cmp		al, byte ptr [esp+0C0h-88h] // i
+			je		DoLOS
+			add		esp, 2Ch
+			fldz
+			jmp		[HeliPreRender_CheckIteration_SkipLOS]
+
+		DoLOS:
+			jmp		[HeliPreRender_CheckIteration_DoLOS]
 		}
 	}
 }
@@ -4506,6 +4536,26 @@ void Patch_III_Common()
 				Patch(match.get<void>(), { 0xD9, 0x05 }); // fld
 				Patch(match.get<void>(2), script_param_0);
 			});
+	}
+	TXN_CATCH();
+
+
+	// Fix a broken heli dust cache in CHeli::PreRender
+	// Researched by Nick007J
+	try
+	{
+		using namespace HeliPreRenderDustCacheFix;
+
+		// Pattern spanning the entire chunk of code we'll be jumping over
+		//auto dust_update_index = pattern("0F B6 44 24 0C 89 C2 83 E2 03 29 D0 99 83 E2 03 01 D0 C1 F8 02").get_one();
+
+		auto check_iterations_before_call = pattern("FF 74 24 38 50 E8 ? ? ? ? 83 C4 2C").get_one();
+		auto skip_los_call_dest = get_pattern("0F B6 44 24 ? 48 83 F8 ? 77 ? FF 24 85 ? ? ? ? EB");
+
+		InjectHook(check_iterations_before_call.get<void>(), HeliPreRender_CheckIteration, HookType::Jump);
+
+		HeliPreRender_CheckIteration_DoLOS = check_iterations_before_call.get<void>(5);
+		HeliPreRender_CheckIteration_SkipLOS = skip_los_call_dest;
 	}
 	TXN_CATCH();
 }
