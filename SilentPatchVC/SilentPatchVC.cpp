@@ -2306,6 +2306,64 @@ namespace MBlurSafeZoneRects
 }
 
 
+// ============= Fix multiple bugs with stingers =============
+namespace StingerFixes
+{
+	class CStinger
+	{
+	public:
+		bool bIsDeployed;
+		uint32_t m_nTimeOfDeploy;
+		CVector m_vPos;
+		float m_fMax_Z;
+		float m_fMin_Z;
+		CVector2D m_vPositions[60];
+		class CStingerSegment *pSpikes[12];
+		class CPed *pOwner;
+		uint8_t m_nSpikeState;
+	};
+
+	template<std::size_t Index>
+	static void* (*orgOperatorNew_Stingers)(size_t size);
+
+	template<std::size_t Index>
+	static void* OperatorNew_Stingers(size_t size)
+	{
+		void* result = orgOperatorNew_Stingers<Index>(size);
+		if (result != nullptr)
+		{
+			std::memset(result, 0, size);
+		}
+		return result;
+	}
+
+	HOOK_EACH_INIT(OperatorNew, orgOperatorNew_Stingers, OperatorNew_Stingers);
+
+	static void (__thiscall *Stinger_Remove)(CStinger* stinger);;
+	static void __fastcall Stinger_InitFailed(CStinger* stinger)
+	{
+		Stinger_Remove(stinger);
+
+		std::fill(std::begin(stinger->pSpikes), std::end(stinger->pSpikes), nullptr);
+	}
+
+	__declspec(naked) static void Stinger_Init_AllocationFailed()
+	{
+		_asm
+		{
+			mov		ecx, ebx
+			call	Stinger_InitFailed
+
+			add     esp, 20h
+			pop     ebp
+			pop     edi
+			pop     esi
+			pop     ebx
+			retn	4
+		}
+	}
+}
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -4531,6 +4589,47 @@ void Patch_VC_Common()
 		}
 		TXN_CATCH();
 	}
+
+
+	// Fix multiple bugs with stingers
+	// 1. CStinger::Remove attempting to delete already-deleted entities on exit
+	// 2. CStinger::Init not dealing with the object pool exhaustion correctly
+	// 3. CStinger::CStinger not initializing pSpikes[] to zero, so 2. can't even be implemented
+	// 4. CStinger::Remove not removing objects if the entire stinger didn't spawn successfully
+	try
+	{
+		using namespace StingerFixes;
+
+		// Let CStinger::Remove correctly delete stingers that have been created but not added to world yet
+		// And make it ignore bIsDeployed, so partially-spawned stingers can tear down
+		// cmp dword ptr [ecx+0DCh], 0 -> cmp dword ptr [ebx+230h], 0
+		auto stinger_remove = pattern("74 ? 31 ED 8D 44 20 ? 8B 8C AB ? ? ? ? 83 B9").get_one();
+
+		// Inlined CStinger::Remove inside ::Process
+		auto inlined_stinger_remove = pattern("0F 84 ? ? ? ? DE D9 31 F6 DD D8 8D 84 20 ? ? ? ? 8B 8C B3 ? ? ? ? 83 B9").get_one();
+
+		std::array<void*, 2> stinger_operator_new = {
+			get_pattern("E8 ? ? ? ? 85 C0 59 74 ? 89 C1 E8 ? ? ? ? 8B 54 24 ? 89 82"),
+			get_pattern("E8 ? ? ? ? 85 C0 59 74 ? 89 C1 E8 ? ? ? ? 89 85"),
+		};
+
+		auto stinger_init = get_pattern("0F 84 ? ? ? ? 89 C1 89 44 24", 2);
+
+		Stinger_Remove = reinterpret_cast<decltype(Stinger_Remove)>(stinger_remove.get<void>(-8));
+
+		Nop(stinger_remove.get<void>(), 2);
+		Patch(stinger_remove.get<void>(0xF), { 0x83, 0xBB, 0x30, 0x02, 0x00, 0x00, 0x00 });
+
+		Nop(inlined_stinger_remove.get<void>(), 6);
+		Patch(inlined_stinger_remove.get<void>(0x1A), { 0x83, 0xBB, 0x30, 0x02, 0x00, 0x00, 0x00 });
+
+		// Initialize CStinger fields correctly (memset is the easiest)
+		HookEach_OperatorNew(stinger_operator_new, InterceptCall);
+
+		// Handle CStingerSegment allocation failure in CStinger::Init
+		WriteOffsetValue(stinger_init, Stinger_Init_AllocationFailed);
+	}
+	TXN_CATCH();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
