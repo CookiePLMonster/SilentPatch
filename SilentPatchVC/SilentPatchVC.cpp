@@ -4630,6 +4630,21 @@ void Patch_VC_Common()
 		WriteOffsetValue(stinger_init, Stinger_Init_AllocationFailed);
 	}
 	TXN_CATCH();
+
+
+	// Fix a crash in CRoadBlocks::CreateRoadBlockBetween2Points when the objects pool runs out of space
+	try
+	{
+		auto object_creation_check = get_pattern_uintptr("74 ? 0F B7 05 ? ? ? ? 89 F1", 1);
+		auto function_epilogue = get_pattern_uintptr("0F 8C ? ? ? ? 8D 4C 24 ? E8 ? ? ? ? 81 C4", 6);
+
+		const ptrdiff_t diff = function_epilogue - (object_creation_check + 1);
+		if (diff <= INT8_MAX)
+		{
+			Patch<int8_t>(object_creation_check, static_cast<int8_t>(diff));
+		}
+	}
+	TXN_CATCH();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

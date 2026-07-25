@@ -17,6 +17,7 @@ Compatibility issues, crashes, progression blockers.
 * Fixed an issue that would cause games to freeze if III/VC/SA were running at the same time.
 * Fixed a rare, random crash that could occur when the game displayed texts added by other mods outside of the GXT file.
 * Fixed multiple crashes caused by stingers (spike strips): they caused a rare crash or exit and a consistent crash when the objects pool ran out of space, which could happen during very long gameplay sessions.
+* Fixed the road blocks causing a crash when the objects pool ran out of space, which could happen during very long gameplay sessions.
 * ⚙️ Made the game default to the desktop refresh rate instead of 60Hz, so Alt+Tab and startup no longer flicker on high refresh rate monitors.
 
 ## Other fixes
