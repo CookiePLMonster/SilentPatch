@@ -2501,6 +2501,28 @@ namespace HeliPreRenderDustCacheFix
 }
 
 
+// ============= Fix a PC regression in the search logic in CHeli::ProcessControl =============
+// ============= Researched by Nick007J =============
+namespace HeliSearchLogicFix
+{
+	static void* HeliStateSwitch_End;
+
+	__declspec(naked) static void HeliStateSwitch_EndOfZero()
+	{
+		_asm
+		{
+			jne		BreakOutOfCase
+			mov		byte ptr [ebp+2A8h], 1
+
+		BreakOutOfCase:
+			fldz
+			fldz
+			jmp		[HeliStateSwitch_End]
+		}
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -4556,6 +4578,21 @@ void Patch_III_Common()
 
 		HeliPreRender_CheckIteration_DoLOS = check_iterations_before_call.get<void>(5);
 		HeliPreRender_CheckIteration_SkipLOS = skip_los_call_dest;
+	}
+	TXN_CATCH();
+
+	// Fix a PC regression in the search logic in CHeli::ProcessControl
+	// Researched by Nick007J
+	try
+	{
+		using namespace HeliSearchLogicFix;
+
+		auto end_of_case_0 = get_pattern("75 07 C6 85 A8 02 00 00 01 80 BD");
+		auto end_of_switch = get_pattern("D9 44 24 ? D8 1D ? ? ? ? DF E0 F6 C4 ? 75 ? D9 05 ? ? ? ? EB ? D9 44 24 ? D8 1D ? ? ? ? DF E0 F6 C4");
+
+		InjectHook(end_of_case_0, HeliStateSwitch_EndOfZero, HookType::Jump);
+
+		HeliStateSwitch_End = end_of_switch;
 	}
 	TXN_CATCH();
 }
