@@ -18,6 +18,7 @@ Compatibility issues, crashes, progression blockers.
 * Fixed a rare, random crash that could occur when the game displayed texts added by other mods outside of the GXT file.
 * Fixed multiple crashes caused by stingers (spike strips): they caused a rare crash or exit and a consistent crash when the objects pool ran out of space, which could happen during very long gameplay sessions.
 * Fixed the road blocks causing a crash when the objects pool ran out of space, which could happen during very long gameplay sessions.
+* Fixed a freeze if the game attempted to create any game entity multiple times in a row when the entity pool was full. This was the most likely to occur with dynamic objects like lampposts or benches.
 * ⚙️ Made the game default to the desktop refresh rate instead of 60Hz, so Alt+Tab and startup no longer flicker on high refresh rate monitors.
 
 ## Other fixes

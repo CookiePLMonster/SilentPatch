@@ -389,6 +389,21 @@ namespace Common {
 				Nop(clear_weapons, 5);
 			}
 			TXN_CATCH();
+
+
+			// Fix CPool<>::New deadlocking if allocation fails twice in a row
+			// San Andreas fixed it differently, but we can fix it safely for all III/VC pools by changing == to >=
+			try
+			{
+				// We don't care how many hits there are, because it differs between III and VC
+				auto pool_new = pattern("FF 41 0C 8B 59 0C 8B 51 08 39 D3 75");
+
+				pool_new.for_each_result([](hook::pattern_match match)
+				{
+					Patch<uint8_t>(match.get<void>(0xB), 0x7C); // jne -> jl
+				});
+			}
+			TXN_CATCH();
 		}
 
 		void III_VC_DelayedCommon( bool /*hasDebugMenu*/, const wchar_t* wcModulePath )
