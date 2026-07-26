@@ -3585,9 +3585,14 @@ void Patch_VC_Common()
 	// Don't reset audio timers in CTimer::Initialise as that interferes with the teardown
 	try
 	{
+		// Pattern to allow both EB and E9 (as 1.0/1.1 use EB but Steam uses E9)
+		// 50 E8 ? ? ? ? E8 ? ? ? ? E8 ? ? ? ? E?
+		constexpr uint8_t bytes[] { 0x50u, 0xE8u, 0x00u, 0x00u, 0x00u, 0x00u, 0xE8u, 0x00u, 0x00u, 0x00u, 0x00u, 0xE8u, 0x00u, 0x00u, 0x00u, 0x00u, 0xE9u };
+		constexpr uint8_t mask[]  { 0xFFu, 0xFFu, 0x00u, 0x00u, 0x00u, 0x00u, 0xFFu, 0x00u, 0x00u, 0x00u, 0x00u, 0xFFu, 0x00u, 0x00u, 0x00u, 0x00u, 0xFDu };
+
 		std::array<void*, 2> reset_timers_to_nop = {
 			get_pattern("E8 ? ? ? ? 68 ? ? ? ? E8 ? ? ? ? 59 89 EC 5D C3"),
-			get_pattern("50 E8 ? ? ? ? E8 ? ? ? ? E8 ? ? ? ? EB 58", 1),
+			pattern({ bytes, std::size(bytes) }, { mask, std::size(mask) }).get_first(1),
 		};
 
 		for (void* func : reset_timers_to_nop)
@@ -4429,23 +4434,45 @@ void Patch_VC_Common()
 	// Fixes an issue where road blocks in 'Decoy' (in GTA III) have Barracks and not the Enforcer
 	try
 	{
-		auto generate_road_blocks = pattern("E8 ? ? ? ? 84 C0 74 ? BD ? ? ? ? EB ? 8D 80 ? ? ? ? E8 ? ? ? ? 8B 88 ? ? ? ? E8 ? ? ? ? 84 C0 74 ? BD ? ? ? ? EB ? 89 C0 8D 40 ? E8 ? ? ? ? 8B 88 ? ? ? ? E8 ? ? ? ? 84 C0 74 ? BD")
-										.get_one();
+		void  *are_army_required_ptr, *are_swat_required_ptr, *army_model_id_ptr, *swat_model_id_ptr;
+
+		try
+		{
+			// VC 1.0/1.1
+			auto generate_road_blocks = pattern("E8 ? ? ? ? 84 C0 74 ? BD ? ? ? ? EB ? 8D 80 ? ? ? ? E8 ? ? ? ? 8B 88 ? ? ? ? E8 ? ? ? ? 84 C0 74 ? BD ? ? ? ? EB ? 89 C0 8D 40 ? E8 ? ? ? ? 8B 88 ? ? ? ? E8 ? ? ? ? 84 C0 74 ? BD")
+											.get_one();
+
+			are_army_required_ptr = generate_road_blocks.get<void>();
+			are_swat_required_ptr = generate_road_blocks.get<void>(0x41);
+			army_model_id_ptr = generate_road_blocks.get<void>(0x9 + 1);
+			swat_model_id_ptr = generate_road_blocks.get<void>(0x4A + 1);
+		}
+		catch (const hook::txn_exception&)
+		{
+			// VC Steam (securom traps were removed)
+			auto generate_road_blocks = pattern("E8 ? ? ? ? 84 C0 74 ? BD ? ? ? ? EB ? E8 ? ? ? ? 8B 88 ? ? ? ? E8 ? ? ? ? 84 C0 74 ? BD ? ? ? ? EB ? 89 C0 8D 40 ? E8 ? ? ? ? 8B 88 ? ? ? ? E8 ? ? ? ? 84 C0 74 ? BD")
+				.get_one();
+
+			are_army_required_ptr = generate_road_blocks.get<void>();
+			are_swat_required_ptr = generate_road_blocks.get<void>(0x3B);
+			army_model_id_ptr = generate_road_blocks.get<void>(0x9 + 1);
+			swat_model_id_ptr = generate_road_blocks.get<void>(0x44 + 1);
+		}
 
 		void* are_army_required;
 		void* are_swat_required;
-		ReadCall(generate_road_blocks.get<void>(), are_army_required);
-		ReadCall(generate_road_blocks.get<void>(0x41), are_swat_required);
+		ReadCall(are_army_required_ptr, are_army_required);
+		ReadCall(are_swat_required_ptr, are_swat_required);
 
 		int32_t army_model_id, swat_model_id;
-		Read(generate_road_blocks.get<void>(0xA), army_model_id);
-		Read(generate_road_blocks.get<void>(0x4B), swat_model_id);
+		Read(army_model_id_ptr, army_model_id);
+		Read(swat_model_id_ptr, swat_model_id);
 
-		InjectHook(generate_road_blocks.get<void>(), are_swat_required);
-		InjectHook(generate_road_blocks.get<void>(0x41), are_army_required);
+		InjectHook(are_army_required_ptr, are_swat_required);
+		InjectHook(are_swat_required_ptr, are_army_required);
 
-		Patch(generate_road_blocks.get<void>(0xA), swat_model_id);
-		Patch(generate_road_blocks.get<void>(0x4B), army_model_id);
+		Patch(army_model_id_ptr, swat_model_id);
+		Patch(swat_model_id_ptr, army_model_id);
 	}
 	TXN_CATCH();
 
@@ -4552,8 +4579,8 @@ void Patch_VC_Common()
 			{
 				// We use a pattern that captures both E9 and EB as the last byte. This pattern has 8 matches, but we only want the first 4
 				// E8 ? ? ? ? 83 C4 ? 85 C0 74 ? B8 ? ? ? ? E?
-				constexpr uint8_t bytes[] { 0xE8u, 0x00u, 0x00u, 0x00u, 0x00u, 0x83u, 0xC4u, 0x00u, 0x85u, 0xC0u, 0x74u, 0x00u, 0xB8u, 0x00u, 0x00u, 0x00u, 0x00u, 0xE8u };
-				constexpr uint8_t mask[]  { 0xFFu, 0x00u, 0x00u, 0x00u, 0x00u, 0xFFu, 0xFFu, 0x00u, 0xFFu, 0xFFu, 0xFFu, 0x00u, 0xFFu, 0x00u, 0x00u, 0x00u, 0x00u, 0xF8u };
+				constexpr uint8_t bytes[] { 0xE8u, 0x00u, 0x00u, 0x00u, 0x00u, 0x83u, 0xC4u, 0x00u, 0x85u, 0xC0u, 0x74u, 0x00u, 0xB8u, 0x00u, 0x00u, 0x00u, 0x00u, 0xE9u };
+				constexpr uint8_t mask[]  { 0xFFu, 0x00u, 0x00u, 0x00u, 0x00u, 0xFFu, 0xFFu, 0x00u, 0xFFu, 0xFFu, 0xFFu, 0x00u, 0xFFu, 0x00u, 0x00u, 0x00u, 0x00u, 0xFDu };
 				auto pos_inside_check = pattern({ bytes, std::size(bytes) }, { mask, std::size(mask) }).count(4);
 
 				static const int32_t FAKE_RES = 1;
