@@ -4445,6 +4445,14 @@ void Patch_III_Common()
 		InjectHook(calculate_duck_pos_start.get<void>(assembly_prologue.size() + 5), calculate_duck_pos_end, HookType::Jump);
 
 		Nop(calculate_duck_pos_matrix_dtor, 5);
+
+		// This code is present only in PC 1.0, so the pattern may fail
+		try
+		{
+			auto duck_and_cover_process_control = get_pattern("24 01 0F 85 ? ? ? ? 89 D9 E8 ? ? ? ? 84 C0 0F 84 ? ? ? ? 89 D9", 2);
+			Patch(duck_and_cover_process_control, { 0x90, 0xE9 });
+		}
+		TXN_CATCH();
 	}
 	TXN_CATCH();
 
