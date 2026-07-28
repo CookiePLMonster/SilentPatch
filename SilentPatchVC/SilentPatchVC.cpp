@@ -3238,6 +3238,22 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	TXN_CATCH();
 
 
+	// Animate boat_moving_hi on Tropic
+	// Moved to the delayed patching point to avoid a conflict with MVL
+	try
+	{
+		auto moving_radar_id_check = pattern("3D ? ? ? ? 74 0B 3D ? ? ? ? 0F 85 ? ? ? ? 8B 83").get_one();
+
+		// push eax \ call CVehicle::HasMovingBoatRadar \ add esp, 4 \ test al, al \ nop
+		Patch<uint8_t>(moving_radar_id_check.get<void>(), 0x50);
+		InjectHook(moving_radar_id_check.get<void>(1), &CVehicle::HasMovingBoatRadar, HookType::Call);
+		Patch(moving_radar_id_check.get<void>(6), { 0x83, 0xC4, 0x04, 0x84, 0xC0 });
+		Nop(moving_radar_id_check.get<void>(11), 1);
+		Patch<uint8_t>(moving_radar_id_check.get<void>(12 + 1), 0x84); // jnz -> jz
+	}
+	TXN_CATCH();
+
+
 	// Apply bilinear filtering on script sprites and scale them to resolution
 	if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ScaleScriptSprites", -1, wcModulePath); ScriptSpritesScaling::HasGameBindings() && INIoption != -1) try
 	{
@@ -4318,21 +4334,6 @@ void Patch_VC_Common()
 	{
 		auto set_texture_filter_blips = get_pattern("6A 01 6A 09 E8 ? ? ? ? 59 59 E8", 1);
 		Patch<uint8_t>(set_texture_filter_blips, rwFILTERLINEAR);
-	}
-	TXN_CATCH();
-
-
-	// Animate boat_moving_hi on Tropic
-	try
-	{
-		auto moving_radar_id_check = pattern("3D ? ? ? ? 74 0B 3D ? ? ? ? 0F 85 ? ? ? ? 8B 83").get_one();
-
-		// push eax \ call CVehicle::HasMovingBoatRadar \ add esp, 4 \ test al, al \ nop
-		Patch<uint8_t>(moving_radar_id_check.get<void>(), 0x50);
-		InjectHook(moving_radar_id_check.get<void>(1), &CVehicle::HasMovingBoatRadar, HookType::Call);
-		Patch(moving_radar_id_check.get<void>(6), { 0x83, 0xC4, 0x04, 0x84, 0xC0 });
-		Nop(moving_radar_id_check.get<void>(11), 1);
-		Patch<uint8_t>(moving_radar_id_check.get<void>(12 + 1), 0x84); // jnz -> jz
 	}
 	TXN_CATCH();
 
