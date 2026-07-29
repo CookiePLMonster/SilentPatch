@@ -43,6 +43,7 @@ SilentPatch includes code contributions from:
 * Kaizo M
 * Nick007J
 * NTAuthority
+* rx
 * Sergeanur
 * spaceeinstein
 * Wesser

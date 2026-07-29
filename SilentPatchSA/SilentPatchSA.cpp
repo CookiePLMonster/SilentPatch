@@ -6163,6 +6163,15 @@ BOOL InjectDelayedPatches_10()
 		}
 
 
+		// Remove the code disallowing Rhino from having functional lights (III/VC leftover)
+		// Contributed by rx
+		if (MemEquals(0x6A2EAB, {0x66u, 0x3Du, 0xB0u, 0x01u }) && MemEquals(0x6ABC81, {0x66u, 0x3Du, 0xB0u, 0x01u })) // Avoid potential incompatibilities with limit adjusters
+		{
+			Patch<int16_t>(0x6A2EAB + 2, -2);
+			Patch<int16_t>(0x6ABC81 + 2, -2);
+		}
+
+
 #ifndef NDEBUG
 		if ( const int QPCDays = GetPrivateProfileIntW(L"Debug", L"AddDaysToQPC", 0, wcModulePath); QPCDays != 0 )
 		{
@@ -6878,6 +6887,20 @@ BOOL InjectDelayedPatches_NewBinaries()
 			Patch(get_best_refresh_rate, { 0x31, 0xC0, 0xC3 });
 		}
 		TXN_CATCH();
+
+
+		// Remove the code disallowing Rhino from having functional lights (III/VC leftover)
+		// Contributed by rx
+		try
+		{
+			auto automobile_render = get_pattern("B9 B0 01 00 00 66 3B C1 74", 1);
+			auto automobile_prerender = get_pattern("B9 B0 01 00 00 66 3B C1 0F 84 ? ? ? ? F6 86", 1);
+
+			Patch<uint32_t>(automobile_render, 0xFFFEu);
+			Patch<uint32_t>(automobile_prerender, 0xFFFEu);
+		}
+		TXN_CATCH();
+
 
 		Memory::FlushCodeChanges();
 		return FALSE;
