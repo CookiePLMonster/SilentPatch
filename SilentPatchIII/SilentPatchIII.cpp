@@ -2523,6 +2523,36 @@ namespace HeliSearchLogicFix
 }
 
 
+// ============= Fix wrongly positioned glass panes if the glass is not axis-aligned =============
+// ============= (none exist in Liberty City, but multiple exist in Upstate) =============
+namespace GlassPanesRotationFix
+{
+	// We want the coordinates to stay in model space until later, so replace object->GetMatrix() * vec with a no-op
+	static const CMatrix* pObjectMatrix = nullptr;
+	static CVector* noopMatrixVectorMult(CVector* out, const CMatrix* left, const CVector* right)
+	{
+		pObjectMatrix = left;
+		*out = *right;
+		return out;
+	}
+
+	static void (*orgGeneratePanesForWindow)(void* type, CVector pos, CVector up, CVector right, void* speedX, void* speedY, void* speedZ,
+		void* pointX, void* pointY, void* pointZ, void* moveSpeed, void* cracked, void* explosion);
+	static void GeneratePanesForWindows_FixCoordinates(void* type, CVector pos, CVector up, CVector right, void* speedX, void* speedY, void* speedZ,
+		void* pointX, void* pointY, void* pointZ, void* moveSpeed, void* cracked, void* explosion)
+	{
+		// Recover the bounding box from the input coordinates
+		const CVector& min = pos;
+		const CVector& max = CVector(right.x + min.x, right.y + min.y, min.z); // min.z used deliberately
+
+		const CVector pa = *pObjectMatrix * min;
+		const CVector pb = *pObjectMatrix * max;
+
+		orgGeneratePanesForWindow(type, pa, up, pb - pa, speedX, speedY, speedZ, pointX, pointY, pointZ, moveSpeed, cracked, explosion);
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -4589,6 +4619,7 @@ void Patch_III_Common()
 	}
 	TXN_CATCH();
 
+
 	// Fix a PC regression in the search logic in CHeli::ProcessControl
 	// Researched by Nick007J
 	try
@@ -4601,6 +4632,41 @@ void Patch_III_Common()
 		InjectHook(end_of_case_0, HeliStateSwitch_EndOfZero, HookType::Jump);
 
 		HeliStateSwitch_End = end_of_switch;
+	}
+	TXN_CATCH();
+
+
+	// Fix a copypaste issue in CGlass::GeneratePanesForWindow producing incorrectly-sized glass shards on rectangular glass panes
+	// (none exist in Liberty City, but multiple exist in Upstate)
+	// Contributed by Fire_Head
+	try
+	{
+		auto glass_pane_div_up = pattern("D8 74 24 30 D9 5E 20 D9 44 24 ? D8 74 24 30 D9 5E 24 D9 44 24 ? D8 74 24 30").get_one();
+
+		Patch<uint8_t>(glass_pane_div_up.get<void>(3), 0x2C);
+		Patch<uint8_t>(glass_pane_div_up.get<void>(0xB + 3), 0x2C);
+		Patch<uint8_t>(glass_pane_div_up.get<void>(0x16 + 3), 0x2C);
+	}
+	TXN_CATCH();
+
+
+	// Fix wrongly positioned glass panes if the glass is not axis-aligned
+	// (none exist in Liberty City, but multiple exist in Upstate)
+	try
+	{
+		using namespace GlassPanesRotationFix;
+
+		// Huge pattern encapsulating all calls we intercept
+		auto matrix_mult = pattern("E8 ? ? ? ? 8B 44 24 ? 83 C4 ? 89 44 24 ? 8B 44 24 ? 89 44 24 ? 8B 4C 24 ? 8D 44 24 ? 89 4C 24 ? 8D 55 ? 50 8D 84 24 ? ? ? ? 52 50 E8 ? ? ? ? 8B 84 24 ? ? ? ? 83 C4 ? 89 44 24 ? 8B 84 24 ? ? ? ? 89 44 24 ? 8B 94 24 ? ? ? ? 8D 44 24 ? 89 54 24 ? 8D 55 ? 50 8D 84 24 ? ? ? ? 52 50 E8 ? ? ? ? 8B 84 24 ? ? ? ? 83 C4 ? 89 44 24 ? 8B 84 24 ? ? ? ? 89 44 24 ? 8B 8C 24 ? ? ? ? 8D 44 24 ? 89 4C 24 ? 8D 55 ? 50 8D 84 24 ? ? ? ? 52 50 E8")
+				.get_one();
+		auto generate_panes_for_window = get_pattern("E8 ? ? ? ? 83 C4 ? 8A 06");
+
+		InjectHook(matrix_mult.get<void>(), noopMatrixVectorMult);
+		InjectHook(matrix_mult.get<void>(0x31), noopMatrixVectorMult);
+		InjectHook(matrix_mult.get<void>(0x6B), noopMatrixVectorMult);
+		InjectHook(matrix_mult.get<void>(0xA5), noopMatrixVectorMult);
+
+		InterceptCall(generate_panes_for_window, orgGeneratePanesForWindow, GeneratePanesForWindows_FixCoordinates);
 	}
 	TXN_CATCH();
 }
