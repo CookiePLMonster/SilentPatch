@@ -2445,6 +2445,22 @@ namespace TommyFistShakeWithWeapons
 }
 
 
+// ============= Fix shell casings being ejected from weapons that don't eject them (Python, Sniper Rifle, Laser Scope) =============
+// ============= Contributed by CanerKaraca =============
+namespace RevolverShellCasingFix
+{
+	static void (__thiscall* orgAddGunshell)(void* weapon, void* shooter, const void* source, const void* direction, void* size);
+	static void __fastcall AddGunshell_SkipForRevolverAndSnipers(void* weapon, void*, void* shooter, const void* source, const void* direction, void* size)
+	{
+		const uint32_t weaponType = *static_cast<const uint32_t*>(weapon);
+		if (weaponType == 18 || weaponType == 28 || weaponType == 29)
+			return;
+
+		orgAddGunshell(weapon, shooter, source, direction, size);
+	}
+}
+
+
 static void __fastcall ResetTimers_Dont(void* /*obj*/, void*, uint32_t /*time*/)
 {
 	// Do nothing
@@ -4671,6 +4687,17 @@ void Patch_VC_Common()
 		{
 			Patch<int8_t>(object_creation_check, static_cast<int8_t>(diff));
 		}
+	}
+	TXN_CATCH();
+
+	// Fixed shell casings being ejected from the Python (revolver), Sniper Rifle, and Laser Scope
+	// Contributed by CanerKaraca
+	try
+	{
+		using namespace RevolverShellCasingFix;
+
+		auto addGunshellCall = get_pattern("E8 ? ? ? ? 8D 44 24 ? 8D 74 24 ? 8D 7C 24");
+		InterceptCall(addGunshellCall, orgAddGunshell, AddGunshell_SkipForRevolverAndSnipers);
 	}
 	TXN_CATCH();
 }
