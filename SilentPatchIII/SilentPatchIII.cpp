@@ -2548,7 +2548,7 @@ namespace GlassPanesRotationFix
 		const CVector pa = *pObjectMatrix * min;
 		const CVector pb = *pObjectMatrix * max;
 
-		orgGeneratePanesForWindow(type, pa, up, pb - pa, speedX, speedY, speedZ, pointX, pointY, pointZ, moveSpeed, cracked, explosion);
+		orgGeneratePanesForWindow(type, pa, pObjectMatrix->GetUp() * up.z, pb - pa, speedX, speedY, speedZ, pointX, pointY, pointZ, moveSpeed, cracked, explosion);
 	}
 }
 
