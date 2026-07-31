@@ -2445,6 +2445,29 @@ namespace TommyFistShakeWithWeapons
 }
 
 
+// ============= Fix player suit resetting during mission triggers =============
+// ============= Contributed by CanerKaraca =============
+namespace PreserveSuitOnDeath
+{
+	static void* orgRequestSpecialModel;
+
+	void __cdecl RequestSpecialModel_PreserveSuit(int mi, const char* name, int flags)
+	{
+		// Only preserve suit for MI_PLAYER (0) if the script attempts to forcefully reload "player".
+		if (mi == 0 && name != nullptr && _stricmp(name, "player") == 0)
+		{
+			// Get the current outfit name of the player
+			const char* currentName = ms_modelInfoPtrs.Get()[0]->GetModelName();
+			if (currentName != nullptr && currentName[0] != '\0')
+			{
+				name = currentName;
+			}
+		}
+
+		((void(__cdecl*)(int, const char*, int))orgRequestSpecialModel)(mi, name, flags);
+	}
+}
+
 // ============= Fix shell casings being ejected from weapons that don't eject them (Python, Sniper Rifle, Laser Scope) =============
 // ============= Contributed by CanerKaraca =============
 namespace RevolverShellCasingFix
@@ -4715,6 +4738,35 @@ void Patch_VC_Common()
 		if (diff <= INT8_MAX)
 		{
 			Patch<int8_t>(object_creation_check, static_cast<int8_t>(diff));
+		}
+	}
+	TXN_CATCH();
+
+	// Fix Tommy's clothes resetting during mission triggers
+	// Contributed by CanerKaraca
+	try
+	{
+		using namespace PreserveSuitOnDeath;
+
+		// CPed::Undress contains a unique call to RpAnimBlendClumpGetAssociation with ANIM_STD_PHONE_OUT (0xA5 = 165 in VC)
+		// 68 A5 00 00 00 50 E8 ? ? ? ? 85 C0 59 59 74 09 53 50 E8 ? ? ? ? 59 59 89 D9 8B 31 FF
+		auto pedUndress = pattern("68 A5 00 00 00 50 E8 ? ? ? ? 85 C0 59 59 74 09 53 50 E8 ? ? ? ? 59 59").count_hint(1).get_first<uint8_t>();
+
+		// Scan forward to find push 6 (STREAMFLAGS_DEPENDENCY | STREAMFLAGS_SCRIPTOWNED) followed by call RequestSpecialModel
+		for (int i = 0; i < 256; i++)
+		{
+			if (pedUndress[i] == 0x6A && pedUndress[i + 1] == 0x06)
+			{
+				for (int j = i + 2; j < i + 16; j++)
+				{
+					if (pedUndress[j] == 0xE8)
+					{
+						InterceptCall(&pedUndress[j], orgRequestSpecialModel, RequestSpecialModel_PreserveSuit);
+						break;
+					}
+				}
+				break;
+			}
 		}
 	}
 	TXN_CATCH();
