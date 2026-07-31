@@ -7090,13 +7090,19 @@ void Patch_SA_10(HINSTANCE hInstance)
 		// Advanced Display Options
 		Nop(0x745B71, 6); // Skip width check
 		Nop(0x745B81, 6); // Skip height check
-		Patch<uint8_t>(0x745B96, 0xEB); // Skip AR check
+		if (MemEquals(0x745B96, { 0x7Bu })) // SA-MP stomps over this entire block of code
+		{
+			Patch<uint8_t>(0x745B96, 0xEB); // Skip AR check
+		}
 		Nop(0x745BFC, 2); // Skip VRAM check
 
 		// Resolution selection dialog
 		Nop(0x74596C, 6); // Skip width check
 		Nop(0x74597A, 6); // Skip height check
-		Patch<uint8_t>(0x7459D0, 0xEB); // Skip AR check
+		if (MemEquals(0x7459D0, { 0x7Bu })) // SA-MP stomps over this entire block of code
+		{
+			Patch<uint8_t>(0x7459D0, 0xEB); // Skip AR check
+		}
 	}
 
 	// Heap corruption fix
@@ -8552,7 +8558,10 @@ void Patch_SA_11()
 		// Resolution selection dialog
 		Nop(0x74619C, 6); // Skip width check
 		Nop(0x7461AA, 6); // Skip height check
-		Patch<uint8_t>(0x746200, 0xEB); // Skip AR check
+		if (MemEquals(0x746200, { 0x7Bu })) // SA-MP stomps over this entire block of code
+		{
+			Patch<uint8_t>(0x746200, 0xEB); // Skip AR check
+		}
 
 		// Advanced Display Options
 		if ( *(BYTE*)0x746333 == 0xE9 )
@@ -8943,13 +8952,19 @@ void Patch_SA_Steam()
 		// Advanced Display Options
 		Nop(0x77F9F0, 2); // Skip width check
 		Nop(0x77F9FC, 2); // Skip height check
-		Patch<uint8_t>(0x77FA0D, 0xEB); // Skip AR check
+		if (MemEquals(0x77FA0D, { 0x7Bu })) // SA-MP stomps over this entire block of code
+		{
+			Patch<uint8_t>(0x77FA0D, 0xEB); // Skip AR check
+		}
 		//Nop(0x77FA81, 2); // Skip VRAM check
 
 		// Resolution selection dialog
 		Nop(0x77F80B, 6); // Skip width check
 		Nop(0x77F819, 6); // Skip height check
-		Patch<uint8_t>(0x77F871, 0xEB); // Skip AR check
+		if (MemEquals(0x77F871, { 0x7Bu })) // SA-MP stomps over this entire block of code
+		{
+			Patch<uint8_t>(0x77F871, 0xEB); // Skip AR check
+		}
 	}
 
 	// Heap corruption fix
