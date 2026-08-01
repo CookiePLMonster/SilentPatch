@@ -3,6 +3,8 @@
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
 #include "Utils/HookEach.hpp"
+#include "Utils/ModuleList.hpp"
+#include "Utils/ScopedUnprotect.hpp"
 #include "ExternalBindings.hpp"
 #include "StoredCar.h"
 #include "SVF.h"
@@ -163,19 +165,30 @@ namespace ExtraCompSpecularity
 }
 
 // ============= Delayed patches =============
-extern void InjectDelayedPatches();
+extern void InjectDelayedPatches(const ModuleList& moduleList);
+extern void InjectPostMSSPatches(const ModuleList& moduleList);
 namespace DelayedPatches
 {
 	static bool delayedPatchesDone = false;
+	static bool postMSSPatchesDone = false;
 
 	static BOOL (*RsEventHandler)(int, void*);
 	static void (WINAPI **OldSetPreference)(int a, int b);
 	void WINAPI Inject_MSS(int a, int b)
 	{
 		(*OldSetPreference)(a, b);
-		if ( !std::exchange(delayedPatchesDone, true) )
+		if ( !std::exchange(postMSSPatchesDone, true) )
 		{
-			InjectDelayedPatches();
+			auto Protect = ScopedUnprotect::SectionOrFullModule(GetModuleHandle(nullptr), ".text");
+			const ModuleList moduleList;
+
+			if (!std::exchange(delayedPatchesDone, true))
+			{
+				InjectDelayedPatches(moduleList);
+			}
+			InjectPostMSSPatches(moduleList);
+			Memory::FlushCodeChanges();
+
 			// So we don't have to revert patches
 			HMODULE		hDummyHandle;
 			GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, TEXT(""), &hDummyHandle);
@@ -189,7 +202,11 @@ namespace DelayedPatches
 		{
 			if ( !std::exchange(delayedPatchesDone, true) )
 			{
-				InjectDelayedPatches();
+				auto Protect = ScopedUnprotect::SectionOrFullModule(GetModuleHandle(nullptr), ".text");
+				const ModuleList moduleList;
+
+				InjectDelayedPatches(moduleList);
+				Memory::FlushCodeChanges();
 			}
 			return TRUE;
 		}
@@ -215,11 +232,8 @@ namespace Common {
 				auto addr_mssHook = get_pattern( "6A 00 6A 02 6A 10 68 00 7D 00 00", -6 + 2 );
 				auto addr_ualHook = get_pattern( "FF 15 ? ? ? ? 6A 00 6A 18", 0xA );
 
-				OldSetPreference = *static_cast<decltype(OldSetPreference)*>(addr_mssHook);
-				Patch( addr_mssHook, &pInjectMSS );
-
-				ReadCall( addr_ualHook, RsEventHandler );
-				InjectHook( addr_ualHook, Inject_UAL );
+				InterceptMemDisplacement(addr_mssHook, OldSetPreference, pInjectMSS);
+				InterceptCall(addr_ualHook, RsEventHandler, Inject_UAL);
 			}
 			TXN_CATCH();
 
@@ -406,7 +420,7 @@ namespace Common {
 			TXN_CATCH();
 		}
 
-		void III_VC_DelayedCommon( bool /*hasDebugMenu*/, const wchar_t* wcModulePath )
+		void III_VC_DelayedCommon(bool /*hasDebugMenu*/, const wchar_t* wcModulePath, const ModuleList& /*moduleList*/)
 		{
 			using namespace Memory;
 			using namespace hook::txn;

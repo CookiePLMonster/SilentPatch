@@ -2467,12 +2467,10 @@ static void __fastcall ResetTimers_Dont(void* /*obj*/, void*, uint32_t /*time*/)
 }
 
 
-void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
+void InjectDelayedPatches_VC_Common(bool bHasDebugMenu, const wchar_t* wcModulePath, const ModuleList& moduleList)
 {
 	using namespace Memory;
 	using namespace hook::txn;
-
-	const ModuleList moduleList;
 
 	const HMODULE hGameModule = GetModuleHandle(nullptr);
 
@@ -3254,22 +3252,6 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	TXN_CATCH();
 
 
-	// Animate boat_moving_hi on Tropic
-	// Moved to the delayed patching point to avoid a conflict with MVL
-	try
-	{
-		auto moving_radar_id_check = pattern("3D ? ? ? ? 74 0B 3D ? ? ? ? 0F 85 ? ? ? ? 8B 83").get_one();
-
-		// push eax \ call CVehicle::HasMovingBoatRadar \ add esp, 4 \ test al, al \ nop
-		Patch<uint8_t>(moving_radar_id_check.get<void>(), 0x50);
-		InjectHook(moving_radar_id_check.get<void>(1), &CVehicle::HasMovingBoatRadar, HookType::Call);
-		Patch(moving_radar_id_check.get<void>(6), { 0x83, 0xC4, 0x04, 0x84, 0xC0 });
-		Nop(moving_radar_id_check.get<void>(11), 1);
-		Patch<uint8_t>(moving_radar_id_check.get<void>(12 + 1), 0x84); // jnz -> jz
-	}
-	TXN_CATCH();
-
-
 	// Apply bilinear filtering on script sprites and scale them to resolution
 	if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ScaleScriptSprites", -1, wcModulePath); ScriptSpritesScaling::HasGameBindings() && INIoption != -1) try
 	{
@@ -3322,10 +3304,30 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	FLAUtils::Init(moduleList);
 }
 
-void InjectDelayedPatches()
+void InjectPostMSSPatches_VC(const ModuleList& moduleList)
 {
-	auto Protect = ScopedUnprotect::SectionOrFullModule(GetModuleHandle(nullptr), ".text");
+	using namespace Memory;
+	using namespace hook::txn;
 
+	const bool bMVL = moduleList.GetByPrefix(L"vehmod_") != nullptr;
+
+	// Animate boat_moving_hi on Tropic
+	// Moved to the post-MSS patching point to avoid a conflict with MVL
+	if (!bMVL) try
+	{
+		auto moving_radar_id_check = pattern("3D ? ? ? ? 74 0B 3D ? ? ? ? 0F 85 ? ? ? ? 8B 83").get_one();
+
+		// push eax \ call CVehicle::HasMovingBoatRadar \ add esp, 4 \ test al, al \ nop
+		Patch<uint8_t>(moving_radar_id_check.get<void>(), 0x50);
+		InjectHook(moving_radar_id_check.get<void>(1), &CVehicle::HasMovingBoatRadar, HookType::Call);
+		Patch(moving_radar_id_check.get<void>(6), { 0x83, 0xC4, 0x04, 0x84, 0xC0, 0x90 });
+		Patch<uint8_t>(moving_radar_id_check.get<void>(12 + 1), 0x84); // jnz -> jz
+	}
+	TXN_CATCH();
+}
+
+void InjectDelayedPatches(const ModuleList& moduleList)
+{
 	// Obtain a path to the ASI
 	wchar_t			wcModulePath[MAX_PATH];
 	GetModuleFileNameW(reinterpret_cast<HMODULE>(&__ImageBase), wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
@@ -3339,10 +3341,14 @@ void InjectDelayedPatches()
 		DebugMenuAddVar("SilentPatch", "Force backface culling off", &SelectableBackfaceCulling::bForceDisableBFC, nullptr);
 	}
 
-	InjectDelayedPatches_VC_Common( hasDebugMenu, wcModulePath );
+	InjectDelayedPatches_VC_Common(hasDebugMenu, wcModulePath, moduleList);
 
-	Common::Patches::III_VC_DelayedCommon( hasDebugMenu, wcModulePath );
-	Memory::FlushCodeChanges();
+	Common::Patches::III_VC_DelayedCommon(hasDebugMenu, wcModulePath, moduleList);
+}
+
+void InjectPostMSSPatches(const ModuleList& moduleList)
+{
+	InjectPostMSSPatches_VC(moduleList);
 }
 
 void Patch_VC_10(uint32_t width, uint32_t height)

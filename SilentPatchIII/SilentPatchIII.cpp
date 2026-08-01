@@ -2564,12 +2564,10 @@ namespace ModelIndicesReadyHook
 }
 
 
-void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
+void InjectDelayedPatches_III_Common(bool bHasDebugMenu, const wchar_t* wcModulePath, const ModuleList& moduleList)
 {
 	using namespace Memory;
 	using namespace hook::txn;
-
-	const ModuleList moduleList;
 
 	const HMODULE hGameModule = GetModuleHandle(nullptr);
 
@@ -3280,10 +3278,13 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 	FLAUtils::Init(moduleList);
 }
 
-void InjectDelayedPatches()
+void InjectPostMSSPatches_III(const ModuleList& /*moduleList*/)
 {
-	auto Protect = ScopedUnprotect::SectionOrFullModule(GetModuleHandle(nullptr), ".text");
+	// Nothing here yet
+}
 
+void InjectDelayedPatches(const ModuleList& moduleList)
+{
 	// Obtain a path to the ASI
 	wchar_t			wcModulePath[MAX_PATH];
 	GetModuleFileNameW(reinterpret_cast<HMODULE>(&__ImageBase), wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
@@ -3291,10 +3292,14 @@ void InjectDelayedPatches()
 
 	const bool hasDebugMenu = DebugMenuLoad();
 
-	InjectDelayedPatches_III_Common( hasDebugMenu, wcModulePath );
+	InjectDelayedPatches_III_Common( hasDebugMenu, wcModulePath, moduleList );
 
-	Common::Patches::III_VC_DelayedCommon( hasDebugMenu, wcModulePath );
-	Memory::FlushCodeChanges();
+	Common::Patches::III_VC_DelayedCommon( hasDebugMenu, wcModulePath, moduleList );
+}
+
+void InjectPostMSSPatches(const ModuleList& moduleList)
+{
+	InjectPostMSSPatches_III(moduleList);
 }
 
 
