@@ -8450,6 +8450,19 @@ void Patch_SA_10(HINSTANCE hInstance)
 		Patch(0x461BB0 + 1, swat_model_id);
 		Patch(0x461BE6 + 1, army_model_id);
 	}
+
+	// Swap the GANGS and CRIMES section names when exporting stats to stats.html
+	// Stat section 3 holds crime stats and section 4 holds gang stats, but the exporter
+	// labels them the other way around
+	{
+		const char* gangsHeader;
+		const char* crimesHeader;
+		Read(0x57E023 + 1, gangsHeader);
+		Read(0x57E02C + 1, crimesHeader);
+
+		Patch(0x57E023 + 1, crimesHeader);
+		Patch(0x57E02C + 1, gangsHeader);
+	}
 }
 
 void Patch_SA_11()
@@ -11281,6 +11294,25 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		Patch(generate_road_blocks.get<void>(0xA), swat_model_id);
 		Patch(generate_road_blocks.get<void>(0x48), army_model_id);
+	}
+	TXN_CATCH();
+
+
+	// Swap the GANGS and CRIMES section names when exporting stats to stats.html
+	// Stat section 3 holds crime stats and section 4 holds gang stats, but the exporter
+	// labels them the other way around
+	try
+	{
+		// GANGS, CRIMES, ACHIEVEMENTS, MISSIONS, MISC cases of the section name switch
+		auto section_names = pattern("6A 00 68 ? ? ? ? EB ? 6A 00 68 ? ? ? ? EB ? 6A 00 68 ? ? ? ? EB ? 6A 00 68 ? ? ? ? EB ? 6A 00 68 ? ? ? ? B9").get_one();
+
+		const char* gangsHeader;
+		const char* crimesHeader;
+		Read(section_names.get<void>(3), gangsHeader);
+		Read(section_names.get<void>(9 + 3), crimesHeader);
+
+		Patch(section_names.get<void>(3), crimesHeader);
+		Patch(section_names.get<void>(9 + 3), gangsHeader);
 	}
 	TXN_CATCH();
 }

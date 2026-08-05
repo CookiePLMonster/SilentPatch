@@ -147,6 +147,7 @@ All the remaining, non-critical fixes.
 * ➕ Securicars are now tougher when damaged by the player.
 * ➕ A misplaced Beagle in Fort Carson has been replaced with a BMX.
 * ➕ Rhino now has fully functional lights (contributed by **rx**).
+* ➕ The GANGS and CRIMES section names are no longer swapped when exporting stats to stats.html.
 * Detached vehicle parts will now keep the same color and lighting as the vehicle they came from.
 * Detached vehicle parts are now rendered from both sides.
 * Resolved single-pixel wide seams showing on the Map screen with Anti-Aliasing enabled.
