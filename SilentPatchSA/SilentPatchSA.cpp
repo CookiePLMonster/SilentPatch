@@ -11326,9 +11326,10 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	TXN_CATCH();
 
 
-	// Swap the GANGS and CRIMES section names when exporting stats to stats.html.
-	// Stat section 3 holds crime stats and section 4 holds gang stats, but the exporter labels them the other way around.
-	// The switch printing those names is located through the GXT keys it references, since its shape differs between the compilers the game versions were built with
+	// Swap the GANGS and CRIMES section names when exporting stats to stats.html. Stat section 3 holds crime
+	// stats and section 4 holds gang stats, but the exporter labels them the other way around.
+	// The switch printing those names is located through the GXT keys it references, since its shape differs
+	// between the compilers the game versions were built with
 	try
 	{
 		const hook::scan_segments rdata = hook::get_section_by_name(GetModuleHandle(nullptr), ".rdata");
