@@ -2573,7 +2573,7 @@ void InjectDelayedPatches_III_Common(bool bHasDebugMenu, const wchar_t* wcModule
 
 	const HMODULE skygfxModule = moduleList.Get(L"skygfx");
 	const HMODULE iiiAircraftModule = moduleList.Get(L"IIIAircraft");
-	const bool bLC01 = moduleList.GetByPrefix(L"LC01") != nullptr;
+	const bool bLC01 = moduleList.Get(L"LC01.Core") != nullptr;
 	if (skygfxModule != nullptr)
 	{
 		auto attachCarPipe = reinterpret_cast<void(*)(RwObject*)>(GetProcAddress(skygfxModule, "AttachCarPipeToRwObject"));
