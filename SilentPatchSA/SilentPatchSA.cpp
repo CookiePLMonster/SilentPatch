@@ -9303,6 +9303,34 @@ void Patch_SA_Steam()
 	InjectHook(0x5EDFD9, 0x5EE0FA, HookType::Jump);
 }
 
+// Formats raw bytes as an IDA style pattern, so no mask has to be maintained by hand
+static std::string BytesToPattern(const void* data, size_t length)
+{
+	std::string result;
+	result.reserve(length * 3);
+
+	for (size_t i = 0; i < length; ++i)
+	{
+		char byte[4];
+		snprintf(byte, sizeof(byte), "%02X ", static_cast<const uint8_t*>(data)[i]);
+		result.append(byte);
+	}
+	return result;
+}
+
+// Locates the operand of the single instruction referencing a GXT key. Both the key and the
+// reference must be unique, so binaries not holding to that are left alone instead of having
+// something unrelated patched
+static void* FindGxtKeyReference(const hook::scan_segments& rdata, const char* key)
+{
+	using namespace hook::txn;
+
+	// The terminator is included so a longer key sharing the prefix cannot match
+	const uintptr_t address = pattern(rdata, BytesToPattern(key, std::strlen(key) + 1)).get_one().get_uintptr();
+
+	return pattern(BytesToPattern(&address, sizeof(address))).get_one().get<void>();
+}
+
 void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 {
 	using namespace Memory;
@@ -11298,21 +11326,22 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	TXN_CATCH();
 
 
-	// Swap the GANGS and CRIMES section names when exporting stats to stats.html
-	// Stat section 3 holds crime stats and section 4 holds gang stats, but the exporter
-	// labels them the other way around
+	// Swap the GANGS and CRIMES section names when exporting stats to stats.html.
+	// Stat section 3 holds crime stats and section 4 holds gang stats, but the exporter labels them the other way around.
+	// The switch printing those names is located through the GXT keys it references, since its shape differs between the compilers the game versions were built with
 	try
 	{
-		// GANGS, CRIMES, ACHIEVEMENTS, MISSIONS, MISC cases of the section name switch
-		auto section_names = pattern("6A 00 68 ? ? ? ? EB ? 6A 00 68 ? ? ? ? EB ? 6A 00 68 ? ? ? ? EB ? 6A 00 68 ? ? ? ? EB ? 6A 00 68 ? ? ? ? B9").get_one();
+		const hook::scan_segments rdata = hook::get_section_by_name(GetModuleHandle(nullptr), ".rdata");
 
-		const char* gangsHeader;
-		const char* crimesHeader;
-		Read(section_names.get<void>(3), gangsHeader);
-		Read(section_names.get<void>(9 + 3), crimesHeader);
+		void* gangsOperand = FindGxtKeyReference(rdata, "FES_GAN");
+		void* crimesOperand = FindGxtKeyReference(rdata, "FES_CRI");
 
-		Patch(section_names.get<void>(3), crimesHeader);
-		Patch(section_names.get<void>(9 + 3), gangsHeader);
+		uintptr_t gangsHeader, crimesHeader;
+		Read(gangsOperand, gangsHeader);
+		Read(crimesOperand, crimesHeader);
+
+		Patch(gangsOperand, crimesHeader);
+		Patch(crimesOperand, gangsHeader);
 	}
 	TXN_CATCH();
 }
