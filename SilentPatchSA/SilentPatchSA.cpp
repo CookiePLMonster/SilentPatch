@@ -4179,9 +4179,11 @@ namespace SpeechSystemFixes
 		}
 	}
 
+	static CEntity* s_targetEntity = nullptr;
 	static int16_t (__thiscall* orgPedSay_ShootContext)(void* ped, void* Phrase, void* StartTimeDelay, void* Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd);
-	static int16_t __fastcall PedSay_ShootContext_CheckTarget(CPlayerPed* firedBy, CPed* targetEntity, void* Phrase, void* StartTimeDelay, void* Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd)
+	static int16_t __fastcall PedSay_ShootContext_CheckTarget(CPlayerPed* firedBy, void*, void* Phrase, void* StartTimeDelay, void* Probability, void* bOverideSilence, void* bForceAudible, void* bFrontEnd)
 	{
+		CEntity* targetEntity = std::exchange(s_targetEntity, nullptr);
 		if (targetEntity == nullptr)
 		{
 			targetEntity = firedBy->GetMouseLockOnRecruitPed();
@@ -8343,8 +8345,10 @@ void Patch_SA_10(HINSTANCE hInstance)
 		InterceptCall(0x68D82F, orgPedSay_ArrestPed, PedSay_ArrestPedHook);
 
 		// Fix CJ not playing SHOOT lines when shooting on a mouse and keyboard
-		Nop(0x7427F1, 2 + 3);
-		Patch(0x7427FC, { 0x8B, 0xD5 }); // mov edx, ebp
+		// mov [s_targetEntity], ebp
+		Patch(0x7427EF, { 0x90u, 0x89u, 0x2Du });
+		WriteMemDisplacement(0x7427EF + 3, &s_targetEntity);
+		Nop(0x7427FC, 2);
 		InterceptCall(0x74281A, orgPedSay_ShootContext, PedSay_ShootContext_CheckTarget);
 
 		// Enable SURROUNDED and COVER ME lines for cops
@@ -11107,12 +11111,14 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		// Fix CJ not playing SHOOT lines when shooting on a mouse and keyboard
 		try
 		{
-			auto target_entity_check1 = get_pattern("74 2D 8A 48 36");
+			auto target_entity_check1 = pattern("74 2D 8A 48 36").get_one();
 			auto target_entity_check2 = get_pattern("75 22 83 3F 17");
 			auto ped_say = get_pattern("E8 ? ? ? ? 83 3F 27");
 
-			Nop(target_entity_check1, 2 + 3);
-			Patch(target_entity_check2, { 0x8B, 0xD0 }); // mov edx, eax
+			// mov [s_targetEntity], eax
+			Patch(target_entity_check1.get<void>(), { 0xA3u });
+			WriteMemDisplacement(target_entity_check1.get<void>(1), &s_targetEntity);
+			Nop(target_entity_check2, 2);
 			InterceptCall(ped_say, orgPedSay_ShootContext, PedSay_ShootContext_CheckTarget);
 		}
 		TXN_CATCH();
