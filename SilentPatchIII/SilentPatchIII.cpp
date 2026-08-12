@@ -4213,7 +4213,7 @@ void Patch_III_Common()
 			auto initialise_wrap_pattern = pattern("E8 ? ? ? ? 59 FF 35 ? ? ? ? E8 ? ? ? ? 59 E8 ? ? ? ? 8D 4C 24 04 68 80 00 00 00 68 80 00 00 00 68 80 00 00 00 68 80 00 00 00").get_one();
 
 			std::array<void*, 1> initialise_scale = {
-				get_pattern("E8 ? ? ? ? DB 05 ? ? ? ? 59 59")
+				get_pattern("E8 ? ? ? ? DB 05 ? ? ? ? 59 59 FF 35")
 			};
 
 			std::array<void*, 2> initialise_wrap = {
