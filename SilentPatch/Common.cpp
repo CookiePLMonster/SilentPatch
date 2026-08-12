@@ -229,7 +229,7 @@ namespace Common {
 			{
 				using namespace DelayedPatches;
 
-				auto addr_mssHook = get_pattern( "6A 00 6A 02 6A 10 68 00 7D 00 00", -6 + 2 );
+				auto addr_mssHook = get_pattern( "FF 15 ? ? ? ? 6A 00 6A 02 6A 10 68 00 7D 00 00", 2 );
 				auto addr_ualHook = get_pattern( "FF 15 ? ? ? ? 6A 00 6A 18", 0xA );
 
 				InterceptMemDisplacement(addr_mssHook, OldSetPreference, pInjectMSS);
