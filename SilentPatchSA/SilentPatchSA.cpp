@@ -6174,6 +6174,20 @@ BOOL InjectDelayedPatches_10()
 		}
 
 
+		// Clip the cursor to the game window bounds
+		// Moved here to get out of the way of SA-MP
+		if (!bSAMP && ClipCursorToGameWindow::HasGameBindings())
+		{
+			using namespace ClipCursorToGameWindow;
+
+			// Disable mouse re-centering
+			Nop(0x53E9F1, 5);
+
+			InterceptCall(0x53EC01, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
+			InterceptMemDisplacement(AddressByRegion_10(0x748452 + 2), orgWindowProc, pClipWindowProcA);
+		}
+
+
 #ifndef NDEBUG
 		if ( const int QPCDays = GetPrivateProfileIntW(L"Debug", L"AddDaysToQPC", 0, wcModulePath); QPCDays != 0 )
 		{
@@ -6621,7 +6635,10 @@ BOOL InjectDelayedPatches_NewBinaries()
 		GetModuleFileNameW(reinterpret_cast<HMODULE>(&__ImageBase), wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
+		const ModuleList moduleList;
+
 		const bool bHasDebugMenu = DebugMenuLoad();
+		const bool bSAMP = moduleList.Get(L"samp") != nullptr;
 
 		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath); INIoption != -1) try
 		{
@@ -6900,6 +6917,40 @@ BOOL InjectDelayedPatches_NewBinaries()
 
 			Patch<uint32_t>(automobile_render, 0xFFFEu);
 			Patch<uint32_t>(automobile_prerender, 0xFFFEu);
+		}
+		TXN_CATCH();
+
+
+		// Clip the cursor to the game window bounds
+		// Moved here to get out of the way of SA-MP
+		if (!bSAMP && ClipCursorToGameWindow::HasGameBindings()) try
+		{
+			using namespace ClipCursorToGameWindow;
+
+			auto rs_camera_show_raster = get_pattern("8B 0D ? ? ? ? 51 E8 ? ? ? ? 83 C4 08 8B E5 5D C3", 7);
+			auto def_window_proc = [] {
+				try {
+					// Steam
+					return get_pattern("50 FF 15 ? ? ? ? 5F 5E 5B", 3);
+				} catch (const hook::txn_exception&) {
+					// RGL
+					return get_pattern("52 FF 15 ? ? ? ? 5F 5E 5B 8B E5", 3);
+				}
+				}();
+
+			// In a bad attempt to fix the mouse issues, the RGL executable cut the DirectInput mouse in favour of using WM_MOUSEMOVE for the camera movements.
+			// This means that the camera stops spinning when the cursor hits our clipping area, and so we need to keep re-centering
+			// as-is so it doesn't break terribly. With this pattern, we can check if this code is present (RGL) or not (newsteam r2)
+			// and act accordingly.
+			if (hook::pattern("8B 45 14 0F BF C8 C1 E8 10 98 5F 5E").count_hint(1).size() != 1)
+			{
+				// newsteam r2, not RGL
+				auto rs_mouse_set_pos = get_pattern("D9 5D FC E8 ? ? ? ? 83 C4 04 E8", 3);
+				Nop(rs_mouse_set_pos, 5);
+			}
+
+			InterceptCall(rs_camera_show_raster, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
+			InterceptMemDisplacement(def_window_proc, orgWindowProc, pClipWindowProcA);
 		}
 		TXN_CATCH();
 
@@ -8427,19 +8478,6 @@ void Patch_SA_10(HINSTANCE hInstance)
 		using namespace FortCarsonBeagle;
 
 		InterceptCall(0x406267, orgLoadCarGenerator, LoadCarGenerator_FixupBeagle);
-	}
-
-
-	// Clip the cursor to the game window bounds
-	if (ClipCursorToGameWindow::HasGameBindings())
-	{
-		using namespace ClipCursorToGameWindow;
-
-		// Disable mouse re-centering
-		Nop(0x53E9F1, 5);
-
-		InterceptCall(0x53EC01, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
-		InterceptMemDisplacement(AddressByRegion_10(0x748452 + 2), orgWindowProc, pClipWindowProcA);
 	}
 
 	// Reorder the law enforcement checks in CRoadBlocks::GenerateRoadBlocks to match the other call sites
@@ -11244,39 +11282,6 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		auto load_car_generator = get_pattern("E8 ? ? ? ? 0F BF 57 10");
 		InterceptCall(load_car_generator, orgLoadCarGenerator, LoadCarGenerator_FixupBeagle);
-	}
-	TXN_CATCH();
-
-
-	// Clip the cursor to the game window bounds
-	if (ClipCursorToGameWindow::HasGameBindings()) try
-	{
-		using namespace ClipCursorToGameWindow;
-
-		auto rs_camera_show_raster = get_pattern("8B 0D ? ? ? ? 51 E8 ? ? ? ? 83 C4 08 8B E5 5D C3", 7);
-		auto def_window_proc = [] {
-			try {
-				// Steam
-				return get_pattern("50 FF 15 ? ? ? ? 5F 5E 5B", 3);
-			} catch (const hook::txn_exception&) {
-				// RGL
-				return get_pattern("52 FF 15 ? ? ? ? 5F 5E 5B 8B E5", 3);
-			}
-		}();
-
-		// In a bad attempt to fix the mouse issues, the RGL executable cut the DirectInput mouse in favour of using WM_MOUSEMOVE for the camera movements.
-		// This means that the camera stops spinning when the cursor hits our clipping area, and so we need to keep re-centering
-		// as-is so it doesn't break terribly. With this pattern, we can check if this code is present (RGL) or not (newsteam r2)
-		// and act accordingly.
-		if (hook::pattern("8B 45 14 0F BF C8 C1 E8 10 98 5F 5E").count_hint(1).size() != 1)
-		{
-			// newsteam r2, not RGL
-			auto rs_mouse_set_pos = get_pattern("D9 5D FC E8 ? ? ? ? 83 C4 04 E8", 3);
-			Nop(rs_mouse_set_pos, 5);
-		}
-
-		InterceptCall(rs_camera_show_raster, orgRsCameraShowRaster, RsCameraShowRaster_ProcessCursorClip);
-		InterceptMemDisplacement(def_window_proc, orgWindowProc, pClipWindowProcA);
 	}
 	TXN_CATCH();
 
