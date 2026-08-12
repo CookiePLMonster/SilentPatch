@@ -5399,60 +5399,22 @@ __declspec(naked) void WeaponRangeMult_VehicleCheck()
 }
 
 
-static const float		fSteamSubtitleSizeX = 0.45f;
-static const float		fSteamSubtitleSizeY = 0.9f;
-static const float		fSteamRadioNamePosY = 33.0f;
-static const float		fSteamRadioNameSizeX = 0.4f;
-static const float		fSteamRadioNameSizeY = 0.6f;
-
-static float* orgSubtitleSizeX;
-static float* orgSubtitleSizeY;
-static float* orgRadioNamePosY;
-static float* orgRadioNameSizeX;
-static float* orgRadioNameSizeY;
-
-static void ToggleSteamTexts( bool enable )
+// ============= Small Steam texts =============
+namespace SmallSteamTexts
 {
-	using namespace Memory::VP;
+	static const float		fSteamSubtitleSizeX = 0.45f;
+	static const float		fSteamSubtitleSizeY = 0.9f;
+	static const float		fSteamRadioNamePosY = 33.0f;
+	static const float		fSteamRadioNameSizeX = 0.4f;
+	static const float		fSteamRadioNameSizeY = 0.6f;
 
-	if ( enable )
-	{
-		Patch<const void*>(0x58C387, &fSteamSubtitleSizeY);
-		Patch<const void*>(0x58C40F, &fSteamSubtitleSizeY);
-		Patch<const void*>(0x58C4CE, &fSteamSubtitleSizeY);
-
-		Patch<const void*>(0x58C39D, &fSteamSubtitleSizeX);
-		Patch<const void*>(0x58C425, &fSteamSubtitleSizeX);
-		Patch<const void*>(0x58C4E4, &fSteamSubtitleSizeX);
-
-		Patch<const void*>(0x4E9FD8, &fSteamRadioNamePosY);
-		Patch<const void*>(0x4E9F22, &fSteamRadioNameSizeY);
-		Patch<const void*>(0x4E9F38, &fSteamRadioNameSizeX);
-	}
-	else
-	{
-		assert( orgSubtitleSizeY != nullptr && orgSubtitleSizeX != nullptr && orgRadioNamePosY != nullptr && orgRadioNameSizeY != nullptr && orgRadioNameSizeX != nullptr );
-
-		Patch<const void*>(0x58C387, orgSubtitleSizeY);
-		Patch<const void*>(0x58C40F, orgSubtitleSizeY);
-		Patch<const void*>(0x58C4CE, orgSubtitleSizeY);
-
-		Patch<const void*>(0x58C39D, orgSubtitleSizeX);
-		Patch<const void*>(0x58C425, orgSubtitleSizeX);
-		Patch<const void*>(0x58C4E4, orgSubtitleSizeX);
-
-		Patch<const void*>(0x4E9FD8, orgRadioNamePosY);
-		Patch<const void*>(0x4E9F22, orgRadioNameSizeY);
-		Patch<const void*>(0x4E9F38, orgRadioNameSizeX);
-	}
+	static const double		dRetailSubtitleSizeX = 0.58;
+	static const double		dRetailSubtitleSizeY = 1.2;
+	static const double		dRetailSubtitleSizeY2 = 1.22;
+	static const double		dRetailRadioNamePosY = 22.0;
+	static const double		dRetailRadioNameSizeX = 0.6;
+	static const double		dRetailRadioNameSizeY = 0.9;
 }
-
-static const double		dRetailSubtitleSizeX = 0.58;
-static const double		dRetailSubtitleSizeY = 1.2;
-static const double		dRetailSubtitleSizeY2 = 1.22;
-static const double		dRetailRadioNamePosY = 22.0;
-static const double		dRetailRadioNameSizeX = 0.6;
-static const double		dRetailRadioNameSizeY = 0.9;
 
 #pragma comment(lib, "shlwapi.lib")
 
@@ -5597,9 +5559,60 @@ BOOL InjectDelayedPatches_10()
 			Patch<WORD>(AddressByRegion_10<DWORD>(0x748AA8), 0x3DEB);
 		}
 
+
+		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath); INIoption != -1 )
 		{
-			static bool bSmallSteamTexts = false;
-			if ( bHasDebugMenu )
+			using namespace SmallSteamTexts;
+
+			static bool bSmallSteamTexts = INIoption != 0;
+
+			static float* orgSubtitleSizeX;
+			static float* orgSubtitleSizeY;
+			static float* orgRadioNamePosY;
+			static float* orgRadioNameSizeX;
+			static float* orgRadioNameSizeY;
+
+			auto ToggleSteamTexts = []()
+			{
+				if (bSmallSteamTexts)
+				{
+					Memory::VP::Patch<const void*>(0x58C387, &fSteamSubtitleSizeY);
+					Memory::VP::Patch<const void*>(0x58C40F, &fSteamSubtitleSizeY);
+					Memory::VP::Patch<const void*>(0x58C4CE, &fSteamSubtitleSizeY);
+
+					Memory::VP::Patch<const void*>(0x58C39D, &fSteamSubtitleSizeX);
+					Memory::VP::Patch<const void*>(0x58C425, &fSteamSubtitleSizeX);
+					Memory::VP::Patch<const void*>(0x58C4E4, &fSteamSubtitleSizeX);
+
+					Memory::VP::Patch<const void*>(0x4E9FD8, &fSteamRadioNamePosY);
+					Memory::VP::Patch<const void*>(0x4E9F22, &fSteamRadioNameSizeY);
+					Memory::VP::Patch<const void*>(0x4E9F38, &fSteamRadioNameSizeX);
+				}
+				else
+				{
+					assert( orgSubtitleSizeY != nullptr && orgSubtitleSizeX != nullptr && orgRadioNamePosY != nullptr && orgRadioNameSizeY != nullptr && orgRadioNameSizeX != nullptr );
+
+					Memory::VP::Patch<const void*>(0x58C387, orgSubtitleSizeY);
+					Memory::VP::Patch<const void*>(0x58C40F, orgSubtitleSizeY);
+					Memory::VP::Patch<const void*>(0x58C4CE, orgSubtitleSizeY);
+
+					Memory::VP::Patch<const void*>(0x58C39D, orgSubtitleSizeX);
+					Memory::VP::Patch<const void*>(0x58C425, orgSubtitleSizeX);
+					Memory::VP::Patch<const void*>(0x58C4E4, orgSubtitleSizeX);
+
+					Memory::VP::Patch<const void*>(0x4E9FD8, orgRadioNamePosY);
+					Memory::VP::Patch<const void*>(0x4E9F22, orgRadioNameSizeY);
+					Memory::VP::Patch<const void*>(0x4E9F38, orgRadioNameSizeX);
+				}
+			};
+
+			if (bSmallSteamTexts)
+			{
+				// We're on 1.0 - make texts smaller
+				ToggleSteamTexts();
+			}
+
+			if (bHasDebugMenu)
 			{
 				orgSubtitleSizeX = *(float**)0x58C39D;
 				orgSubtitleSizeY = *(float**)0x58C387;
@@ -5607,20 +5620,10 @@ BOOL InjectDelayedPatches_10()
 				orgRadioNameSizeY = *(float**)0x4E9F22;
 				orgRadioNameSizeX = *(float**)0x4E9F38;
 
-				DebugMenuAddVar( "SilentPatch", "Small Steam texts", &bSmallSteamTexts, []() {
-					ToggleSteamTexts( bSmallSteamTexts );
-				} );
-
-			}
-
-			if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", 0, wcModulePath) != 0 )
-			{
-				// We're on 1.0 - make texts smaller
-				ToggleSteamTexts( true );
-
-				bSmallSteamTexts = true;
+				DebugMenuAddVar("SilentPatch", "Small Steam texts", &bSmallSteamTexts, ToggleSteamTexts);
 			}
 		}
+
 
 		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption != -1 && ColouredZoneNames::HasGameBindings() )
 		{
@@ -6327,8 +6330,10 @@ BOOL InjectDelayedPatches_11()
 			Patch<WORD>(AddressByRegion_11<DWORD>(0x749388), 0x62EB);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", 0, wcModulePath) != 0 )
+		if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath); INIoption != -1 && INIoption != 0 )
 		{
+			using namespace SmallSteamTexts;
+
 			// We're on 1.01 - make texts smaller
 			Patch<const void*>(0x58CB57, &fSteamSubtitleSizeY);
 			Patch<const void*>(0x58CBDF, &fSteamSubtitleSizeY);
@@ -6522,8 +6527,10 @@ BOOL InjectDelayedPatches_Steam()
 			HookEach_SCMFixes(wipeLocalVars, InterceptCall);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == 0 )
+		if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath); INIoption != -1 && INIoption == 0 )
 		{
+			using namespace SmallSteamTexts;
+
 			// We're on Steam - make texts bigger
 			Patch<const void*>(0x59A719, &dRetailSubtitleSizeY);
 			Patch<const void*>(0x59A7B7, &dRetailSubtitleSizeY2);
