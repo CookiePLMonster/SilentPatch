@@ -6165,7 +6165,8 @@ BOOL InjectDelayedPatches_10()
 		// Make the game use the desktop refresh rate instead of a fixed 60Hz
 		if (GetPrivateProfileIntW(L"SilentPatch", L"UseDesktopRefreshRate", 0, wcModulePath) != 0)
 		{
-			if (MemEquals(0x7460A0, { 0x83, 0xEC, 0x10 }))
+			// Only patch if the stock function still targets 60Hz. Otherwise, it probably was changed by Framerate Vigilante
+			if (MemEquals(0x7460A0, { 0x83, 0xEC, 0x10 }) && MemEquals(0x74612A, { 0x83, 0xF8, 0x3C }))
 			{
 				// xor eax, eax \ retn
 				Patch(0x7460A0, { 0x31, 0xC0, 0xC3 });
@@ -6912,10 +6913,14 @@ BOOL InjectDelayedPatches_NewBinaries()
 		// Make the game use the desktop refresh rate instead of a fixed 60Hz
 		if (GetPrivateProfileIntW(L"SilentPatch", L"UseDesktopRefreshRate", 0, wcModulePath) != 0) try
 		{
-			auto get_best_refresh_rate = get_pattern("55 8B EC 83 EC 14 53 56 57 6A 20");
+			// Only patch if the stock function still targets 60Hz. Otherwise, it probably was changed by Framerate Vigilante
+			if (pattern("83 F8 3C 72 ? 89 45").count_hint(1).size() == 1)
+			{
+				auto get_best_refresh_rate = get_pattern("55 8B EC 83 EC 14 53 56 57 6A 20");
 
-			// xor eax, eax \ retn
-			Patch(get_best_refresh_rate, { 0x31, 0xC0, 0xC3 });
+				// xor eax, eax \ retn
+				Patch(get_best_refresh_rate, { 0x31, 0xC0, 0xC3 });
+			}
 		}
 		TXN_CATCH();
 
