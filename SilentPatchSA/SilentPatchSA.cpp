@@ -1544,6 +1544,11 @@ CVehicleModelInfo* __fastcall VehicleModelInfoInit(CVehicleModelInfo* me)
 	static uintptr_t DUMMY;
 	me->__removedInSilentPatch = &DUMMY;
 
+	std::fill(std::begin(me->m_firstColour), std::end(me->m_firstColour), nullptr);
+	std::fill(std::begin(me->m_secondColour), std::end(me->m_secondColour), nullptr);
+	std::fill(std::begin(me->m_thirdColour), std::end(me->m_thirdColour), nullptr);
+	std::fill(std::begin(me->m_fourthColour), std::end(me->m_fourthColour), nullptr);
+
 	me->m_dirtMaterials = nullptr;
 	me->m_numDirtMaterials = 0;
 	std::fill( std::begin( me->m_staticDirtMaterials ), std::end( me->m_staticDirtMaterials ), nullptr );

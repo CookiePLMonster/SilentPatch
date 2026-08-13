@@ -273,14 +273,18 @@ public:
 		unsigned int		m_dwMaskComponentsDamagable;
 	}						*m_pVehicleStruct;
 
-	char					field_60[464];
+	// Those are all unused, but 1.01 zeroes them
+	RpMaterial*				m_firstColour[49];
+	RpMaterial*				m_secondColour[33];
+	RpMaterial*				m_thirdColour[17];
+	RpMaterial*				m_fourthColour[17];
 
 	static const size_t IN_PLACE_BUFFER_DIRT_SIZE = 30;
 	union{
-		struct{;
+		struct{
+			RpMaterial*		m_staticDirtMaterials[IN_PLACE_BUFFER_DIRT_SIZE];
 			RpMaterial**	m_dirtMaterials;
 			size_t			m_numDirtMaterials;
-			RpMaterial*		m_staticDirtMaterials[IN_PLACE_BUFFER_DIRT_SIZE];
 		};
 		RpMaterial*			__oldDirtMaterials[32]; // Unused with SilentPatch
 	};

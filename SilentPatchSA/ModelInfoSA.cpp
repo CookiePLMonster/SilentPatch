@@ -1,6 +1,8 @@
 #include "StdAfxSA.h"
 #include "ModelInfoSA.h"
 
+#include <algorithm>
+
 ExternalFunc<RwTexture* (const char* pText, signed char nDesign)> CCustomCarPlateMgr::CreatePlateTexture(AddressByVersion<RwTexture*(*)(const char*,signed char)>(0x6FDEA0, 0x6FE6D0, 0x736AC0));
 ExternalFunc<signed char ()> CCustomCarPlateMgr::GetMapRegionPlateDesign(AddressByVersion<signed char(*)()>(0x6FD7A0, 0x6FDFD0, 0x7363E0));
 ExternalFunc<void (RpMaterial* pMaterial, signed char nDesign)> CCustomCarPlateMgr::SetupMaterialPlatebackTexture(AddressByVersion<void(*)(RpMaterial*,signed char)>(0x6FDE50, 0x6FE680, 0x736A80));
@@ -16,7 +18,7 @@ static ExternalRef ms_aDirtTextures(AddressByVersion<RwTexture*(**)[16]>( 0x5D5D
 
 bool HasGameBindings_DirtRemapFix()
 {
-	return RWBindings::RpMaterialSetTexture() && EnsureBindings(ms_aDirtTextures);
+	return rwengine != nullptr && RWBindings::RpMaterialSetTexture() && EnsureBindings(ms_aDirtTextures);
 }
 
 bool HasGameBindings_ResetCompsForNoExtras()
@@ -26,12 +28,22 @@ bool HasGameBindings_ResetCompsForNoExtras()
 
 void RemapDirt( CVehicleModelInfo* modelInfo, uint32_t dirtID )
 {
-	RpMaterial** materials = modelInfo->m_numDirtMaterials > CVehicleModelInfo::IN_PLACE_BUFFER_DIRT_SIZE ? modelInfo->m_dirtMaterials : modelInfo->m_staticDirtMaterials;
-
 	auto& aDirtTextures = ms_aDirtTextures.Get();
-	for ( size_t i = 0; i < modelInfo->m_numDirtMaterials; i++ )
+
+	std::size_t i = 0;
+	for (std::size_t j = std::min(modelInfo->m_numDirtMaterials, std::size(modelInfo->m_staticDirtMaterials)); i < j; ++i)
 	{
-		RpMaterialSetTexture( materials[i], aDirtTextures[dirtID] );
+		RpMaterialSetTexture(modelInfo->m_staticDirtMaterials[i], aDirtTextures[dirtID]);
+	}
+
+	// Now apply the remaining textures, if any
+	if (modelInfo->m_dirtMaterials != nullptr)
+	{
+		const size_t offset = std::size(modelInfo->m_staticDirtMaterials);
+		for (; i < modelInfo->m_numDirtMaterials; ++i)
+		{
+			RpMaterialSetTexture(modelInfo->m_dirtMaterials[i - offset], aDirtTextures[dirtID]);
+		}
 	}
 }
 
@@ -58,13 +70,13 @@ void CVehicleModelInfo::FindEditableMaterialList()
 {
 	std::vector<RpMaterial*> editableMaterials;
 
-	auto GetEditableMaterialListCB = [&]( RpAtomic* atomic ) -> RpAtomic* {
+	auto GetEditableMaterialListCB = [&editableMaterials]( RpAtomic* atomic ) -> RpAtomic* {
 		RpGeometryForAllMaterials( RpAtomicGetGeometry(atomic), [&]( RpMaterial* material ) -> RpMaterial* {
 			if ( RwTexture* texture = RpMaterialGetTexture(material) )
 			{
 				if ( const char* texName = RwTextureGetName(texture) )
 				{
-					if ( strcmp(texName, "vehiclegrunge256") == 0 )
+					if ( rwstrcmp(texName, "vehiclegrunge256") == 0 )
 					{
 						editableMaterials.push_back( material );
 					}
@@ -81,17 +93,20 @@ void CVehicleModelInfo::FindEditableMaterialList()
 		GetEditableMaterialListCB(m_pVehicleStruct->m_apExtras[i]);
 
 	m_numDirtMaterials = editableMaterials.size();
-	if ( m_numDirtMaterials > IN_PLACE_BUFFER_DIRT_SIZE )
+
+	// We always use the stock array first, then allocate if we need more space
+	const std::size_t inPlaceBufferCopySize = std::min(m_numDirtMaterials, std::size(m_staticDirtMaterials));
+	std::copy_n(editableMaterials.begin(), inPlaceBufferCopySize, m_staticDirtMaterials);
+
+	if (m_numDirtMaterials > inPlaceBufferCopySize)
 	{
-		m_dirtMaterials = new RpMaterial* [m_numDirtMaterials];
-		std::copy( editableMaterials.begin(), editableMaterials.end(), m_dirtMaterials );
+		const std::size_t remainder = m_numDirtMaterials - inPlaceBufferCopySize;
+		m_dirtMaterials = new RpMaterial* [remainder];
+		std::copy_n(editableMaterials.begin() + inPlaceBufferCopySize, remainder, m_dirtMaterials);
 	}
 	else
 	{
 		m_dirtMaterials = nullptr;
-
-		// Use existing space instead of allocating new space
-		std::copy( editableMaterials.begin(), editableMaterials.end(), m_staticDirtMaterials );
 	}
 
 	m_nPrimaryColor = -1;
