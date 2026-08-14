@@ -1057,8 +1057,6 @@ namespace VariableResets
 				v.Get() = {};
 				}, var );
 		}
-
-		PurpleNinesGlitchFix::ResetGangOverrides();
 	}
 
 	template<std::size_t Index>
@@ -1069,6 +1067,7 @@ namespace VariableResets
 	{
 		// First reinit "our" variables in case stock ones rely on those during resetting
 		ReInitOurVariables(GameVariablesToReset);
+		PurpleNinesGlitchFix::ResetGangOverrides();
 		orgReInitGameObjectVariables<Index>();
 	}
 	HOOK_EACH_INIT(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
@@ -1077,6 +1076,7 @@ namespace VariableResets
 	void GameInitialise(const char* path)
 	{
 		ReInitOurVariables(GameVariablesToReset);
+		PurpleNinesGlitchFix::ResetGangOverrides();
 		TimerInitialise();
 		orgGameInitialise(path);
 	}
