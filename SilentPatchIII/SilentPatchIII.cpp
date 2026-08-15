@@ -2646,6 +2646,32 @@ namespace ExtinguishCarFireFix
 }
 
 
+// ============= Fix CVehicle::SetDriver removing extra health if the player has >100HP (backport from VC) =============
+namespace AmbulanceHealthBonusFix
+{
+	__declspec(naked) static void SetDriver_HealthCheck()
+	{
+		// Set health only if <= 100HP
+		_asm
+		{
+			fld		[eax+2C0h]
+			fcom	st(1)
+			fnstsw  ax
+			test    ah, 45h
+			jz		DontUpdate
+			fstp	st
+			fstp	[ebx+2C0h]
+			retn
+
+		DontUpdate:
+			fstp	st
+			fstp	st
+			retn
+		}
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -4830,6 +4856,18 @@ void Patch_III_Common()
 		ExtinguishCarFire_CheckStatus_DontUpdate = extinguish_car_fire.get<void>(0x21);
 		ExtinguishCarFire_CheckStatus_DoUpdate = extinguish_car_fire.get<void>(6);
 		InjectHook(extinguish_car_fire.get<void>(), ExtinguishCarFire_CheckStatus, HookType::Jump);
+	}
+	TXN_CATCH();
+
+
+	// Fix CVehicle::SetDriver removing extra health if the player has >100HP (backport from VC)
+	try
+	{
+		using namespace AmbulanceHealthBonusFix;
+
+		auto set_health = pattern("D9 98 C0 02 00 00 EB ? 89 C0").get_one();
+		InjectHook(set_health.get<void>(), SetDriver_HealthCheck, HookType::Call);
+		Nop(set_health.get<void>(5), 1);
 	}
 	TXN_CATCH();
 }

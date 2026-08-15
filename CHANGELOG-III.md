@@ -102,6 +102,7 @@ All the remaining, non-critical fixes.
 * Cutscene borders now scale to resolution correctly.
 * Colored big messages (seen in 'Uzi Money' and 'Espresso-2-Go') now fade properly.
 * Cutscenes no longer repair engines of blown up cars.
+* Entering the Ambulance no longer reduces the player's health if it's at over 100HP.
 * ⚙️ Fixed siren corona placements in Firetruck, Ambulance, and Enforcer.
 * ⚙️ Fixed taxi light corona placement for Taxi.
 * ⚙️ Fixed police chopper's searchlight placement.
