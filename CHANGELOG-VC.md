@@ -109,3 +109,4 @@ Any changes that don't strictly fix game bugs.
 * ⚙️ Sliding mission titles and odd job texts from the GTA III beta can now be re-enabled (off by default).
 * ⚙️ An unused 'Minimal HUD' feature can now be re-enabled (off by default).
 * ⚙️ Purchasable property icons now show on the radar and the menu map (off by default).
+* ⚙️ Mipmapping support can now be enabled, reducing aliasing and flickering on distant textures (contributed by **CanerKaraca**).

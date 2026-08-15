@@ -3303,6 +3303,27 @@ void InjectDelayedPatches_VC_Common(bool bHasDebugMenu, const wchar_t* wcModuleP
 	}
 	TXN_CATCH();
 
+	// Mipmapping
+	// Contributed by CanerKaraca
+	if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"EnableMipMaps", 0, wcModulePath); INIoption != 0) try
+	{
+		// Enable Mipmapping globally
+		// Matches: push 1; call RwTextureSetAutoMipmapping; add esp, 4; push 0
+		auto setMipmapping = pattern("6A 01 E8 ? ? ? ? 83 C4 ? 6A 00").get_first<uint8_t>();
+		if (setMipmapping)
+		{
+			// change push 0 to push 1
+			Patch<uint8_t>(setMipmapping + 10, 1);
+		}
+
+		// Remove code which disables mipmap flags in CStreaming::ReadTextureFormat
+		// Finds: and dword ptr [esp+XX], 0FFFF6FFFh followed by test
+		pattern("81 ? ? ? FF 6F FF FF 84").for_each_result([](hook::txn::pattern_match match) {
+			Nop(match.get<void>(0), 8);
+		});
+	}
+	TXN_CATCH();
+
 	// Speech delay fix
 	if (const int speech_delay = GetPrivateProfileIntW(L"SilentPatch", L"SpeechDelayTimer", -1, wcModulePath); speech_delay != -1) try
 	{
