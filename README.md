@@ -46,5 +46,6 @@ SilentPatch includes code contributions from:
 * NTAuthority
 * rx
 * Sergeanur
+* sndth
 * spaceeinstein
 * Wesser
