@@ -433,6 +433,38 @@ class NOVMT CBoat : public CVehicle
 	RwFrame*		m_pBoatNode[12];
 };
 
+class NOVMT CTrain : public CVehicle
+{
+public:
+	struct CTrainFlags
+	{
+		bool bDoorsReady : 1;
+		bool bAtStation : 1;
+		bool bPassengersCanBoard : 1;
+		bool bEngine : 1;
+		bool bCaboose : 1;
+		bool bMissionTrain : 1;
+		bool bDirection : 1;
+		bool bStopForStations : 1;
+		bool bDerailed : 1;
+		bool bIsForcedToSlowDown : 1;
+		bool bHasPassengerCarriages : 1;
+	};
+
+	uint16_t CurrentNode;
+
+	float LinearSpeed;
+	float PositionOnTrack;
+	float OffsetFromLeader;
+	float Gas, Brake;
+
+	CTrainFlags m_nTrainFlags;
+
+	std::byte __gap[240];
+};
+static_assert(sizeof(CTrain) == 0x6AC, "Wrong size: CTrain");
+
+
 class CStoredCar
 {
 private:

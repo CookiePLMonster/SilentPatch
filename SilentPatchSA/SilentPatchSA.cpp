@@ -404,6 +404,10 @@ ExternalFunc			WorldRemove(AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57
 ExternalFunc			IsInPlayersGroup(AddressByVersion<bool(*)(const CPed* pPed)>(0x5F7F10, { "83 B9 80 04 00 00 00 75", -6 }));
 
 
+ExternalFunc<bool(int modelID)> IsTrainModel(AddressByVersion<bool (*)(int)>(0x4C5AD0, { "85 C9 74 ? 8B 01 8B 50 ? FF D2 3C ? 75 ? 8B 04 B5 ? ? ? ? 83 78 3C 06", -0xE }));
+ExternalMethod<CTrain, CTrain*(int modelID, uint8_t createdBy)> CTrainCtor(AddressByVersion<CTrain* (__thiscall*)(CTrain*, int, uint8_t)>(0x6F6030, { "64 A1 ? ? ? ? 50 64 89 25 ? ? ? ? 51 8B 45 ? 53 56 57 8B F1", -0xA }));
+
+
 // SA variables
 void** rwengine = []() -> void** {
 
@@ -4653,6 +4657,32 @@ namespace ClipCursorToGameWindow
 }
 
 
+// ============= Allow to store trains in garages =============
+namespace TrainsInGarages
+{
+	static bool HasGameBindings()
+	{
+		return EnsureBindings(IsTrainModel, CTrainCtor);
+	}
+
+	CAutomobile* (__thiscall* orgCAutomobileCtor)(void*, int modelID, uint8_t createdBy, void* setupSuspensionLines);
+	CVehicle* __fastcall CAutomobileCtor_OrTrain(CVehicle* obj, void*, int modelID, uint8_t createdBy, void* setupSuspensionLines)
+	{
+		if (IsTrainModel.Call(modelID))
+		{
+			CTrain* train = CTrainCtor.Call(static_cast<CTrain*>(obj), modelID, createdBy);
+
+			// We need to mark it as derailed, or else the train can't exist outside of the tracks
+			train->m_nTrainFlags.bDerailed = true;
+			train->m_nPhysicalFlags.bInfiniteMass = false;
+			train->m_nPhysicalFlags.bDontProcessCollisionOurSelves = false;
+			return train;
+		}
+		return orgCAutomobileCtor(obj, modelID, createdBy, setupSuspensionLines);
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -8562,6 +8592,14 @@ void Patch_SA_10(HINSTANCE hInstance)
 		Patch(0x57E023 + 1, crimesHeader);
 		Patch(0x57E02C + 1, gangsHeader);
 	}
+
+
+	// Allow to store trains in garages
+	if (TrainsInGarages::HasGameBindings())
+	{
+		using namespace TrainsInGarages;
+		InterceptCall(0x4480D0, orgCAutomobileCtor, CAutomobileCtor_OrTrain);
+	}
 }
 
 void Patch_SA_11()
@@ -11400,6 +11438,17 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Patch(section_names.get<void>(9 + 3), gangsHeader);
 	}
 	TXN_CATCH();
+
+
+	// Allow to store trains in garages
+	if (TrainsInGarages::HasGameBindings())
+	{
+		using namespace TrainsInGarages;
+
+		auto automobile_ctor = get_pattern("8B C8 E8 ? ? ? ? EB ? 33 C0 D9 07", 2);
+
+		InterceptCall(automobile_ctor, orgCAutomobileCtor, CAutomobileCtor_OrTrain);
+	}
 }
 
 

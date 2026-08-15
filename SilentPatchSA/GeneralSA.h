@@ -168,45 +168,48 @@ public:
 
 class NOVMT CPhysical : public CEntity
 {
-private:
+public:
+	struct CPhysicalFlags
+	{
+		uint32_t bExtraHeavy : 1;
+		uint32_t bDoGravity : 1;
+		uint32_t bInfiniteMass : 1;
+		uint32_t bInfiniteMassFixed : 1;
+		uint32_t bPedPhysics : 1;
+		uint32_t bDoorPhysics : 1;
+		uint32_t bHangingPhysics : 1;
+		uint32_t bPoolBallPhysics : 1;
+		uint32_t bIsInWater : 1;
+		uint32_t bCollidedThisFrame : 1;
+
+		uint32_t bUnFreezable : 1;
+		uint32_t bTrainForceCol : 1;
+		uint32_t bSkipLineCol : 1;
+		uint32_t bCoorsFrozenByScript : 1;
+		uint32_t bDontLoadCollision : 1;
+		uint32_t bHalfSpeedCollision : 1;
+		uint32_t bForceHitReturnFalse : 1;
+		uint32_t bDontProcessCollisionOurSelves : 1;
+		uint32_t bNotDamagedByBullets : 1;
+		uint32_t bNotDamagedByFlames : 1;
+		uint32_t bNotDamagedByCollisions : 1;
+		uint32_t bNotDamagedByMelee : 1;
+		uint32_t bOnlyDamagedByPlayer : 1;
+		uint32_t bIgnoresExplosions : 1;
+		uint32_t bFlyer : 1;
+		uint32_t bNeverGoStatic : 1;
+		uint32_t bUsingSpecialColModel : 1;
+		uint32_t bForceFullWaterCheck : 1;
+		uint32_t bUsesCollisionRecords : 1;
+		uint32_t bRenderScorched : 1;
+		uint32_t bDoorHitEndStop : 1;
+		uint32_t bCarriedByRope : 1;
+	};
+
     float			pad1; // 56
     int				__pad2; // 60
 
-    unsigned int	b0x01 : 1; // 64
-    unsigned int	bApplyGravity : 1;
-    unsigned int	bDisableFriction : 1;
-    unsigned int	bCollidable : 1;
-    unsigned int	b0x10 : 1;
-    unsigned int	bDisableMovement : 1;
-    unsigned int	b0x40 : 1;
-    unsigned int	b0x80 : 1;
-
-    unsigned int	bSubmergedInWater : 1; // 65
-    unsigned int	bOnSolidSurface : 1;
-    unsigned int	bBroken : 1;
-    unsigned int	b0x800 : 1; // ref @ 0x6F5CF0
-    unsigned int	b0x1000 : 1;//
-    unsigned int	b0x2000 : 1;//
-    unsigned int	b0x4000 : 1;//
-    unsigned int	b0x8000 : 1;//
-
-    unsigned int	b0x10000 : 1; // 66
-    unsigned int	b0x20000 : 1; // ref @ CPhysical__processCollision
-    unsigned int	bBulletProof : 1;
-    unsigned int	bFireProof : 1;
-    unsigned int	bCollisionProof : 1;
-    unsigned int	bMeeleProof : 1;
-    unsigned int	bInvulnerable : 1;
-    unsigned int	bExplosionProof : 1;
-
-    unsigned int	b0x1000000 : 1; // 67
-    unsigned int	bAttachedToEntity : 1;
-    unsigned int	b0x4000000 : 1;
-    unsigned int	bTouchingWater : 1;
-    unsigned int	bEnableCollision : 1;
-    unsigned int	bDestroyed : 1;
-    unsigned int	b0x40000000 : 1;
-    unsigned int	b0x80000000 : 1;
+    CPhysicalFlags m_nPhysicalFlags;
 
     CVector			m_vecLinearVelocity; // 68
     CVector			m_vecAngularVelocity; // 80
