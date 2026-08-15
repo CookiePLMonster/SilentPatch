@@ -124,6 +124,7 @@ All the remaining, non-critical fixes.
 * ➕ Pedestrians can now initiate conversations about the weather, and CJ can respond to their comments correctly.
 * ➕ Criminals running away from cops will now play their correct dialogue lines instead of screaming (contributed by **iFarbod**).
 * ➕ WMYSGRD, BMYPIMP, VBFYST2 and Maccer now have voices.
+* ➕ SBFYSTR and SWFYSTR now have their correct voices.
 * ➕ CJ now cheers after taking over certain districts.
 * ➕ CJ's comments after the solicitation are no longer forced to the Wisecracking mood, so their variety is wider.
 * ➕ Multiple unused dialogue lines for girlfriends and shopkeepers have been re-enabled.

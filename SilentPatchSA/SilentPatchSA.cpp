@@ -3996,6 +3996,31 @@ namespace SpeechSystemFixes
 
 	HOOK_EACH_INIT(TextLabelStricmp, orgStricmp, stricmp_UseTextLabel);
 
+	static int (*orgSscanf_PedsIde)(const char* s, const char* format, ...);
+	static int sscanf_PedsIde_FixupVoiceNames(const char* s, const char* format, int* modelId, char* modelName, char* texName, char* pedType, char* statName, char* animGroup,
+					int* carsCanDriveMask, int* flags, char* animFile, int* radio1, int* radio2, char* pedVoiceType, char* voice1, char* voice2)
+	{
+		int result = orgSscanf_PedsIde(s, format, modelId, modelName, texName, pedType, statName, animGroup, carsCanDriveMask, flags, animFile, radio1, radio2,
+					pedVoiceType, voice1, voice2);
+		if (result == 14)
+		{
+			// For S*FYSTR, we fix up the voice name if it's VOICE_GEN_S*FYST
+			// Model name is case-insensitive, voice names are case-sensitive
+			if (_stricmp(modelName, "sbfystr") == 0 && strcmp(voice1, "VOICE_GEN_SBFYST") == 0 && strcmp(voice2, "VOICE_GEN_SBFYST") == 0)
+			{
+				strcpy_s(voice1, 60, "VOICE_GEN_SBFYSTR");
+				strcpy_s(voice2, 60, "VOICE_GEN_SBFYSTR");
+			}
+			else if (_stricmp(modelName, "swfystr") == 0 && strcmp(voice1, "VOICE_GEN_SWFYST") == 0 && strcmp(voice2, "VOICE_GEN_SWFYST") == 0)
+			{
+				strcpy_s(voice1, 60, "VOICE_GEN_SWFYSTR");
+				strcpy_s(voice2, 60, "VOICE_GEN_SWFYSTR");
+			}
+		}
+
+		return result;
+	}
+
 
 	static void (*orgSetCJMood)(void*, void*, void*, void*, void*);
 	// Those are not actually void*, but we just need to store these arguments for later,
@@ -8369,6 +8394,9 @@ void Patch_SA_10(HINSTANCE hInstance)
 		};
 		HookEach_GetVoice(get_voices, InterceptCall);
 
+		// Try to fixup VOICE_GEN_S*FYST vs VOICE_GEN_S*FYSTR
+		InterceptCall(0x5B749D, orgSscanf_PedsIde, sscanf_PedsIde_FixupVoiceNames);
+
 		// Play turf takeover cheers on CJ, not on his gang members
 		Patch(0x444059, { 0x89, 0x04, 0x24, 0xEB, 0x18 }); // mov [esp], eax / jmp 0x444076
 		Nop(0x444078, 2);
@@ -11092,6 +11120,14 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 				get_voices_pattern.get<void>(0x11),
 			};
 			HookEach_GetVoice(get_voices, InterceptCall);
+		}
+		TXN_CATCH();
+
+		try
+		{
+			// Try to fixup VOICE_GEN_S*FYST vs VOICE_GEN_S*FYSTR
+			auto sscanf_pedObject = get_pattern("E8 ? ? ? ? 8B 45 ? 50 E8 ? ? ? ? 8D 4D");
+			InterceptCall(sscanf_pedObject, orgSscanf_PedsIde, sscanf_PedsIde_FixupVoiceNames);
 		}
 		TXN_CATCH();
 
