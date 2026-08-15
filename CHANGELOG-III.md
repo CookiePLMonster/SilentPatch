@@ -101,6 +101,7 @@ All the remaining, non-critical fixes.
 * Two broken graffiti attractors in Portland now work correctly, so pedestrians can stare at them.
 * Cutscene borders now scale to resolution correctly.
 * Colored big messages (seen in 'Uzi Money' and 'Espresso-2-Go') now fade properly.
+* Cutscenes no longer repair engines of blown up cars.
 * ⚙️ Fixed siren corona placements in Firetruck, Ambulance, and Enforcer.
 * ⚙️ Fixed taxi light corona placement for Taxi.
 * ⚙️ Fixed police chopper's searchlight placement.

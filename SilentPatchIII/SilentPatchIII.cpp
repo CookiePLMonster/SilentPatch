@@ -2621,6 +2621,31 @@ namespace TokenColorFix
 }
 
 
+// ============= Fix CVehicle::ExtinguishCarFire healing exploded cars (backport from VC) =============
+namespace ExtinguishCarFireFix
+{
+	static void* ExtinguishCarFire_CheckStatus_DontUpdate;
+	static void* ExtinguishCarFire_CheckStatus_DoUpdate;
+	__declspec(naked) static void ExtinguishCarFire_CheckStatus()
+	{
+		// if (m_nStatus != STATUS_WRECKED)
+		_asm
+		{
+			fld		[ebp+200h]
+
+			mov		al, [ebp+0x50]
+			and		al, 0xF8
+			cmp		al, 0x28
+			je		DontUpdate
+			jmp		[ExtinguishCarFire_CheckStatus_DoUpdate]
+
+		DontUpdate:
+			jmp		[ExtinguishCarFire_CheckStatus_DontUpdate]
+		}
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -4791,6 +4816,20 @@ void Patch_III_Common()
 			{
 				InjectHook(match.get<void>(1), Font_SetColorRGB);
 			});
+	}
+	TXN_CATCH();
+
+
+	// Fix CVehicle::ExtinguishCarFire healing exploded cars (backport from VC)
+	try
+	{
+		using namespace ExtinguishCarFireFix;
+
+		auto extinguish_car_fire = pattern("D9 85 00 02 00 00 D8 15 ? ? ? ? DF E0 F6 C4 ? 74 ? D9 05 ? ? ? ? DD D9 D9 95 00 02 00 00").get_one();
+
+		ExtinguishCarFire_CheckStatus_DontUpdate = extinguish_car_fire.get<void>(0x21);
+		ExtinguishCarFire_CheckStatus_DoUpdate = extinguish_car_fire.get<void>(6);
+		InjectHook(extinguish_car_fire.get<void>(), ExtinguishCarFire_CheckStatus, HookType::Jump);
 	}
 	TXN_CATCH();
 }
