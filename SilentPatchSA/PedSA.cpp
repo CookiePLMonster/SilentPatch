@@ -11,6 +11,9 @@ ExternalMethod<CPed, int16_t (uint16_t phrase, uint32_t StartTimeDelay, float Pr
 ExternalMethod<CPedIntelligence, class CTaskSimpleJetPack* () const> CPedIntelligence::GetTaskJetPack(
 		AddressByVersion<class CTaskSimpleJetPack* (__thiscall*)(const CPedIntelligence*)>(0x601110, 0x601930, 0x620E70));
 
+ExternalMethod<CPedIntelligence, CTaskSimpleUseGun* () const> CPedIntelligence::GetTaskUseGun(
+		AddressByVersion<CTaskSimpleUseGun* (__thiscall*)(const CPedIntelligence*)>(0x600F70, { "8B CE E8 ? ? ? ? 85 C0 74 ? 6A ? 8B CE E8 ? ? ? ? 8B 10 8B C8 8B 42 ? FF D0 3D F9 03 00 00", -6 }));
+
 ExternalMethod<CTaskSimpleJetPack, void (class CPed* ped)> CTaskSimpleJetPack::RenderJetPack(
 		AddressByVersion<void (__thiscall*)(CTaskSimpleJetPack*, class CPed*)>(0x67F6A0, 0x67FEC0, 0x6AB110));
 

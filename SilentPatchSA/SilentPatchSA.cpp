@@ -4091,30 +4091,41 @@ namespace SpeechSystemFixes
 
 	static bool HasGameBindings_PainSprayed()
 	{
-		return HasGameBindings_AllFixes();
+		return HasGameBindings_AllFixes() && EnsureBindings(CPedIntelligence::GetTaskUseGun);
 	}
 
-	static void PlayPainSprayed(CPed* ped)
+	static bool CheckAndPlayPainSprayed(CPed* ped, const CPedDamageResponseCalculator* damage)
 	{
-		ped->Say(CONTEXT_GLOBAL_PAIN_SPRAYED);
+		if (damage->m_eWeaponUsed == WEAPONTYPE_TEARGAS || damage->m_eWeaponUsed == WEAPONTYPE_SPRAYCAN || damage->m_eWeaponUsed == WEAPONTYPE_EXTINGUISHER)
+		{
+			// Bail out if the victim was "whipped" with the can, and not sprayed
+			if (damage->m_pInflictor != nullptr && damage->m_pInflictor->GetType() == ENTITY_TYPE_PED)
+			{
+				const CTaskSimpleUseGun* useGunTask = CPedIntelligence::GetTaskUseGun.Call(static_cast<const CPed*>(damage->m_pInflictor)->GetPedIntelligence());
+				if (useGunTask != nullptr && useGunTask->GetCurrentCommand() == GCOMMAND_PISTOLWHIP)
+				{
+					return false;
+				}
+			}
+
+			ped->Say(CONTEXT_GLOBAL_PAIN_SPRAYED);
+			return true;
+		}
+		return false;
 	}
 
+	static void* CheckForSprayHook_JumpBack;
 	static __declspec(naked) void CheckForSprayHook_OldBinaries()
 	{
 		static const float FIVE = 5.0f;
 		_asm
 		{
-			cmp		dword ptr [ebp+0Ch], WEAPONTYPE_TEARGAS
-			je		CheckForSprayHook_Play
-			cmp		dword ptr [ebp+0Ch], WEAPONTYPE_SPRAYCAN
-			je		CheckForSprayHook_Play
-			cmp		dword ptr [ebp+0Ch], WEAPONTYPE_EXTINGUISHER
-			jne		CheckForSprayHook_Return
-
-		CheckForSprayHook_Play:
+			push	ebp
 			push	esi
-			call	PlayPainSprayed
-			add		esp, 8 // Pop the IP of the PlayPainSprayed call
+			call	CheckAndPlayPainSprayed
+			add		esp, 8
+			test	al, al
+			jz		CheckForSprayHook_Return
 
 			// Original epilogue
 			pop		edi
@@ -4127,7 +4138,7 @@ namespace SpeechSystemFixes
 			// Original code
 			fld		dword ptr [ebp+4]
 			fcomp	FIVE
-			retn
+			jmp		[CheckForSprayHook_JumpBack]
 		}
 	}
 
@@ -4136,17 +4147,12 @@ namespace SpeechSystemFixes
 		static const float FIVE = 5.0f;
 		_asm
 		{
-			cmp		dword ptr [ebx+0Ch], WEAPONTYPE_TEARGAS
-			je		CheckForSprayHook_Play
-			cmp		dword ptr [ebx+0Ch], WEAPONTYPE_SPRAYCAN
-			je		CheckForSprayHook_Play
-			cmp		dword ptr [ebx+0Ch], WEAPONTYPE_EXTINGUISHER
-			jne		CheckForSprayHook_Return
-
-		CheckForSprayHook_Play:
+			push	ebx
 			push	esi
-			call	PlayPainSprayed
-			add		esp, 8 // Pop the IP of the PlayPainSprayed call
+			call	CheckAndPlayPainSprayed
+			add		esp, 8
+			test	al, al
+			jz		CheckForSprayHook_Return
 
 			// Original epilogue
 			pop		edi
@@ -4159,7 +4165,7 @@ namespace SpeechSystemFixes
 		CheckForSprayHook_Return:
 			// Original code
 			fld		FIVE
-			retn
+			jmp		[CheckForSprayHook_JumpBack]
 		}
 	}
 
@@ -8405,8 +8411,8 @@ void Patch_SA_10(HINSTANCE hInstance)
 		// Re-enable PAIN_SPRAYED
 		if (HasGameBindings_PainSprayed())
 		{
-			InjectHook(0x4B3349, &CheckForSprayHook_OldBinaries, HookType::Call);
-			Nop(0x4B3349 + 5, 4);
+			CheckForSprayHook_JumpBack = (void*)(0x4B3349 + 9);
+			InjectHook(0x4B3349, &CheckForSprayHook_OldBinaries, HookType::Jump);
 		}
 
 		// Play CJ's CHASED line from CTaskComplexArrestPed too, so 1-star quotes are not ultra rare
@@ -11149,8 +11155,8 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		{
 			auto check_type = pattern("D9 05 ? ? ? ? D8 5B 04").get_one();
 
-			InjectHook(check_type.get<void>(0), &CheckForSprayHook_NewBinaries, HookType::Call);
-			Nop(check_type.get<void>(5), 1);
+			CheckForSprayHook_JumpBack = check_type.get<void>(6);
+			InjectHook(check_type.get<void>(0), &CheckForSprayHook_NewBinaries, HookType::Jump);
 		}
 		TXN_CATCH();
 

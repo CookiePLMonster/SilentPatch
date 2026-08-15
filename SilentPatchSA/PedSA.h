@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AnimationSA.h"
 #include "GeneralSA.h"
 #include "EventsSA.h"
 
@@ -91,6 +92,53 @@ public:
 	static ExternalMethod<CTaskSimpleJetPack, void (class CPed* ped)> RenderJetPack;
 };
 
+enum eGunCommand
+{
+	GCOMMAND_NONE = 0,
+	GCOMMAND_AIM,
+	GCOMMAND_FIRE,
+	GCOMMAND_FIREBURST,
+	GCOMMAND_RELOAD,
+	GCOMMAND_PISTOLWHIP,
+	GCOMMAND_END_LEISURE,
+	GCOMMAND_END_NOW
+};
+
+class CTaskSimpleUseGun : public CTaskSimple
+{
+public:
+	int8_t GetCurrentCommand() const { return m_nLastCommand; }
+
+private:
+	bool m_bIsFinished;
+	bool m_bIsInControl;
+	bool m_bMoveControl;
+	bool m_bFiredGun;
+	bool m_bBlockedLOS;
+	uint8_t m_nFireGunThisFrame;
+	bool m_bSkipAim;
+
+	int8_t m_nNextCommand;
+	int8_t m_nLastCommand;
+	CVector2D m_vecMoveCommand;
+
+	CEntity* m_pTargetEntity;
+	CVector m_vecCoords;
+
+	CAnimBlendAssociation* m_pAnim;
+
+	CWeaponInfo* m_pWeaponInfo;
+	int16_t m_nBurstLength;
+	int16_t m_nBurstShots;
+
+	uint8_t m_nCountDownFrames;
+	bool m_armIkInUse;
+	bool m_lookIkInUse;
+
+	bool m_bAimImmediate;
+};
+static_assert(sizeof(CTaskSimpleUseGun) == 0x3C, "Wrong size: CTaskSimpleUseGun");
+
 class __declspec(novtable) CTaskComplexSequence : public CTaskComplex
 {
 public:
@@ -151,6 +199,7 @@ public:
 	CEvent* GetCurrentEvent() const { return m_eventHandler.GetCurrentEvent(); }
 
 	static ExternalMethod<CPedIntelligence, class CTaskSimpleJetPack* () const> GetTaskJetPack;
+	static ExternalMethod<CPedIntelligence, CTaskSimpleUseGun* () const> GetTaskUseGun;
 
 private:
 	CPed* m_pPed;
@@ -515,3 +564,15 @@ public:
 	std::byte	_pad[0x92];
 	int16_t		m_PedType;
 };
+
+class CPedDamageResponseCalculator
+{
+public:
+	const CEntity*	m_pInflictor;
+	float			m_fRawDamage;
+	int32_t			m_eHitZone;
+	eWeaponType		m_eWeaponUsed;
+	bool			m_bJumpedOutOfMovingCar;
+};
+
+static_assert(sizeof(CPedDamageResponseCalculator) == 0x14, "Wrong size: CPedDamageResponseCalculator");
