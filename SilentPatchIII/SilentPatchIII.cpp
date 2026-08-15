@@ -2606,6 +2606,21 @@ namespace CutsceneBorderScalingFixes
 }
 
 
+// ============= Fix color text tokens overriding alpha to 255 =============
+namespace TokenColorFix
+{
+	static ExternalRef<CRGBA> s_FontDetails_Color;
+
+	static void Font_SetColorRGB(const CRGBA& color)
+	{
+		auto& FontColor = s_FontDetails_Color.Get();
+		FontColor.r = color.r;
+		FontColor.g = color.g;
+		FontColor.b = color.b;
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -4758,6 +4773,24 @@ void Patch_III_Common()
 		InterceptCall(cutscene_borders_rect_top.get<void>(0x13), orgRectCtor_Top, RectCtor_Top_Fixup);
 		InterceptCall(cutscene_borders_rect_bottom.get<void>(0x29), orgRectCtor_Bottom, RectCtor_Bottom_Fixup);
 		InterceptCall(do_fade_rect.get<void>(0x2B), orgRectCtor_DoFade, RectCtor_DoFade_Fixup);
+	}
+	TXN_CATCH();
+
+
+	// Fix color text tokens overriding alpha to 255
+	try
+	{
+		using namespace TokenColorFix;
+
+		// Calls to SetColor are very non-descript, so we do a range pattern scan on ParseToken
+		auto parse_token_begin = pattern("83 C3 ? 80 3D ? ? ? ? ? 75 ? 80 3D").get_one();
+		auto parse_token_end = get_pattern_uintptr("83 C3 02 66 83 3B 7E 75");
+
+		s_FontDetails_Color.Bind(parse_token_begin.get<CRGBA*>(3 + 2));
+		pattern({ { parse_token_begin.get_uintptr(0), parse_token_end } }, "50 E8 ? ? ? ? 59").for_each_result([](pattern_match match)
+			{
+				InjectHook(match.get<void>(1), Font_SetColorRGB);
+			});
 	}
 	TXN_CATCH();
 }
