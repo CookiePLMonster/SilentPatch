@@ -2461,6 +2461,29 @@ namespace RevolverShellCasingFix
 }
 
 
+// ============= Fixed CPedAttractorManager::GetEffectForIceCreamVan returning stale memory when the attractor is created =============
+// ============= This resulted in the game generating less ice cream customers than intended =============
+namespace IceCreamVanEffectFix
+{
+	static void* __fastcall ChooseEffect_ReturnGuard(void* /*obj*/, void*, void* /*pos*/)
+	{
+		return &ChooseEffect_ReturnGuard;
+	}
+
+	static void* (__thiscall* orgGetEffectForIceCreamVan)(void* obj, void* vehicle, void* pos);
+	static void* __fastcall GetEffectForIceCreamVan_CheckForGuard(void* obj, void*, void* vehicle, void* pos)
+	{
+		void* result = orgGetEffectForIceCreamVan(obj, vehicle, pos);
+		if (result == &ChooseEffect_ReturnGuard)
+		{
+			// Newly inserted value, call the function again to query for the real deal
+			result = orgGetEffectForIceCreamVan(obj, vehicle, pos);
+		}
+		return result;
+	}
+}
+
+
 static void __fastcall ResetTimers_Dont(void* /*obj*/, void*, uint32_t /*time*/)
 {
 	// Do nothing
@@ -4704,6 +4727,21 @@ void Patch_VC_Common()
 
 		auto addGunshellCall = get_pattern("E8 ? ? ? ? 8D 44 24 ? 8D 74 24 ? 8D 7C 24");
 		InterceptCall(addGunshellCall, orgAddGunshell, AddGunshell_SkipForRevolverAndSnipers);
+	}
+	TXN_CATCH();
+
+
+	// Fixed CPedAttractorManager::GetEffectForIceCreamVan returning stale memory when the attractor is created
+	// This resulted in the game generating less ice cream customers than intended
+	try
+	{
+		using namespace IceCreamVanEffectFix;
+
+		auto get_effect_for_ice_cream_van = get_pattern("E8 ? ? ? ? 83 F8 ? 89 44 24");
+		auto choose_new_effect = get_pattern("E8 ? ? ? ? 89 C3 8D 44 24");
+
+		InterceptCall(get_effect_for_ice_cream_van, orgGetEffectForIceCreamVan, GetEffectForIceCreamVan_CheckForGuard);
+		InjectHook(choose_new_effect, ChooseEffect_ReturnGuard);
 	}
 	TXN_CATCH();
 }
