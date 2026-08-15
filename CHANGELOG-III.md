@@ -98,6 +98,7 @@ All the remaining, non-critical fixes.
 * Fixed the logic of police helicopters looking for the player to match the PS2 version (researched by **Nick007J**).
 * Glass shards from broken rectangular windows are now correctly sized (contributed by **Fire_Head**).
 * Glass panes now break correctly also in cases where the glass isn't perfectly axis-aligned.
+* Two broken graffiti attractors in Portland now work correctly, so pedestrians can stare at them.
 * ⚙️ Fixed siren corona placements in Firetruck, Ambulance, and Enforcer.
 * ⚙️ Fixed taxi light corona placement for Taxi.
 * ⚙️ Fixed police chopper's searchlight placement.

@@ -2553,6 +2553,24 @@ namespace GlassPanesRotationFix
 }
 
 
+// ============= Clamp the attractor probability value to uint8 to fix two malformed stock data entries =============
+namespace AttractorProbabilityClampFix
+{
+	static int (*orgSscanf)(const char* s, const char* format, ...);
+	static int sscanf_ClampProbability(const char* s, const char* format, void* id, void* x, void* y, void* z, void* r, void* g, void* b, void* a,
+			void* type, void* flags, void* dirX, void* dirY, void* dirZ, int* probability)
+	{
+		const int result = orgSscanf(s, format, id, x, y, z, r, g, b, a, type, flags, dirX, dirY, dirZ, probability);
+		if (result == 14)
+		{
+			using ProbabilityLimits = std::numeric_limits<uint8_t>;
+			*probability = std::clamp<int>(*probability, ProbabilityLimits::min(), ProbabilityLimits::max());
+		}
+		return result;
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -4672,6 +4690,17 @@ void Patch_III_Common()
 		InjectHook(matrix_mult.get<void>(0xA5), noopMatrixVectorMult);
 
 		InterceptCall(generate_panes_for_window, orgGeneratePanesForWindow, GeneratePanesForWindows_FixCoordinates);
+	}
+	TXN_CATCH();
+
+
+	// Clamp the attractor probability value to uint8 to fix two malformed stock data entries
+	try
+	{
+		using namespace AttractorProbabilityClampFix;
+
+		auto sscanf_2deffect = get_pattern("E8 ? ? ? ? 8A 84 24 ? ? ? ? 83 C4 ? 88 43");
+		InterceptCall(sscanf_2deffect, orgSscanf, sscanf_ClampProbability);
 	}
 	TXN_CATCH();
 }
