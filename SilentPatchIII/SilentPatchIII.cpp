@@ -1810,8 +1810,9 @@ namespace MenuManagerScalingFixes
 	template<std::size_t Index>
 	static void PrintString_Brief(float fX, float fY, const wchar_t* pText)
 	{
+		const float MissingHeightScale = UIScales::MenuManager::Height() - 1.0f;
 		const float originY = **pBriefTextOriginY;
-		orgPrintString<Index>(fX * UIScales::MenuManager::Width(), fY - originY + (originY * UIScales::MenuManager::Height()), pText);
+		orgPrintString<Index>(fX * UIScales::MenuManager::Width(), fY + (originY * MissingHeightScale), pText);
 	}
 
 	HOOK_EACH_INIT_CTR(MenuText, 0, orgPrintString, PrintString_Scale);
@@ -2567,6 +2568,40 @@ namespace AttractorProbabilityClampFix
 			*probability = std::clamp<int>(*probability, ProbabilityLimits::min(), ProbabilityLimits::max());
 		}
 		return result;
+	}
+}
+
+
+// ============= Fix cutscene borders not scaling to resolution =============
+namespace CutsceneBorderScalingFixes
+{
+	static bool HasGameBindings()
+	{
+		return UIScales::HasGameBindings();
+	}
+
+	static ExternalRef<float> s_DrawBordersForWidescreen_Top;
+	static CRect* (__thiscall* orgRectCtor_Top)(CRect* rect, float left, float top, float right, float bottom);
+	static CRect* __fastcall RectCtor_Top_Fixup(CRect* rect, void*, float left, float top, float right, float bottom)
+	{
+		const float MissingHeight = UIScales::Stuff2d::Height() - 1.0f;
+		return orgRectCtor_Top(rect, left, top - (MissingHeight * s_DrawBordersForWidescreen_Top.Get()), right, bottom);
+	}
+
+	static ExternalRef<float> s_DrawBordersForWidescreen_Bottom;
+	static CRect* (__thiscall* orgRectCtor_Bottom)(CRect* rect, float left, float top, float right, float bottom);
+	static CRect* __fastcall RectCtor_Bottom_Fixup(CRect* rect, void*, float left, float top, float right, float bottom)
+	{
+		const float MissingHeight = UIScales::Stuff2d::Height() - 1.0f;
+		return orgRectCtor_Bottom(rect, left, top, right, bottom - (MissingHeight * s_DrawBordersForWidescreen_Bottom.Get()));
+	}
+
+	static ExternalRef<float> s_DoFade_Top, s_DoFade_Bottom;
+	static CRect* (__thiscall* orgRectCtor_DoFade)(CRect* rect, float left, float top, float right, float bottom);
+	static CRect* __fastcall RectCtor_DoFade_Fixup(CRect* rect, void*, float left, float top, float right, float bottom)
+	{
+		const float MissingHeight = UIScales::Stuff2d::Height() - 1.0f;
+		return orgRectCtor_Bottom(rect, left, top - (MissingHeight * s_DoFade_Top.Get()), right, bottom - (MissingHeight * s_DoFade_Bottom.Get()));
 	}
 }
 
@@ -4701,6 +4736,28 @@ void Patch_III_Common()
 
 		auto sscanf_2deffect = get_pattern("E8 ? ? ? ? 8A 84 24 ? ? ? ? 83 C4 ? 88 43");
 		InterceptCall(sscanf_2deffect, orgSscanf, sscanf_ClampProbability);
+	}
+	TXN_CATCH();
+
+
+	// Fix cutscene borders not scaling to resolution
+	if (CutsceneBorderScalingFixes::HasGameBindings()) try
+	{
+		using namespace CutsceneBorderScalingFixes;
+
+		auto cutscene_borders_rect_top = pattern("D8 25 ? ? ? ? D9 1C 24 8D 4C 24 ? FF 35 ? ? ? ? E8").get_one();
+		auto cutscene_borders_rect_bottom = pattern("D8 25 ? ? ? ? D9 1C 24 DB 05 ? ? ? ? 50 D9 1C 24 89 54 24 ? 50 DB 44 24 ? D9 1C 24 8D 4C 24 ? FF 35 ? ? ? ? E8").get_one();
+		auto do_fade_rect = pattern("D8 25 ? ? ? ? D9 1C 24 DB 05 ? ? ? ? 50 D9 1C 24 D9 C0 D8 25 ? ? ? ? 50 D9 1C 24 8D 4C 24 ? FF 35 ? ? ? ? DD D8 E8").get_one();
+
+		s_DrawBordersForWidescreen_Top.Bind(cutscene_borders_rect_top.get<float*>(2));
+		s_DrawBordersForWidescreen_Bottom.Bind(cutscene_borders_rect_bottom.get<float*>(2));
+
+		s_DoFade_Bottom.Bind(do_fade_rect.get<float*>(2));
+		s_DoFade_Top.Bind(do_fade_rect.get<float*>(0x15 + 2));
+
+		InterceptCall(cutscene_borders_rect_top.get<void>(0x13), orgRectCtor_Top, RectCtor_Top_Fixup);
+		InterceptCall(cutscene_borders_rect_bottom.get<void>(0x29), orgRectCtor_Bottom, RectCtor_Bottom_Fixup);
+		InterceptCall(do_fade_rect.get<void>(0x2B), orgRectCtor_DoFade, RectCtor_DoFade_Fixup);
 	}
 	TXN_CATCH();
 }

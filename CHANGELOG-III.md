@@ -99,6 +99,7 @@ All the remaining, non-critical fixes.
 * Glass shards from broken rectangular windows are now correctly sized (contributed by **Fire_Head**).
 * Glass panes now break correctly also in cases where the glass isn't perfectly axis-aligned.
 * Two broken graffiti attractors in Portland now work correctly, so pedestrians can stare at them.
+* Cutscene borders now scale to resolution correctly.
 * ⚙️ Fixed siren corona placements in Firetruck, Ambulance, and Enforcer.
 * ⚙️ Fixed taxi light corona placement for Taxi.
 * ⚙️ Fixed police chopper's searchlight placement.
