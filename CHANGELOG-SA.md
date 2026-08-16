@@ -84,6 +84,7 @@ All the remaining, non-critical fixes.
 * ➕ Fixed a glitch allowing bikes without engines to spawn.
 * ➕ Allowed extra6 parts to be picked when a random extra is to be picked.
 * ➕ Fixed in-car camera mouse behavior when looking left/right/behind.
+* The on-foot aiming/first-person camera no longer shakes at very high frame rates (contributed by **sonochiwa**).
 * ➕ Steam and RGL versions have proper aspect ratios now.
 * ➕ Steam/RGL versions will now default Steer with Mouse option to disabled, like in 1.0/1.01.
 * ➕ Wind animations now apply to CJ's clothes when driving a Quadbike (contributed by **Wesser**).
