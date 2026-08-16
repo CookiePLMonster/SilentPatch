@@ -183,7 +183,12 @@ protected:
 	BYTE			__pad2[48];
 	CPed*			m_pDriver;
 	CPed*			m_apPassengers[8];
-	BYTE			__pad8[24];
+	BYTE 			m_nNumPassengers;
+  	BYTE 			m_nNumGettingIn;
+  	BYTE 			m_nGettingInFlags;
+  	BYTE 			m_nGettingOutFlags;
+  	BYTE 			m_nMaxPassengers;
+	BYTE			__pad8[19];
 	float			m_fGasPedal;
 	float			m_fBrakePedal;
 	uint8_t			m_VehicleCreatedBy;
@@ -213,6 +218,22 @@ public:
 						{ return m_dwVehicleClass; }
 	CPed*			GetDriver() const
 						{ return m_pDriver;}
+
+	uint8_t GetMaxPassengers() const
+	{
+		return m_nMaxPassengers;
+	}
+
+	CPed** GetPassengers() const
+	{
+		return (CPed**)m_apPassengers;
+	}
+
+	void scalar_deleting_dtor()
+	{
+		reinterpret_cast<void(__thiscall *)(CVehicle *, bool)>(
+			(*(void ***)this)[0])(this, true);
+  	}
 
 	void			SetBombOnBoard( uint32_t bombOnBoard )
 						{ m_BombOnBoard = bombOnBoard; }
