@@ -3458,12 +3458,13 @@ void Patch_III_10(uint32_t width, uint32_t height)
 		using namespace PrintStringShadows;
 		using namespace UIScales;
 
-		XY<0x505F7B, 0x505F50, Hud>::Hook(0x505F82);
-		XY<0x5065D3, 0x5065A8, Hud>::Hook(0x5065DA);
-		XY<0x50668E, 0x506670, Hud>::Hook(0x50669B);
-		XY<0x506944, 0x506919, Hud>::Hook(0x50694B);
-		XY<0x5069FF, 0x5069E1, Hud>::Hook(0x506A0C);
-		XY<0x506C2B, 0x506C22, Hud>::Hook(0x506C37);
+		XY<0x505F7B, 0x505F50, Hud>::Hook(0x505F82); // Money
+		XY<0x5065D3, 0x5065A8, Hud>::Hook(0x5065DA); // Health text shadow
+		XY<0x50668E, 0x506670, Hud>::Hook(0x50669B); // Health icon shadow
+		X<0x5067BA + 2, Hud>::Hook(0x5067C9); // Health icon
+		XY<0x506944, 0x506919, Hud>::Hook(0x50694B); // Armour text shadow
+		XY<0x5069FF, 0x5069E1, Hud>::Hook(0x506A0C); // Armour icon shadow
+		XY<0x506C2B, 0x506C22, Hud>::Hook(0x506C37); // Wanted level star
 		XY<0x5070F3, 0x5070C8, Hud>::Hook(0x5070FA); // Zone name
 		XY<0x507591, 0x507566, Hud>::Hook(0x507598); // Vehicle name
 		XY<0x50774D, 0x507722, Hud>::Hook(0x507754); // Time
@@ -3548,12 +3549,13 @@ void Patch_III_11(uint32_t width, uint32_t height)
 		using namespace PrintStringShadows;
 		using namespace UIScales;
 
-		XY<0x50605B, 0x506030, Hud>::Hook(0x506062);
-		XY<0x5066B3, 0x506688, Hud>::Hook(0x5066BA);
-		XY<0x50676E, 0x506750, Hud>::Hook(0x50677B);
-		XY<0x506A24, 0x5069F9, Hud>::Hook(0x506A2B);
-		XY<0x506ADF, 0x506AC1, Hud>::Hook(0x506AEC);
-		XY<0x506D0B, 0x506D02, Hud>::Hook(0x506D17);
+		XY<0x50605B, 0x506030, Hud>::Hook(0x506062); // Money
+		XY<0x5066B3, 0x506688, Hud>::Hook(0x5066BA); // Health text shadow
+		XY<0x50676E, 0x506750, Hud>::Hook(0x50677B); // Health icon shadow
+		X<0x50689A + 2, Hud>::Hook(0x5068A9); // Health icon
+		XY<0x506A24, 0x5069F9, Hud>::Hook(0x506A2B); // Armour text shadow
+		XY<0x506ADF, 0x506AC1, Hud>::Hook(0x506AEC); // Armour icon shadow
+		XY<0x506D0B, 0x506D02, Hud>::Hook(0x506D17); // Wanted level star
 		XY<0x5071D3, 0x5071A8, Hud>::Hook(0x5071DA); // Zone name
 		XY<0x507671, 0x507646, Hud>::Hook(0x507678); // Vehicle name
 		XY<0x50782D, 0x507802, Hud>::Hook(0x507834); // Time
@@ -3628,12 +3630,13 @@ void Patch_III_Steam(uint32_t width, uint32_t height)
 		using namespace PrintStringShadows;
 		using namespace UIScales;
 
-		XY<0x505FEB, 0x505FC0, Hud>::Hook(0x505FF2);
-		XY<0x506643, 0x506618, Hud>::Hook(0x50664A);
-		XY<0x5066FE, 0x5066E0, Hud>::Hook(0x50670B);
-		XY<0x5069B4, 0x506989, Hud>::Hook(0x5069BB);
-		XY<0x506A6F, 0x506A51, Hud>::Hook(0x506A7C);
-		XY<0x506C9B, 0x506C92, Hud>::Hook(0x506CA7);
+		XY<0x505FEB, 0x505FC0, Hud>::Hook(0x505FF2); // Money
+		XY<0x506643, 0x506618, Hud>::Hook(0x50664A); // Health text shadow
+		XY<0x5066FE, 0x5066E0, Hud>::Hook(0x50670B); // Health icon shadow
+		X<0x50682A + 2, Hud>::Hook(0x506839); // Health icon
+		XY<0x5069B4, 0x506989, Hud>::Hook(0x5069BB); // Armour text shadow
+		XY<0x506A6F, 0x506A51, Hud>::Hook(0x506A7C); // Armour icon shadow
+		XY<0x506C9B, 0x506C92, Hud>::Hook(0x506CA7); // Wanted level star
 		XY<0x507163, 0x507138, Hud>::Hook(0x50716A); // Zone name
 		XY<0x507601, 0x5075D6, Hud>::Hook(0x507608); // Vehicle name
 		XY<0x5077BD, 0x507792, Hud>::Hook(0x5077C4); // Time
