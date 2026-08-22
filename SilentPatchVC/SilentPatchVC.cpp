@@ -2484,6 +2484,26 @@ namespace IceCreamVanEffectFix
 }
 
 
+// ============= Fix Tommy's idle animations failing to play when using Standard controls =============
+// ============= Contributed by CanerKaraca =============
+namespace IdleAnimationsFix
+{
+	static void (__thiscall* orgPlayerControl1stPersonRunAround)(void*, void*);
+	static void (__thiscall* orgPlayIdleAnimations)(void*, void*);
+
+	static void __fastcall PlayerControl1stPersonRunAround_Hook(void* _this, void* /*edx*/, void* padUsed)
+	{
+		orgPlayerControl1stPersonRunAround(_this, padUsed);
+
+		// PEDSTATE_FIGHT is 17. m_nPedState is at offset 0x244.
+		if (*reinterpret_cast<const uint32_t*>(reinterpret_cast<const uint8_t*>(_this) + 0x244) != 17)
+		{
+			orgPlayIdleAnimations(_this, padUsed);
+		}
+	}
+}
+
+
 static void __fastcall ResetTimers_Dont(void* /*obj*/, void*, uint32_t /*time*/)
 {
 	// Do nothing
@@ -3592,6 +3612,7 @@ void Patch_VC_JP()
 	Patch<DWORD>(0x47C266 + 0x22E + 0x2, 0x94ABD8);
 	Patch<DWORD>(0x481E8A + 0x4FE + 0x2, 0x94ABD8);
 }
+
 
 void Patch_VC_Common()
 {
@@ -4730,7 +4751,6 @@ void Patch_VC_Common()
 	}
 	TXN_CATCH();
 
-
 	// Fixed CPedAttractorManager::GetEffectForIceCreamVan returning stale memory when the attractor is created
 	// This resulted in the game generating less ice cream customers than intended
 	try
@@ -4742,6 +4762,26 @@ void Patch_VC_Common()
 
 		InterceptCall(get_effect_for_ice_cream_van, orgGetEffectForIceCreamVan, GetEffectForIceCreamVan_CheckForGuard);
 		InjectHook(choose_new_effect, ChooseEffect_ReturnGuard);
+	}
+	TXN_CATCH();
+
+	// Tommy's idle animations playback fix (Issue #199)
+	// Contributed by CanerKaraca
+	try
+	{
+		using namespace IdleAnimationsFix;
+
+		// CPlayerPed::ProcessControl calls PlayerControl1stPersonRunAround (0x5357D0 in VC 1.0)
+		auto pc1stPersonCall = get_pattern("74 33 89 E9 53 E8 ? ? ? ? EB 29 83 BD 44 02 00 00 11 75", 5);
+		
+		// CPlayerPed::PlayIdleAnimations (0x535D10 in VC 1.0)
+		// Masked out the absolute address of a global variable at offset 0x9
+		auto playIdleAnims = get_pattern("53 56 57 55 83 EC 38 80 3D ? ? ? ? 00 89 CD 75 0D 8A 85");
+
+		ReadCall(pc1stPersonCall, orgPlayerControl1stPersonRunAround);
+		orgPlayIdleAnimations = reinterpret_cast<decltype(orgPlayIdleAnimations)>(playIdleAnims);
+		
+		InjectHook(pc1stPersonCall, PlayerControl1stPersonRunAround_Hook, HookType::Call);
 	}
 	TXN_CATCH();
 }
