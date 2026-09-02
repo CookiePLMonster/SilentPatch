@@ -1,4 +1,5 @@
 {
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
-    "dependencies": ["libflac"]
+    "dependencies": ["libflac"],
+    "builtin-baseline": "eaca4a577b6b678c6e10252754b6988a61746c19"
 }
