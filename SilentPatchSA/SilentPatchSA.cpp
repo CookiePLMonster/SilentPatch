@@ -10,6 +10,7 @@
 #include "AnimationSA.h"
 #include "ScriptSA.h"
 #include "GeneralSA.h"
+#include "TimerSA.h"
 #include "ModelInfoSA.h"
 #include "VehicleSA.h"
 #include "PedSA.h"
@@ -7042,6 +7043,139 @@ BOOL InjectDelayedPatches_NewBinaries()
 static char		aNoDesktopMode[64];
 
 
+// ============= Fix aiming/first-person camera shake at high frame rates =============
+// At very high frame rates CTimer::ms_fTimeStep becomes tiny and the on-foot aim/
+// first-person camera smoothing in CCamera::Process (around CCam::Process_AimWeapon)
+// jitters instead of settling. While aiming on foot, clamp both timesteps to a 60 FPS
+// equivalent floor for the duration of CCamera::Process and restore them immediately
+// afterwards - the shake is removed without capping the frame rate.
+// 1.0 only.
+// By sonochiwa.
+namespace AimCameraShakeFix
+{
+	// CTimer timestep units: 1.0 == one frame at the game's nominal 50 FPS, so the 60 FPS floor is 50/60.
+	static constexpr float MIN_AIM_TIMESTEP = 50.0f / 60.0f;
+
+	// Both timesteps come from the existing CTimer::m_fTimeStep binding; CTimer::ms_fTimeStepNonClipped
+	// is the float immediately preceding ms_fTimeStep in memory.
+	static float& TimeStep()           { return CTimer::m_fTimeStep.Get(); }
+	static float& TimeStepNonClipped() { return *(&CTimer::m_fTimeStep.Get() - 1); }
+
+	// Depth-counted guard so the clamp spans the whole CCamera::Process call - the shake comes from
+	// the smoothing done around the per-mode processing, not only inside Process_AimWeapon.
+	static int   g_guardDepth = 0;
+	static float g_savedTimeStep = 0.0f;
+	static float g_savedTimeStepNonClipped = 0.0f;
+
+	static void BeginGuard()
+	{
+		if ( g_guardDepth++ != 0 ) return;
+		g_savedTimeStep = TimeStep();
+		g_savedTimeStepNonClipped = TimeStepNonClipped();
+		if ( TimeStep() > 0.0f && TimeStep() < MIN_AIM_TIMESTEP ) TimeStep() = MIN_AIM_TIMESTEP;
+		if ( TimeStepNonClipped() > 0.0f && TimeStepNonClipped() < MIN_AIM_TIMESTEP ) TimeStepNonClipped() = MIN_AIM_TIMESTEP;
+	}
+
+	static void EndGuard()
+	{
+		if ( g_guardDepth <= 0 ) { g_guardDepth = 0; return; }
+		if ( --g_guardDepth != 0 ) return;
+		TimeStep() = g_savedTimeStep;
+		TimeStepNonClipped() = g_savedTimeStepNonClipped;
+	}
+
+	static void WriteCode( void* dst, const void* src, size_t numBytes )
+	{
+		DWORD oldProtect;
+		VirtualProtect( dst, numBytes, PAGE_EXECUTE_READWRITE, &oldProtect );
+		memcpy( dst, src, numBytes );
+		VirtualProtect( dst, numBytes, oldProtect, &oldProtect );
+		FlushInstructionCache( GetCurrentProcess(), dst, numBytes );
+	}
+
+	struct EntryHook
+	{
+		void*   target = nullptr;
+		uint8_t original[5] = {};
+		uint8_t jump[5] = {};
+
+		void Install( uintptr_t func, void* hook )
+		{
+			target = reinterpret_cast<void*>(func);
+			memcpy( original, target, sizeof(original) );
+			const intptr_t rel = reinterpret_cast<intptr_t>(hook) - static_cast<intptr_t>(func) - 5;
+			jump[0] = 0xE9; // jmp rel32
+			memcpy( &jump[1], &rel, sizeof(int32_t) );
+			WriteCode( target, jump, sizeof(jump) );
+		}
+		void Unhook() { WriteCode( target, original, sizeof(original) ); }
+		void Rehook() { WriteCode( target, jump, sizeof(jump) ); }
+	};
+
+	static EntryHook g_aimWeaponHook;
+	static EntryHook g_cameraProcessHook;
+
+	static bool IsAimMode( int mode )
+	{
+		switch ( mode )
+		{
+		case 7: case 8: case 34: case 39: case 40: case 41: case 42: case 43:
+		case 45: case 46: case 51: case 52: case 53: case 65:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	// Clamp only while aiming a weapon on foot. The aim state is taken from the active camera mode
+	// rather than the ped's bIsAimingGun flag, which lags the camera and leaves a residual shake.
+	static bool IsAimCameraActive()
+	{
+		const CPlayerPed* ped = FindPlayerPed();
+		if ( ped == nullptr || ped->GetCurrentVehicle() != nullptr ) return false;
+		const uintptr_t camera = 0x00B6F028; // TheCamera
+		const uint8_t active = *reinterpret_cast<uint8_t*>(camera + 0x59);
+		if ( active > 2 ) return false;
+		const int16_t mode       = *reinterpret_cast<int16_t*>(camera + 0x174 + static_cast<uintptr_t>(active) * 0x238 + 0x0C);
+		const int16_t weaponMode = *reinterpret_cast<int16_t*>(camera + 0x830);
+		return IsAimMode( mode ) || IsAimMode( weaponMode ) || weaponMode != 0;
+	}
+
+	using ProcessAimWeapon_t = void(__thiscall*)(void* camera, const void* target, float, float, float);
+	using CameraProcess_t    = void(__thiscall*)(void* camera);
+
+	static void __fastcall ProcessAimWeapon_Hook( void* camera, void* /*edx*/, const void* target, float a, float b, float c )
+	{
+		g_aimWeaponHook.Unhook();
+		BeginGuard();
+		reinterpret_cast<ProcessAimWeapon_t>( g_aimWeaponHook.target )( camera, target, a, b, c );
+		EndGuard();
+		g_aimWeaponHook.Rehook();
+	}
+
+	static void __fastcall CameraProcess_Hook( void* camera, void* /*edx*/ )
+	{
+		const bool guard = IsAimCameraActive();
+		g_cameraProcessHook.Unhook();
+		if ( guard ) BeginGuard();
+		reinterpret_cast<CameraProcess_t>( g_cameraProcessHook.target )( camera );
+		if ( guard ) EndGuard();
+		g_cameraProcessHook.Rehook();
+	}
+
+	static bool HasGameBindings()
+	{
+		return CTimer::HasGameBindings() && HasGameBindings_FindPlayer();
+	}
+
+	static void Install()
+	{
+		g_aimWeaponHook.Install( 0x521500, reinterpret_cast<void*>(&ProcessAimWeapon_Hook) );
+		g_cameraProcessHook.Install( 0x52B730, reinterpret_cast<void*>(&CameraProcess_Hook) );
+	}
+}
+
+
 void Patch_SA_10(HINSTANCE hInstance)
 {
 	using namespace Memory;
@@ -7427,6 +7561,12 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Patch<const void*>(0x5105C0 + 0x666 + 0x2, sens);
 	Patch<const void*>(0x511B50 + 0x2B8 + 0x2, sens);
 	Patch<const void*>(0x521500 + 0xD8C + 0x2, sens);
+
+	// Fix aiming/first-person camera shake at high frame rates
+	if ( AimCameraShakeFix::HasGameBindings() )
+	{
+		AimCameraShakeFix::Install();
+	}
 
 	// Don't lock mouse Y axis during fadeins
 	Patch<WORD>(0x50FBB4, 0x27EB);
