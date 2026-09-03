@@ -332,6 +332,15 @@ public:
 	static std::tuple<int,int>	TryOrFreeUpTempObjects( int numObjects, bool force );
 };
 
+class CWorld
+{
+public:
+    static void Remove(CEntity* pEntity)
+    {
+        reinterpret_cast<void(__cdecl*)(CEntity*)>(0x563280)(pEntity);
+    }
+};
+
 class CZoneInfo
 {
 public:

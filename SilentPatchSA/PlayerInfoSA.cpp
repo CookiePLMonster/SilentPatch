@@ -46,3 +46,19 @@ CVehicle* FindPlayerVehicle( int playerID, bool withRC )
 	}
 	return ped->m_pMyVehicle;
 }
+
+void CPlayerInfo::CancelPlayerEnteringCars_ImpoundGarage(CVehicle *pVehicle)
+{
+	bool has_occupant = pVehicle->GetDriver() != nullptr;
+
+    for (auto i = 0; i < pVehicle->GetMaxPassengers() && !has_occupant; ++i)
+	{
+		has_occupant = pVehicle->GetPassengers()[i] != nullptr;
+    }
+
+    if (!has_occupant)
+    {
+		CWorld::Remove(pVehicle);
+		pVehicle->scalar_deleting_dtor();
+    }
+}
