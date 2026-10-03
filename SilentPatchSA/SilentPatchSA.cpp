@@ -4284,6 +4284,17 @@ namespace SpeechSystemFixes
 		}
 	}
 
+	static bool (__thiscall* orgPedIsReadyForConversation)(CPed* ped, bool bCheckWantedLevel);
+	static bool __fastcall PedIsReadyForConversation_CheckAlive(CPed* ped, void*, bool bCheckWantedLevel)
+	{
+		const int32_t pedState = ped->GetPedState();
+		if (pedState == 54 || pedState == 55) // PEDSTATE_DIE || PEDSTATE_DEAD
+		{
+			return false;
+		}
+		return orgPedIsReadyForConversation(ped, bCheckWantedLevel);
+	}
+
 	namespace Patches
 	{
 		static void PatchGlobalSpeechContexts(int16_t (*gSpeechContextLookup)[8])
@@ -8498,6 +8509,9 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 		// Play DRUGGED_IGNORE on the homie, not on CJ, when they're refusing to be recruited
 		InterceptCall(0x60C87A, orgPedSay_MakeThisPedJoinOurGroup_DruggedIgnore, PedSay_MakeThisPedJoinOurGroup_DruggedIgnore);
+
+		// Don't let dead and dying peds start conversations with CJ
+		InterceptCall(0x43B213, orgPedIsReadyForConversation, PedIsReadyForConversation_CheckAlive);
 	}
 
 
