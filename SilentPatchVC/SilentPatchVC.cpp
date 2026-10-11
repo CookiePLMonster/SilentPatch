@@ -3645,8 +3645,8 @@ void Patch_VC_Common()
 	// Alt+F4
 	try
 	{
-		auto addr = pattern( "59 59 31 C0 83 C4 70 5D 5F 5E 5B C2 10 00" ).count(2);
-		auto dest = get_pattern( "53 55 56 FF B4 24 90 00 00 00 FF 15" );
+		auto addr = pattern( "59 59 31 C0 83 C4 ? 5D 5F 5E 5B C2 10 00" ).count(2);
+		auto dest = get_pattern( "53 55 56 FF B4 24 ? 00 00 00 FF 15" );
 
 		addr.for_each_result( [&]( pattern_match match ) {
 			InjectHook( match.get<void>( 2 ), dest, HookType::Jump );
@@ -4231,7 +4231,7 @@ void Patch_VC_Common()
 		try
 		{
 			std::array<void*, 1> set_centre_size = {
-				get_pattern("E8 ? ? ? ? 59 E8 ? ? ? ? 6A 01 E8 ? ? ? ? 59 8D 4C 24 08")
+				get_pattern("E8 ? ? ? ? 59 E8 ? ? ? ? 6A ? E8 ? ? ? ? 59 8D 4C 24 08")
 			};
 
 			Garages::HookEach_PrintMessages_Right(set_centre_size, InterceptCall);
