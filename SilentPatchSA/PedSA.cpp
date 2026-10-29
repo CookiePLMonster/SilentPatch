@@ -7,6 +7,8 @@ ExternalMethod<CPed, void (bool bSecondWeapon)> CPed::SetGunFlashAlpha(AddressBy
 
 ExternalMethod<CPed, int16_t (uint16_t phrase, uint32_t StartTimeDelay, float Probability, bool bOverideSilence, bool bForceAudible, bool bFrontEnd)> CPed::SayFunc(
 		AddressByVersion<int16_t (__thiscall*)(CPed*, uint16_t, uint32_t, float, bool, bool, bool)>(0x5EFFE0, { "66 85 C0 74 29", -6 }));
+		
+ExternalMethod<CPed, bool () const> CPed::IsAliveFunc(AddressByVersion<bool (__thiscall*)(const CPed*)>(0x5E0170));
 
 ExternalMethod<CPedIntelligence, class CTaskSimpleJetPack* () const> CPedIntelligence::GetTaskJetPack(
 		AddressByVersion<class CTaskSimpleJetPack* (__thiscall*)(const CPedIntelligence*)>(0x601110, 0x601930, 0x620E70));

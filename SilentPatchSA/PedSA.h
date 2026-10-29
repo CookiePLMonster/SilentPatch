@@ -501,6 +501,13 @@ public:
 	{
 		return SayFunc.Call(this, phrase, StartTimeDelay, Probability, bOverideSilence, bForceAudible, bFrontEnd);
 	}
+	
+	static ExternalMethod<CPed, bool () const> IsAliveFunc;
+	bool				IsAlive() const
+	{
+		return IsAliveFunc.Call(this);
+	}
+	
 	static ExternalMethod<CPed, int16_t (uint16_t phrase, uint32_t StartTimeDelay, float Probability, bool bOverideSilence, bool bForceAudible, bool bFrontEnd)> SayFunc;
 	void				ResetGunFlashAlpha();
 
