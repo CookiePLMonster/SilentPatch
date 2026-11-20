@@ -150,6 +150,7 @@ All the remaining, non-critical fixes.
 * ➕ A misplaced Beagle in Fort Carson has been replaced with a BMX.
 * ➕ Rhino now has fully functional lights (contributed by **rx**).
 * ➕ The GANGS and CRIMES section names are no longer swapped when exporting stats to stats.html (contributed by **sndth**).
+* ➕ Traffic no longer starts facing the wrong way, reversing along roads and lurching into other cars on long-played saves. The autopilot re-based its curve timestamp in single precision, so past roughly 149 hours of in-game time the rounding walked cars backwards along their paths.
 * Detached vehicle parts will now keep the same color and lighting as the vehicle they came from.
 * Detached vehicle parts are now rendered from both sides.
 * Resolved single-pixel wide seams showing on the Map screen with Anti-Aliasing enabled.

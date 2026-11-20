@@ -8600,6 +8600,29 @@ void Patch_SA_10(HINSTANCE hInstance)
 		using namespace TrainsInGarages;
 		InterceptCall(0x4480D0, orgCAutomobileCtor, CAutomobileCtor_OrTrain);
 	}
+
+
+	// Traffic drives backwards and lurches into other cars on long-played saves.
+	// CAutoPilot::ModifySpeed re-bases the curve timestamp as `now - dur*frac` on the FPU in
+	// single precision, so past 2^29 ms (149 hours of in-game time) the result rounds to a
+	// 64 ms grid and slow cars creep backwards along their curve. Keep the subtraction in
+	// integers; only the small dur*frac product needs the FPU.
+	Patch(0x41BC3B, { 0x89, 0x44, 0x24, 0x40,					// mov   [esp+40], eax
+					  0xDB, 0x44, 0x24, 0x40,					// fild  dword [esp+40]
+					  0xD8, 0x4C, 0x24, 0x20 });				// fmul  dword [esp+20]
+	InjectHook(0x41BC47, reinterpret_cast<void*>(0x821B40), HookType::Call);	// _ftol
+	Patch(0x41BC4C, { 0x8B, 0x0D, 0x84, 0xCB, 0xB7, 0x00,		// mov   ecx, [CTimer::m_snTimeInMilliseconds]
+					  0x2B, 0xC8,								// sub   ecx, eax
+					  0x89, 0x4E, 0x0C });						// mov   [esi+0Ch], ecx
+	Nop(0x41BC57, 16);
+
+	// UpdateCarOnRails reads now - m_nTimeEnteredCurve as unsigned, so a timestamp left in the
+	// future turns a small negative into ~4.29e9 and drags the car backwards. Clamp it to zero.
+	Patch(0x4365CE, { 0x79, 0x02,								// jns   +2
+					  0x33, 0xC9,								// xor   ecx, ecx
+					  0x89, 0x4C, 0x24, 0x70,					// mov   [esp+70], ecx
+					  0xDB, 0x44, 0x24, 0x70 });				// fild  dword [esp+70]
+	Nop(0x4365DA, 4);
 }
 
 void Patch_SA_11()
@@ -11449,6 +11472,63 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		InterceptCall(automobile_ctor, orgCAutomobileCtor, CAutomobileCtor_OrTrain);
 	}
+
+
+	// Traffic drives backwards and lurches into other cars on long-played saves.
+	// CAutoPilot::ModifySpeed re-bases the curve timestamp as `now - dur*frac` on the FPU in
+	// single precision, so past 2^29 ms (149 hours of in-game time) the result rounds to a
+	// 64 ms grid and slow cars creep backwards along their curve. Keep the subtraction in
+	// integers; only the small dur*frac product needs the FPU.
+	try
+	{
+		auto rebase = pattern("DB 05 ? ? ? ? 8B 0D ? ? ? ? 85 C9 89 44 24 ? 7D 06 D8 05 ? ? ? ? "
+							  "DB 44 24 ? D8 4C 24 ? DE E9 E8 ? ? ? ? 89 46 ?").get_one();
+
+		int*	timeInMilliseconds;
+		void*	ftol;
+		uint8_t	durSlot, durSlotRead, fracSlot, tecOffset;
+		ReadMemDisplacement(rebase.get<void>(2), timeInMilliseconds);
+		ReadOffsetValue(rebase.get<void>(0x25), ftol);
+		Read(rebase.get<void>(0x11), durSlot);
+		Read(rebase.get<void>(0x1D), durSlotRead);
+		Read(rebase.get<void>(0x21), fracSlot);
+		Read(rebase.get<void>(0x2B), tecOffset);
+
+		// The stock code stores the duration to a stack local and reads it back; the rewrite
+		// reuses a single slot, so bail out if those two ever name different ones.
+		if (durSlot != durSlotRead) throw hook::txn_exception{};
+
+		Patch(rebase.get<void>(), { 0x89, 0x44, 0x24, durSlot,			// mov   [esp+D1], eax
+									0xDB, 0x44, 0x24, durSlot,			// fild  dword [esp+D1]
+									0xD8, 0x4C, 0x24, fracSlot });		// fmul  dword [esp+D2]
+		InjectHook(rebase.get<void>(12), ftol, HookType::Call);			// _ftol
+		Patch(rebase.get<void>(17), { 0x8B, 0x0D });					// mov   ecx, [CTimer::m_snTimeInMilliseconds]
+		WriteMemDisplacement(rebase.get<void>(19), timeInMilliseconds);
+		Patch(rebase.get<void>(23), { 0x2B, 0xC8,						// sub   ecx, eax
+									  0x89, 0x4E, tecOffset });			// mov   [esi+D3], ecx
+		Nop(rebase.get<void>(28), 16);
+	}
+	TXN_CATCH();
+
+
+	// UpdateCarOnRails reads now - m_nTimeEnteredCurve as unsigned, so a timestamp left in the
+	// future turns a small negative into ~4.29e9 and drags the car backwards. Clamp it to zero.
+	try
+	{
+		auto elapsed = pattern("2B 8E ? ? ? ? 85 C9 89 4C 24 ? DB 44 24 ? 7D 06 D8 05 ? ? ? ?").get_one();
+
+		uint8_t scratchSlot, scratchSlotRead;
+		Read(elapsed.get<void>(0x0B), scratchSlot);
+		Read(elapsed.get<void>(0x0F), scratchSlotRead);
+		if (scratchSlot != scratchSlotRead) throw hook::txn_exception{};
+
+		Patch(elapsed.get<void>(8), { 0x79, 0x02,							// jns   +2
+									  0x33, 0xC9,							// xor   ecx, ecx
+									  0x89, 0x4C, 0x24, scratchSlot,		// mov   [esp+E], ecx
+									  0xDB, 0x44, 0x24, scratchSlot });		// fild  dword [esp+E]
+		Nop(elapsed.get<void>(20), 4);
+	}
+	TXN_CATCH();
 }
 
 
